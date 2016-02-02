@@ -4,7 +4,7 @@
 #pragma warning( disable: 4299)
 #pragma warning( disable: 4099)
 
-#include <vld.h>
+//#include <vld.h>
 
 #include <main.h>
 #include <glcanvas.h>
@@ -109,9 +109,9 @@ int idMenuProfileReset = wxNewId();
 int idMenuAbout = wxNewId();
 int idMenuDlgOGL = wxNewId();
 
-//int idMenuPhysicsBuild = wxNewId();
-//int idMenuPhysicsOn = wxNewId();
-//int idMenuPhysicsOff = wxNewId();
+int idMenuPhysicsBuild = wxNewId();
+int idMenuPhysicsOn = wxNewId();
+int idMenuPhysicsOff = wxNewId();
 
 
 BEGIN_EVENT_TABLE(FrmMainFrame, wxFrame)
@@ -155,8 +155,8 @@ EVT_MENU(idMenuAbout, FrmMainFrame::OnAbout)
 
 EVT_KEY_DOWN(FrmMainFrame::OnKeyDown)
 	
-//EVT_MENU_RANGE(idMenuPhysicsOn, idMenuPhysicsOff, FrmMainFrame::OnPhysicsMode)
-//EVT_MENU(idMenuPhysicsBuild, FrmMainFrame::OnPhysicsBuild)
+EVT_MENU_RANGE(idMenuPhysicsOn, idMenuPhysicsOff, FrmMainFrame::OnPhysicsMode)
+EVT_MENU(idMenuPhysicsBuild, FrmMainFrame::OnPhysicsBuild)
 	
 EVT_CLOSE(FrmMainFrame::OnClose)
 	
@@ -294,12 +294,12 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 
     mbar->Append(aboutMenu, _("&Help"));
 
-	//wxMenu* physicsMenu = new wxMenu(_T(""));
-	//physicsMenu->Append (idMenuPhysicsBuild, _("&Build physics"), _("Builds physics"));
-	//physicsMenu->AppendRadioItem (idMenuPhysicsOn, _("Physics On"), _("Physics On"));
-	//physicsMenu->AppendRadioItem (idMenuPhysicsOff, _("Physics Off"), _("Physics Off"));
-	//physicsMenu->Check (idMenuPhysicsOff, true);
-	//mbar->Append (physicsMenu, _("Physics"));
+	wxMenu* physicsMenu = new wxMenu(_T(""));
+	physicsMenu->Append (idMenuPhysicsBuild, _("&Build physics"), _("Builds physics"));
+	physicsMenu->AppendRadioItem (idMenuPhysicsOn, _("Physics On"), _("Physics On"));
+	physicsMenu->AppendRadioItem (idMenuPhysicsOff, _("Physics Off"), _("Physics Off"));
+	physicsMenu->Check (idMenuPhysicsOn, true);
+	mbar->Append (physicsMenu, _("Physics"));
 
     SetMenuBar(mbar);
 
@@ -808,7 +808,7 @@ FrmMainFrame::startStandAlone (void) {
 	}
 
 	//initScene();
-	//buildPhysics();
+	buildPhysics();
 
 	RENDERMANAGER->getScene ("MainScene")->compile();
 
@@ -901,43 +901,66 @@ FrmMainFrame::OnDlgDbgStep(wxCommandEvent& event) {
 }
 
 
-//void
-//FrmMainFrame::OnPhysicsBuild (wxCommandEvent &event)
-//{
-//	buildPhysics();
-//}
+void
+FrmMainFrame::OnPhysicsBuild (wxCommandEvent &event)
+{
+	buildPhysics();
+}
 
-//void
-//FrmMainFrame::buildPhysics(void) {
-//
-//	nau::scene::Camera *cam = RENDERMANAGER->getCamera("testCamera");
-//
-//	if (0 != m_pRoot) {
-//		m_pRoot->getWorld().build();
-//		EVENTMANAGER->addListener("DYNAMIC_CAMERA", cam);
-//		m_pRoot->getWorld()._add(60.1f, cam, cam->getName(), vec3(0.3f, 0.3f, 0.5f));
-//	}
-//}
-//
-//
-//
+void
+FrmMainFrame::buildPhysics(void) {
+
+	nau::scene::Camera *cam = RENDERMANAGER->getCamera("testCamera");
+
+	if (0 != m_pRoot) {
+		//std::vector<std::string>* names = RENDERMANAGER->getAllSceneNames();
+		//m_pRoot->getWorld().setScene(RENDERMANAGER->getScene("plane"));
+		m_pRoot->getWorld().build();//glcanvas; onPaint; idle 
+
+		EVENTMANAGER->addListener("DYNAMIC_CAMERA", cam);
+		//m_pRoot->getWorld()._add(60.1f, cam, cam->getName(), vec3(0.3f, 0.3f, 0.5f));//descartar
+
+		IScene* planeScene = RENDERMANAGER->getScene("plane");
+		//vector<SceneObject*> ballObjects = ballScene->getAllObjects();
+		SceneObject* plane = planeScene->getSceneObject(0);
+		m_pRoot->getWorld()._add(
+			10.0f,
+			plane,
+			"plane",
+			vec3(0.5f, 0.5f, 0.5f)
+			);
+
+		IScene* ballScene = RENDERMANAGER->getScene("ball");
+		//vector<SceneObject*> ballObjects = ballScene->getAllObjects();
+		SceneObject* ball = ballScene->getSceneObject(0);
+		m_pRoot->getWorld()._add(
+			10.0f,
+			ball,
+			ball->getName(),
+			vec3(0.5f, 0.5f, 0.5f)
+		);
+	}
+}
 
 
-//void
-//FrmMainFrame::OnPhysicsMode (wxCommandEvent &event)
-//{
-//	nau::scene::Camera *cam = NAU->getActiveCamera ();
-//
-//	if (idMenuPhysicsOn == event.GetId()) {
-//		m_pRoot->enablePhysics();		
-//		cam->setDynamic(true);
-//	}
-//	
-//	if (idMenuPhysicsOff == event.GetId()) {
-//		m_pRoot->disablePhysics();	
-//		cam->setDynamic(false);
-//	}
-//}
+
+
+
+void
+FrmMainFrame::OnPhysicsMode (wxCommandEvent &event)
+{
+	nau::scene::Camera *cam = NAU->getActiveCamera ();
+
+	if (idMenuPhysicsOn == event.GetId()) {
+		m_pRoot->enablePhysics();		
+		cam->setDynamic(true);
+	}
+	
+	if (idMenuPhysicsOff == event.GetId()) {
+		m_pRoot->disablePhysics();	
+		cam->setDynamic(false);
+	}
+}
 
 
 
