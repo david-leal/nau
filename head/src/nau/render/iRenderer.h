@@ -64,7 +64,9 @@ namespace nau
 
 			FLOAT_PROP(TIMER, 0);
 
-			INT2_PROP(MOUSE_CLICK, 0);
+			INT2_PROP(MOUSE_LEFT_CLICK, 0);
+			INT2_PROP(MOUSE_MIDDLE_CLICK, 1);
+			INT2_PROP(MOUSE_RIGHT_CLICK, 2);
 
 			BOOL_PROP(DEBUG_DRAW_CALL, 0);
 
@@ -144,13 +146,13 @@ namespace nau
 
 		public:
 			/// sets viewport
-			virtual void setViewport(nau::render::Viewport *aViewport) = 0;
+			virtual void setViewport(std::shared_ptr<Viewport>) = 0;
 			/// returns currrent viewport
-			virtual Viewport *getViewport() = 0;
+			virtual std::shared_ptr<Viewport> getViewport() = 0;
 			/// set the camera
-			virtual void setCamera(nau::scene::Camera *aCamera) = 0;
+			virtual void setCamera(std::shared_ptr<Camera> &aCamera) = 0;
 			/// returns current camera
-			virtual Camera *getCamera() = 0;
+			virtual std::shared_ptr<Camera> &getCamera() = 0;
 
 
 		// COUNTERS
@@ -200,10 +202,14 @@ namespace nau
 		// MATERIAL (color, state, shaders and textures)
 
 		public:
+
+			virtual void setMaterial(const std::shared_ptr<Material> &aMat) = 0;
+			virtual void resetMaterial() = 0;
+			virtual const std::shared_ptr<Material>& getMaterial() = 0;
 			// color
-			virtual void setMaterial(nau::material::ColorMaterial &mat) = 0;
-			virtual void setMaterial(vec4 &diffuse, vec4 &ambient, vec4 &emission, vec4 &specular, float shininess) = 0;
-			virtual ColorMaterial *getMaterial() = 0;
+			virtual void setColorMaterial(nau::material::ColorMaterial &mat) = 0;
+			virtual void setColorMaterial(vec4 &diffuse, vec4 &ambient, vec4 &emission, vec4 &specular, float shininess) = 0;
+			virtual ColorMaterial *getColorMaterial() = 0;
 
 			// state
 			virtual void setState(IState *aState) = 0;
@@ -257,7 +263,7 @@ namespace nau
 
 
 			virtual void setRenderMode(TRenderMode mode) = 0;
-			virtual void drawGroup(nau::material::MaterialGroup* aMaterialGroup) = 0;
+			virtual void drawGroup(std::shared_ptr<nau::material::MaterialGroup> aMaterialGroup) = 0;
 			virtual void setCullFace(Face aFace) = 0;
 			virtual void dispatchCompute(int dimX, int dimY, int dimZ) = 0;
 

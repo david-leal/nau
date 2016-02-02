@@ -3,7 +3,8 @@
 #include "nau/config.h"
 #include "nau/slogger.h"
 #include "nau/debug/profile.h"
-//#include "nau/debug/state.h"
+#include "nau/geometry/sphere.h"
+#include "nau/interface/interface.h"
 #include "nau/event/eventFactory.h"
 #include "nau/loader/cboLoader.h"
 #include "nau/loader/iTextureLoader.h"
@@ -12,12 +13,11 @@
 #include "nau/loader/assimpLoader.h"
 #include "nau/loader/patchLoader.h"
 #include "nau/loader/projectLoader.h"
-#ifdef GLINTERCEPTDEBUG
-#include "nau/loader/projectLoaderDebugLinker.h"
-#endif //GLINTERCEPTDEBUG
 #include "nau/material/uniformBlockManager.h"
 #include "nau/render/iAPISupport.h"
 #include "nau/render/passFactory.h"
+#include "nau/render/PassProcessTexture.h"
+#include "nau/render/PassProcessBuffer.h"
 #include "nau/resource/fontManager.h"
 #include "nau/scene/sceneFactory.h"
 #include "nau/system/file.h"
@@ -34,45 +34,22 @@ extern "C" {
 }
 #endif
 
-#include <ctime>
 
-//// added for directory loading
-//#ifdef NAU_PLATFORM_WIN32
-//#include <dirent.h>
-//#else
-//#include <dirent.h>
-//#include <sys/types.h>
-//#endif
+#include <ctime>
+#include <typeinfo>
 
 using namespace nau;
-using namespace nau::system;
+using namespace nau::geometry;
 using namespace nau::loader;
-using namespace nau::scene;
+using namespace nau::material;
 using namespace nau::render;
 using namespace nau::resource;
+using namespace nau::scene;
+using namespace nau::system;
 using namespace nau::world;
-using namespace nau::material;
 
 
 static nau::Nau *gInstance = 0;
-
-
-//bool
-//Nau::Init() {
-//
-//	// UINT
-//	Attribs.add(Attribute(FRAME_COUNT, "FRAME_COUNT", Enums::DataType::UINT, true, new unsigned int(0)));
-//	// FLOAT
-//	Attribs.add(Attribute(TIMER, "TIMER", Enums::DataType::FLOAT, false, new bool(false)));
-//
-//	NAU->registerAttributes("NAU", &Attribs);
-//
-//	return true;
-//}
-//
-//
-//AttribSet Nau::Attribs;
-//bool Nau::Inited = Init();
 
 
 nau::Nau*
@@ -107,9 +84,8 @@ Nau::SetInstance(Nau * inst) {
 Nau::Nau() :
 	m_WindowWidth (0), 
 	m_WindowHeight (0), 
-//	m_vViewports(),
 	m_Inited (false),
-	m_Physics (true),
+	m_Physics (false),
 	loadedScenes(0),
 	m_ActiveCameraName(""),
 	m_Name("Nau"),
@@ -117,14 +93,17 @@ Nau::Nau() :
 	m_UseTangents(false),
 	m_UseTriangleIDs(false),
 	m_CoreProfile(false),
-	isFrameBegin(true), 
-	m_DummyVector(),
 	m_pRenderManager(NULL),
 	m_pMaterialLibManager(NULL),
 	m_pResourceManager(NULL),
 	m_pEventManager(NULL),
 	m_TraceFrames(0),
-	m_ProjectName("")
+	m_ProjectName(""),
+	m_DefaultState(0),
+	m_pAPISupport(0),
+	m_pWorld(0), 
+	m_LuaState(0),
+	m_ProfileResetRequest(false)
 {
 
 }
@@ -132,17 +111,12 @@ Nau::Nau() :
 
 Nau::~Nau() {
 
-	if (m_pMaterialLibManager)
-		delete MATERIALLIBMANAGER;
-	if (m_pEventManager) {
-		delete EVENTMANAGER;
-	}
-	//if (m_pRenderManager)
-	//	RENDERMANAGER->clear();
+	delete MATERIALLIBMANAGER;
 	delete RENDERMANAGER;
-
-	if (m_pResourceManager)
-		delete RESOURCEMANAGER;
+	delete RESOURCEMANAGER;
+	m_Viewport.reset();
+	delete EVENTMANAGER;
+	m_pEventManager = NULL;
 
 	delete m_DefaultState; 
 	delete m_pAPISupport;
@@ -155,8 +129,11 @@ Nau::~Nau() {
 	PassFactory::DeleteInstance();
 
 #ifdef NAU_LUA
-	lua_close(m_LuaState);
+	if (m_LuaState)
+		lua_close(m_LuaState);
 #endif
+
+	gInstance = NULL;
 }
 
 
@@ -209,8 +186,11 @@ Nau::init (bool context, std::string aConfigFile) {
 #endif
 	PASSFACTORY->loadPlugins();
 
+//	TwInit(TW_OPENGL_CORE, NULL);
+
 	return true;
 }
+
 
 
 const std::string &
@@ -234,22 +214,27 @@ Nau::getName() {
 }
 
 
-//float 
-//Nau::getPropf(FloatProperty prop) {
-//
-//	switch (prop) {
-//	case TIMER:
-//		CLOCKS_PER_MILISEC = CLOCKS_PER_SEC / 1000.0;
-//		INV_CLOCKS_PER_MILISEC = 1.0 / CLOCKS_PER_MILISEC;
-//		m_FloatProps[TIMER] = clock() * INV_CLOCKS_PER_MILISEC;
-//		return m_FloatProps[TIMER];
-//
-//	default:return(AttributeValues::getPropf(prop));
-//	}
-//
-//}
+// ----------------------------------------------------
+//		Profiling
+// ----------------------------------------------------
 
 
+void
+Nau::setProfileResetRequest() {
+
+	m_ProfileResetRequest = true;
+}
+
+
+bool
+Nau::getProfileResetRequest() {
+
+	bool aux = m_ProfileResetRequest;
+	m_ProfileResetRequest = false;
+	return aux;
+}
+
+#pragma region LuaStuff
 // ----------------------------------------------------
 //		Lua Stuff
 // ----------------------------------------------------
@@ -563,7 +548,25 @@ luaSaveTexture(lua_State *l) {
 }
 
 
-void 
+int
+luaSaveProfile(lua_State *l) {
+
+	const char *fileName = lua_tostring(l, -1);
+
+	std::string prof = Profile::DumpLevels();
+
+	fstream s;
+	s.open(fileName, fstream::out);
+	s << prof << "\n";
+	s.close();
+
+	NAU->setProfileResetRequest();
+	//Profile::Reset();
+	return 0;
+}
+
+
+void
 Nau::initLua() {
 
 	m_LuaState = luaL_newstate();
@@ -578,6 +581,8 @@ Nau::initLua() {
 	lua_setglobal(m_LuaState, "saveTexture");
 	lua_pushcfunction(m_LuaState, luaSetBuffer);
 	lua_setglobal(m_LuaState, "setBuffer");
+	lua_pushcfunction(m_LuaState, luaSaveProfile);
+	lua_setglobal(m_LuaState, "saveProfiler");
 }
 
 
@@ -621,86 +626,188 @@ Nau::callLuaTestScript(std::string name) {
 #endif
 
 
+#pragma endregion
+
+
+
+
+
 // ----------------------------------------------------------
 //		GET AND SET ATTRIBUTES
 // ----------------------------------------------------------
 
 
 AttributeValues *
-Nau::getCurrentObjectAttributes(std::string context, int number) {
+Nau::getCurrentObjectAttributes(const std::string &type, int number) {
 
 	IRenderer *renderer = m_pRenderManager->getRenderer();
 	IAPISupport *sup = IAPISupport::GetInstance();
 
-	if (context == "CAMERA") {
-		return (AttributeValues *)renderer->getCamera();
+	if (type == "CAMERA") {
+		return (AttributeValues *)renderer->getCamera().get();
 	}
-	if (context == "COLOR") {
-		return (AttributeValues *)renderer->getMaterial();
+	if (type == "COLOR") {
+		return (AttributeValues *)renderer->getColorMaterial();
 	}
 	
-	if (sup->apiSupport(IAPISupport::IMAGE_TEXTURE) && context == "IMAGE_TEXTURE") {
+	if (sup->apiSupport(IAPISupport::IMAGE_TEXTURE) && type == "IMAGE_TEXTURE") {
 		return (AttributeValues *)renderer->getImageTexture(number);
 	}
 
-	if (context == "LIGHT") {
+	if (type == "LIGHT") {
 		return (AttributeValues *)renderer->getLight(number).get();
 	}
-	if (context == "MATERIAL_TEXTURE") {
+	if (type == "BUFFER_BINDING") {
+		return (AttributeValues *)renderer->getMaterial()->getMaterialBuffer(number);
+	}
+	if (type == "BUFFER_MATERIAL") {
+		return (AttributeValues *)renderer->getMaterial()->getBuffer(number);
+	}
+	if (type == "IMAGE_TEXTURE") {
+		return (AttributeValues *)renderer->getMaterial()->getImageTexture(number);
+	}
+	if (type == "TEXTURE_BINDING") {
 		return (AttributeValues *)renderer->getMaterialTexture(number);
 	}
-	if (context == "PASS") {
+	if (type == "PASS") {
 		return (AttributeValues *)m_pRenderManager->getCurrentPass();
 	}
-	if (context == "RENDERER") {
+	if (type == "RENDERER") {
 		return (AttributeValues *)renderer;
 	}
-	if (context == "RENDER_TARGET") {
+	if (type == "RENDER_TARGET") {
 		return (AttributeValues *)m_pRenderManager->getCurrentPass()->getRenderTarget();
 			//m_pResourceManager->getRenderTarget(context);
 	}
-	if (context == "STATE") {
+	if (type == "STATE") {
 		return (AttributeValues *)renderer->getState();
 	}
-	if (context == "TEXTURE") {
+	if (type == "TEXTURE") {
 		return (AttributeValues *)renderer->getTexture(number);
 	}
-	if (context == "VIEWPORT") {
-		return (AttributeValues *)renderer->getViewport();
+	if (type == "VIEWPORT") {
+		return (AttributeValues *)renderer->getViewport().get();
 	}
 	// If we get here then we are trying to fetch something that does not exist
-	NAU_THROW("Getting an invalid object\ntype: %s", context.c_str());
+	NAU_THROW("Getting an invalid object\ntype: %s", type.c_str());
 }
 
 
 AttributeValues *
-Nau::getObjectAttributes(std::string type, std::string context, int number) {
+Nau::getObjectAttributes(const std::string &type, const std::string &context, int number) {
 
 	IAPISupport *sup = IAPISupport::GetInstance();
 	// From Render Manager
 	if (type == "CAMERA") {
 		if (m_pRenderManager->hasCamera(context))
-			return (AttributeValues *)m_pRenderManager->getCamera(context);
+			return (AttributeValues *)m_pRenderManager->getCamera(context).get();
 	}
+
 	if (type == "LIGHT") {
 		if (m_pRenderManager->hasLight(context))
 			return (AttributeValues *)m_pRenderManager->getLight(context).get();
 	}
-	if (type == "SCENE") {
-		if (m_pRenderManager->hasScene(context))
-			return (AttributeValues *)m_pRenderManager->getScene(context);
-	}
+
 	if (type == "PASS") {
 		std::string pipName = m_pRenderManager->getActivePipelineName();
 		if (m_pRenderManager->hasPass(pipName, context))
 			return (AttributeValues *)m_pRenderManager->getPass(pipName, context);
 	}
-	if (type == "VIEWPORT") {
-		if (m_pRenderManager->hasViewport(context))
-			return (AttributeValues *)m_pRenderManager->getViewport(context);
-	}
+
 	if (type == "RENDERER") {
 		return (AttributeValues *)RENDERER;
+	}
+
+	if (type == "SCENE") {
+		if (m_pRenderManager->hasScene(context))
+			return (AttributeValues *)m_pRenderManager->getScene(context).get();
+	}
+
+	if (type == "SPHERE") {
+		std::string scene, object;
+		std::size_t found = context.find("::");
+		if (found != std::string::npos && context.size() > found + 2) {
+			scene = context.substr(0, found);
+			object = context.substr(found + 2);
+		}
+
+		if (m_pRenderManager->hasScene(scene)) {
+			SceneObject *s = m_pRenderManager->getScene(scene)->getSceneObject(object).get();
+			if (s) {
+				SceneObject *so = (SceneObject *)m_pRenderManager->getScene(scene)->getSceneObject(object)->getRenderable().get();
+				std::string s = typeid(*so).name();
+				if (s == "class nau::geometry::Sphere") {
+					Sphere *sp = (Sphere *)so;
+					return (AttributeValues *)sp;
+
+				}
+			}
+		}
+	}
+
+	if (type == "PASS_POST_PROCESS_TEXTURE") {
+		Pass *p = RENDERMANAGER->getPass(context);
+		if (p) {
+			PassProcessItem *pp = p->getPostProcessItem(number);
+			std::string s = typeid(*pp).name();
+			if (s == "class nau::render::PassProcessTexture") {
+				PassProcessTexture *ppt = (PassProcessTexture *)pp;
+				return (AttributeValues *)ppt;
+			}
+		}
+	}
+	if (type == "PASS_PRE_PROCESS_TEXTURE") {
+		Pass *p = RENDERMANAGER->getPass(context);
+		if (p) {
+			PassProcessItem *pp = p->getPreProcessItem(number);
+			std::string s = typeid(*pp).name();
+			if (s == "class nau::render::PassProcessTexture") {
+				PassProcessTexture *ppt = (PassProcessTexture *)pp;
+				return (AttributeValues *)ppt;
+			}
+		}
+	}
+	if (type == "PASS_POST_PROCESS_BUFFER") {
+		Pass *p = RENDERMANAGER->getPass(context);
+		if (p) {
+			PassProcessItem *pp = p->getPostProcessItem(number);
+			std::string s = typeid(*pp).name();
+			if (s == "class nau::render::PassProcessBuffer") {
+				PassProcessBuffer *ppt = (PassProcessBuffer *)pp;
+				return (AttributeValues *)ppt;
+			}
+		}
+	}
+	if (type == "PASS_PRE_PROCESS_BUFFER") {
+		Pass *p = RENDERMANAGER->getPass(context);
+		if (p) {
+			PassProcessItem *pp = p->getPreProcessItem(number);
+			std::string s = typeid(*pp).name();
+			if (s == "class nau::render::PassProcessBuffer") {
+				PassProcessBuffer *ppt = (PassProcessBuffer *)pp;
+				return (AttributeValues *)ppt;
+			}
+		}
+	}
+
+	if (type == "SCENE_OBJECT") {
+		std::string scene, object;
+		std::size_t found = context.find("::");
+		if (found != std::string::npos && context.size() > found + 2) {
+			scene = context.substr(0, found);
+			object = context.substr(found + 2);
+		}
+
+		if (m_pRenderManager->hasScene(scene)) {
+			SceneObject *s = m_pRenderManager->getScene(scene)->getSceneObject(object).get();
+			if (s)
+				return (AttributeValues *)s;
+		}
+	}
+
+	if (type == "VIEWPORT") {
+		if (m_pRenderManager->hasViewport(context))
+			return (AttributeValues *)m_pRenderManager->getViewport(context).get();
 	}
 
 	// From ResourceManager
@@ -708,6 +815,10 @@ Nau::getObjectAttributes(std::string type, std::string context, int number) {
 	if (type == "BUFFER") {
 		if (m_pResourceManager->hasBuffer(context))
 			return (AttributeValues *)m_pResourceManager->getBuffer(context);
+	}
+	if (type == "TEXTURE") {
+		if (m_pResourceManager->hasTexture(context))
+			return (AttributeValues *)m_pResourceManager->getTexture(context);
 	}
 	if (type == "RENDER_TARGET") {
 		if (m_pResourceManager->hasRenderTarget(context))
@@ -727,29 +838,34 @@ Nau::getObjectAttributes(std::string type, std::string context, int number) {
 		mat = context.substr(found + 2);
 	}
 
-	if (type == "COLOR_MATERIAL") {
+	if (type == "COLOR") {
 		if (m_pMaterialLibManager->hasMaterial(lib, mat))
 			return (AttributeValues *)&(m_pMaterialLibManager->getMaterial(lib, mat)->getColor());
 	}
-	if (type == "TEXTURE") {
+	if (type == "TEXTURE_MATERIAL") {
 		if (m_pMaterialLibManager->hasMaterial(lib, mat))
 			return (AttributeValues *)m_pMaterialLibManager->getMaterial(lib, mat)->getTexture(number);
-	}
-	if (sup->apiSupport(IAPISupport::IMAGE_TEXTURE) && type == "IMAGE_TEXTURE") {
-		if (m_pMaterialLibManager->hasMaterial(lib, mat))
-			return (AttributeValues *)m_pMaterialLibManager->getMaterial(lib, mat)->getImageTexture(number);
-	}
-	if (type == "MATERIAL_BUFFER") {
-		if (m_pMaterialLibManager->hasMaterial(lib, mat))
-			return (AttributeValues *)m_pMaterialLibManager->getMaterial(lib, mat)->getBuffer(number);
 	}
 	if (type == "TEXTURE_SAMPLER") {
 		if (m_pMaterialLibManager->hasMaterial(lib, mat))
 			return (AttributeValues *)m_pMaterialLibManager->getMaterial(lib, mat)->getTextureSampler(number);
 	}
-	if (type == "MATERIAL_TEXTURE") {
+	if (type == "TEXTURE_BINDING") {
 		if (m_pMaterialLibManager->hasMaterial(lib, mat))
 			return (AttributeValues *)m_pMaterialLibManager->getMaterial(lib, mat)->getMaterialTexture(number);
+	}
+	if (sup->apiSupport(IAPISupport::IMAGE_TEXTURE) && type == "IMAGE_TEXTURE") {
+		if (m_pMaterialLibManager->hasMaterial(lib, mat))
+			return (AttributeValues *)m_pMaterialLibManager->getMaterial(lib, mat)->getImageTexture(number);
+	}
+	if (type == "BUFFER_MATERIAL") {
+		if (m_pMaterialLibManager->hasMaterial(lib, mat)) {
+			return (AttributeValues *)m_pMaterialLibManager->getMaterial(lib, mat)->getBuffer(number);
+		}
+	}
+	if (type == "BUFFER_BINDING") {
+		if (m_pMaterialLibManager->hasMaterial(lib, mat))
+			return (AttributeValues *)m_pMaterialLibManager->getMaterial(lib, mat)->getMaterialBuffer(number);
 	}
 
 	// If we get here then we are trying to fetch something that does not exist
@@ -758,33 +874,27 @@ Nau::getObjectAttributes(std::string type, std::string context, int number) {
 }
 
 
-bool
-Nau::validateAttribute(std::string type, std::string context, std::string component) {
-
-	int id;
-	Enums::DataType dt;
-	if (!getObjectAttributes(type, context))
-		return false; 
-	m_Attributes[type]->getPropTypeAndId(component, &dt, &id); 
-	return (id != -1);
-}
+//bool
+//Nau::validateAttribute(std::string type, std::string context, std::string component) {
+//
+//	int id;
+//	Enums::DataType dt;
+//	if (!getObjectAttributes(type, context))
+//		return false; 
+//	m_Attributes[type]->getPropTypeAndId(component, &dt, &id); 
+//	return (id != -1);
+//}
 
 bool
 Nau::validateShaderAttribute(std::string type, std::string context, std::string component) {
 
 	int id;
 	Enums::DataType dt;
-	std::string what;
 
-	//if (type == "CURRENT")
-	//	what = context;
-	//else
-		what = type;
-
-	if (m_Attributes.count(what) == 0)
+	if (m_Attributes.count(type) == 0)
 		return false;
 
-	m_Attributes[what]->getPropTypeAndId(component, &dt, &id);
+	m_Attributes[type]->getPropTypeAndId(component, &dt, &id);
 	return (id != -1);
 }
 
@@ -798,18 +908,13 @@ Nau::setAttribute(std::string type, std::string context, std::string component, 
 	AttributeValues *attrVal;
 
 	if (context != "CURRENT") {
-//	if (type != "CURRENT") {
 		m_Attributes[type]->getPropTypeAndId(component, &dt, &id);
 		attrVal = NAU->getObjectAttributes(type, context, number);
 	}
 	else {
 		m_Attributes[type]->getPropTypeAndId(component, &dt, &id);
 		attrVal = NAU->getCurrentObjectAttributes(type, number);
-//		m_Attributes[context]->getPropTypeAndId(component, &dt, &id);
-//		attrVal = NAU->getCurrentObjectAttributes(context, number);
 	}
-
-	//attrVal = getObjectAttributes(type, context, number);
 
 	if (attrVal == NULL || id == -1) {
 		return false;
@@ -829,7 +934,6 @@ Nau::getAttribute(std::string type, std::string context, std::string component, 
 	AttributeValues *attrVal;
 
 	if (context != "CURRENT") {
-//	if (type != "CURRENT") {
 		attrVal = NAU->getObjectAttributes(type, context, number);
 		m_Attributes[type]->getPropTypeAndId(component, &dt, &id);
 	}
@@ -847,6 +951,72 @@ Nau::getAttribute(std::string type, std::string context, std::string component, 
 }
 
 
+bool 
+Nau::validateObjectType(const std::string &type) {
+
+	if (m_Attributes.count(type) == 0)
+		return false;
+	else
+		return true;
+}
+
+
+void
+Nau::getValidObjectTypes(std::vector<std::string> *v) {
+
+	for (auto &s : m_Attributes)
+		v->push_back(s.first);
+}
+
+
+bool 
+Nau::validateObjectContext(const std::string &type, const std::string &context) {
+
+	if (m_Attributes.count(type) == 0)
+		return false;
+
+	AttributeValues *attrVal;
+
+	if (context != "CURRENT") {
+		attrVal = NAU->getObjectAttributes(type, context, 0);
+	}
+	else {
+		attrVal = NAU->getCurrentObjectAttributes(type, 0);
+	}
+
+	if (attrVal == NULL)
+		return false;
+	else
+		return true;
+}
+
+
+bool
+Nau::validateObjectComponent(const std::string &type, const std::string & component) {
+
+	if (m_Attributes.count(type) == 0)
+		return false;
+
+	AttribSet *as = m_Attributes[type];
+	if (as->getID(component) == -1)
+		return false;
+
+	return true;
+}
+
+
+void
+Nau::getValidObjectComponents(const std::string &type, std::vector<std::string> *v) {
+
+	if (m_Attributes.count(type) == 0)
+		return;
+
+	AttribSet *as = m_Attributes[type];
+	for (auto &attr : as->getAttributes())
+		v->push_back(attr.first);
+}
+
+
 // -----------------------------------------------------------
 //		USER ATTRIBUTES
 // -----------------------------------------------------------
@@ -860,9 +1030,9 @@ Nau::registerAttributes(std::string s, AttribSet *attrib) {
 
 
 bool 
-Nau::validateUserAttribContext(std::string context) {
+Nau::validateUserAttribType(std::string type) {
 
-	if (m_Attributes.count(context) != 0)
+	if (m_Attributes.count(type) != 0)
 		return true;
 	else
 		return false;
@@ -906,14 +1076,12 @@ Nau::deleteUserAttributes() {
 }
 
 
-std::vector<std::string> &
-Nau::getContextList() {
+void 
+Nau::getObjTypeList(std::vector<std::string> *v) {
 
-	m_DummyVector.clear();
 	for (auto attr : m_Attributes) {
-		m_DummyVector.push_back(attr.first);
+		v->push_back(attr.first);
 	}
-	return m_DummyVector;
 }
 
 
@@ -923,7 +1091,8 @@ Nau::getContextList() {
 
 
 void
-Nau::eventReceived(const std::string &sender, const std::string &eventType, IEventData *evtData) {
+Nau::eventReceived(const std::string &sender, const std::string &eventType, 
+	const std::shared_ptr<nau::event_::IEventData> &evtData) {
 
 	if (eventType == "WINDOW_SIZE_CHANGED") {
 	
@@ -933,12 +1102,87 @@ Nau::eventReceived(const std::string &sender, const std::string &eventType, IEve
 }
 
 
+// -----------------------------------------------------------
+//		KEYBOARD AND MOUSE
+// -----------------------------------------------------------
+
+
+int 
+Nau::keyPressed(int key, int modifiers) {
+
+	return TwKeyPressed(key, modifiers);
+}
+
+
+int 
+Nau::mouseButton(Nau::MouseAction action, Nau::MouseButton buttonID, int x, int y) {
+
+	if (action == PRESSED) {
+		switch (buttonID) {
+		case LEFT:
+			RENDERER->setPropi2(IRenderer::MOUSE_LEFT_CLICK, ivec2(x, y));
+			break;
+		case MIDDLE:
+			RENDERER->setPropi2(IRenderer::MOUSE_MIDDLE_CLICK, ivec2(x, y));
+			break;
+		case RIGHT:
+			RENDERER->setPropi2(IRenderer::MOUSE_RIGHT_CLICK, ivec2(x, y));
+			break;
+		}
+	}
+
+
+	return TwMouseButton((TwMouseAction)action, (TwMouseButtonID)buttonID);
+}
+
+
+int 
+Nau::mouseMotion(int x, int y) {
+
+	return TwMouseMotion(x, y);
+}
+
+
+int 
+Nau::mouseWheel(int pos) {
+
+	return TwMouseWheel(pos);
+}
+
+
+// -----------------------------------------------------------
+//		LOAD ASSETS
+// -----------------------------------------------------------
+
+
+void
+Nau::clear() {
+
+	RENDERER->setPropui(IRenderer::FRAME_COUNT, 0);
+	setActiveCameraName("");
+	SceneObject::ResetCounter();
+	MATERIALLIBMANAGER->clear();
+	EVENTMANAGER->clear();
+	EVENTMANAGER->addListener("WINDOW_SIZE_CHANGED", this);
+	RENDERMANAGER->clear();
+	RESOURCEMANAGER->clear();
+	Profile::Reset();
+	deleteUserAttributes();
+	UniformBlockManager::DeleteInstance();
+
+	m_Viewport = RENDERMANAGER->createViewport("defaultFixedVP");
+
+	ProjectLoader::loadMatLib(m_AppFolder + File::PATH_SEPARATOR + "nauSettings/nauSystem.mlib");
+
+	INTERFACE->clear();
+}
+
+
 void
 Nau::readProjectFile (std::string file, int *width, int *height) {
 
 	try {
 		ProjectLoader::load (file, width, height);
-		isFrameBegin = true;
 	}
 	catch (std::string s) {
 		clear();
@@ -946,14 +1190,25 @@ Nau::readProjectFile (std::string file, int *width, int *height) {
 	}
 
 	setActiveCameraName(RENDERMANAGER->getDefaultCameraName());
+	//std::string wn = "test";
+	//std::string wl = "My AT Bar";
+	//INTERFACE->createWindow(wn, wl);
+	////INTERFACE->addVar("test", "Viewport_Size", "VIEWPORT", "defaultFixedVP", "SIZE", 0);
+	////INTERFACE->addVar("test", "Camera_Far", "CAMERA", "MainCamera", "FAR", 0);
+	////INTERFACE->addVar("test", "Depth_Func", "STATE", "nau_material_lib::__Emission Purple", "DEPTH_FUNC");
+	//INTERFACE->addPipelineList("test", "Step");
+	//INTERFACE->addColor("test", "dark", "RENDERER", "Materials::woodRings", "dark", 0);
+	//INTERFACE->addDir("test", "LightDir", "LIGHT", "Sun", "DIRECTION", 0);
+	//INTERFACE->addVar("test", "normal", "RENDERER", "CURRENT", "NORMAL");
+	//INTERFACE->addVar("test", "view", "CAMERA", "MainCamera", "VIEW_MATRIX");
+	//SLOG("AntTweakBar error : %s", TwGetLastError());
 }
-
-
 
 
 void
 Nau::readDirectory (std::string dirName) {
 
+	clear();
 	std::vector<std::string> files;
 
 	File::RecurseDirectory(dirName, &files);
@@ -971,37 +1226,6 @@ Nau::readDirectory (std::string dirName) {
 			throw(s);
 		}
 	}
-//	DIR *dir;
-//	struct dirent *ent;
-//	bool result = true;
-//	char fileName [1024];
-//	char sceneName[256];
-//
-//	clear();
-//	sprintf(sceneName,"MainScene"); //,loadedScenes);
-//	loadedScenes++;
-//	RENDERMANAGER->createScene (dirName);
-//	dir = opendir (dirName.c_str());
-//
-//	if (0 == dir) {
-//		NAU_THROW("Can't open dir: %s",dirName);
-//	}
-//	while (0 != (ent = readdir (dir))) {
-//
-//#ifdef NAU_PLATFORM_WIN32
-//		sprintf (fileName, "%s\\%s", dirName.c_str(), ent->d_name);
-//#else
-//		sprintf (fileName, "%s/%s", dirName, ent->d_name);						
-//#endif
-//		try {
-//			NAU->loadAsset (fileName, sceneName);
-//		}
-//		catch(std::string &s) {
-//			closedir(dir);
-//			throw(s);
-//		}
-//	}
-//	closedir (dir);
 	loadFilesAndFoldersAux(dirName, false);	
 }
 
@@ -1051,8 +1275,8 @@ Nau::appendModel(std::string fileName) {
 
 void Nau::loadFilesAndFoldersAux(std::string sceneName, bool unitize) {
 
-	Camera *aNewCam = m_pRenderManager->getCamera ("MainCamera");
-	Viewport *v = m_pRenderManager->getViewport("defaultFixedVP");//createViewport ("MainViewport", nau::math::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	Camera *aNewCam = m_pRenderManager->getCamera ("MainCamera").get();
+	std::shared_ptr<Viewport> v = m_pRenderManager->getViewport("defaultFixedVP");//createViewport ("MainViewport", nau::math::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	aNewCam->setViewport (v);
 
 	setActiveCameraName("MainCamera");
@@ -1070,7 +1294,7 @@ void Nau::loadFilesAndFoldersAux(std::string sceneName, bool unitize) {
 	l->setPropf4(Light::COLOR, 0.9f,0.9f,0.9f,1.0f);
 	l->setPropf4(Light::AMBIENT,0.5f,0.5f,0.5f,1.0f );
 
-	Pipeline *aPipeline = m_pRenderManager->getPipeline("MainPipeline");
+	std::shared_ptr<Pipeline> &aPipeline = m_pRenderManager->createPipeline("MainPipeline");
 	Pass *aPass = aPipeline->createPass("MainPass");
 	aPass->setCamera ("MainCamera");
 
@@ -1082,36 +1306,6 @@ void Nau::loadFilesAndFoldersAux(std::string sceneName, bool unitize) {
 	aPass->addScene(sceneName);
 	m_pRenderManager->setActivePipeline("MainPipeline");
 //	RENDERMANAGER->prepareTriangleIDsAndTangents(true,true);
-}
-
-
-bool
-Nau::reload (void) {
-
-	if (false == m_Inited) {
-		return false;
-	}
-	return true;
-}
-
-
-void
-Nau::clear() {
-
-	resetFrameCount();
-	setActiveCameraName("");
-	SceneObject::ResetCounter();
-	MATERIALLIBMANAGER->clear();
-	EVENTMANAGER->clear();
-	EVENTMANAGER->addListener("WINDOW_SIZE_CHANGED", this);
-	RENDERMANAGER->clear();
-	RESOURCEMANAGER->clear();
-
-	deleteUserAttributes();
-
-	m_Viewport = RENDERMANAGER->createViewport("defaultFixedVP");
-
-	ProjectLoader::loadMatLib(m_AppFolder + File::PATH_SEPARATOR + "nauSettings/nauSystem.mlib");
 }
 
 
@@ -1146,9 +1340,9 @@ Nau::step() {
 		LOG_trace("#NAU(FRAME,START)");
 	}
 
-#ifdef GLINTERCEPTDEBUG
-	addMessageToGLILog("\n#NAU(FRAME,START)");
-#endif //GLINTERCEPTDEBUG
+//#ifdef GLINTERCEPTDEBUG
+//	addMessageToGLILog("\n#NAU(FRAME,START)");
+//#endif //GLINTERCEPTDEBUG
 
 	m_pEventManager->notifyEvent("FRAME_BEGIN", "Nau", "", NULL);
 
@@ -1173,6 +1367,10 @@ Nau::step() {
 		RENDERER->setPropui(IRenderer::FRAME_COUNT, 2);
 	else
 		RENDERER->setPropui(IRenderer::FRAME_COUNT, ++k);
+
+	//if (getProfileResetRequest())
+	//	Profile::Reset();
+	INTERFACE->render();
 }
 
 
@@ -1186,8 +1384,7 @@ void Nau::stepPass() {
 	double deltaT = timer - m_LastFrameTime;
 	m_LastFrameTime = timer;
 
-	Pipeline *p;
-	p = RENDERMANAGER->getActivePipeline();
+	std::shared_ptr<Pipeline> &p = RENDERMANAGER->getActivePipeline();
 	int lastPass;
 	int currentPass;
 	lastPass = p->getNumberOfPasses()-1;
@@ -1201,9 +1398,9 @@ void Nau::stepPass() {
 		if (m_TraceFrames) {
 			LOG_trace("#NAU(FRAME,START)");
 		}
-#ifdef GLINTERCEPTDEBUG
-		addMessageToGLILog("\n#NAU(FRAME,START)");
-#endif //GLINTERCEPTDEBUG
+//#ifdef GLINTERCEPTDEBUG
+//		addMessageToGLILog("\n#NAU(FRAME,START)");
+//#endif //GLINTERCEPTDEBUG
 
 		renderer->resetCounters();
 
@@ -1218,25 +1415,22 @@ void Nau::stepPass() {
 	if (m_TraceFrames) {
 		LOG_trace("\n#NAU(PASS START %s)", s.c_str());
 	}
-#ifdef GLINTERCEPTDEBUG
-	addMessageToGLILog(("\n#NAU(PASS,START," + s + ")").c_str());
-#endif //GLINTERCEPTDEBUG
+//#ifdef GLINTERCEPTDEBUG
+//	addMessageToGLILog(("\n#NAU(PASS,START," + s + ")").c_str());
+//#endif //GLINTERCEPTDEBUG
 
 	p->executeNextPass();
 
 	if (m_TraceFrames) {
 		LOG_trace("#NAU(PASS END %s)", s.c_str());
 	}
-#ifdef GLINTERCEPTDEBUG
-	addMessageToGLILog(("\n#NAU(PASS,END," + s + ")").c_str());
-#endif //GLINTERCEPTDEBUG
+//#ifdef GLINTERCEPTDEBUG
+//	addMessageToGLILog(("\n#NAU(PASS,END," + s + ")").c_str());
+//#endif //GLINTERCEPTDEBUG
 
 	if (currentPass == lastPass) {
 
 		m_pEventManager->notifyEvent("FRAME_END", "Nau", "", NULL);
-//#ifdef GLINTERCEPTDEBUG
-//		addMessageToGLILog(("\n#NAU(PASS,END," + s + ")").c_str());
-//#endif //GLINTERCEPTDEBUG	
 	
 	}
 
@@ -1254,8 +1448,7 @@ void Nau::stepPass() {
 void 
 Nau::stepCompleteFrame() {
 
-	Pipeline *p;
-	p = RENDERMANAGER->getActivePipeline();
+	std::shared_ptr<Pipeline> &p = RENDERMANAGER->getActivePipeline();
 	int totalPasses;
 	int currentPass;
 	totalPasses = p->getNumberOfPasses();
@@ -1274,32 +1467,17 @@ void Nau::stepPasses(int n) {
 
 
 void 
-Nau::resetFrameCount() {
-
-	RENDERER->setPropui(IRenderer::FRAME_COUNT, 0);
-}
-
-
-//unsigned long
-//Nau::getFrameCount() {
-//
-//	return RENDERER->FRAME_COUNT];
-//
-//}
-
-
-void 
 Nau::setActiveCameraName(const std::string &aCamName) {
 
 	if (m_ActiveCameraName != "") {
-		EVENTMANAGER->removeListener("CAMERA_MOTION",RENDERMANAGER->getCamera(m_ActiveCameraName));
-		EVENTMANAGER->removeListener("CAMERA_ORIENTATION",RENDERMANAGER->getCamera(m_ActiveCameraName));
+		EVENTMANAGER->removeListener("CAMERA_MOTION",RENDERMANAGER->getCamera(m_ActiveCameraName).get());
+		EVENTMANAGER->removeListener("CAMERA_ORIENTATION",RENDERMANAGER->getCamera(m_ActiveCameraName).get());
 	}
 	m_ActiveCameraName = aCamName;
 
 	if (m_ActiveCameraName != "") {
-		EVENTMANAGER->addListener("CAMERA_MOTION",RENDERMANAGER->getCamera(m_ActiveCameraName));
-		EVENTMANAGER->addListener("CAMERA_ORIENTATION",RENDERMANAGER->getCamera(m_ActiveCameraName));
+		EVENTMANAGER->addListener("CAMERA_MOTION",RENDERMANAGER->getCamera(m_ActiveCameraName).get());
+		EVENTMANAGER->addListener("CAMERA_ORIENTATION",RENDERMANAGER->getCamera(m_ActiveCameraName).get());
 	}
 }
 
@@ -1308,7 +1486,7 @@ nau::scene::Camera *
 Nau::getActiveCamera() {
 
 	if (RENDERMANAGER->hasCamera(m_ActiveCameraName)) {
-		return RENDERMANAGER->getCamera(m_ActiveCameraName);
+		return RENDERMANAGER->getCamera(m_ActiveCameraName).get();
 	}
 	else
 		return NULL;
@@ -1321,7 +1499,7 @@ Nau::getDepthAtCenter() {
 	float wz;
 	vec2 v = m_Viewport->getPropf2(Viewport::ORIGIN);
 	v += m_Viewport->getPropf2(Viewport::SIZE);
-	Camera *cam = RENDERMANAGER->getCamera(m_ActiveCameraName);
+	std::shared_ptr<Camera> &cam = RENDERMANAGER->getCamera(m_ActiveCameraName);
 	float f = cam->getPropf(Camera::FARP);
 	float n = cam->getPropf(Camera::NEARP);
 	float p22 = cam->getPropm4(Camera::PROJECTION_MATRIX).at(2,2);
@@ -1336,26 +1514,6 @@ Nau::getDepthAtCenter() {
 	return (pz);
 }
 
-
-void 
-Nau::sendKeyToEngine (char keyCode) {
-
-	switch(keyCode) {
-	case 'K':
-		Profile::Reset();
-		break;
-	case 'I':
-		getDepthAtCenter();
-		break;
-	}
-}
-
-
-void 
-Nau::setClickPosition(int x, int y) {
-
-	RENDERER->setPropi2(IRenderer::MOUSE_CLICK, ivec2(x, y));
-}
 
 
 IWorld&
@@ -1373,7 +1531,7 @@ Nau::loadAsset (std::string aFilename, std::string sceneName, std::string params
 	try {
 		switch (file.getType()) {
 			case File::PATCH:
-				PatchLoader::loadScene(RENDERMANAGER->getScene (sceneName), file.getFullPath());
+				PatchLoader::loadScene(RENDERMANAGER->getScene (sceneName).get(), file.getFullPath());
 				break;
 			case File::COLLADA:
 			case File::BLENDER:
@@ -1381,21 +1539,21 @@ Nau::loadAsset (std::string aFilename, std::string sceneName, std::string params
 			case File::LIGHTWAVE:
 			case File::STL:
 			case File::TRUESPACE:
-				AssimpLoader::loadScene(RENDERMANAGER->getScene (sceneName), file.getFullPath(),params);
+				AssimpLoader::loadScene(RENDERMANAGER->getScene (sceneName).get(), file.getFullPath(),params);
 				break;
 			case File::NAUBINARYOBJECT:
-				CBOLoader::loadScene(RENDERMANAGER->getScene(sceneName), file.getFullPath(), params);
+				CBOLoader::loadScene(RENDERMANAGER->getScene(sceneName).get(), file.getFullPath(), params);
 				break;
 			case File::THREEDS:
-				AssimpLoader::loadScene(RENDERMANAGER->getScene (sceneName), file.getFullPath(), params);
+				AssimpLoader::loadScene(RENDERMANAGER->getScene (sceneName).get(), file.getFullPath(), params);
 				//THREEDSLoader::loadScene (RENDERMANAGER->getScene (sceneName), file.getFullPath(),params);				
 				break;
 			case File::WAVEFRONTOBJ:
 				//AssimpLoader::loadScene(RENDERMANAGER->getScene (sceneName), file.getFullPath(),params);
-				OBJLoader::loadScene(RENDERMANAGER->getScene (sceneName), file.getFullPath(), params);				
+				OBJLoader::loadScene(RENDERMANAGER->getScene (sceneName).get(), file.getFullPath(), params);
 				break;
 			case File::OGREXMLMESH:
-				OgreMeshLoader::loadScene(RENDERMANAGER->getScene (sceneName), file.getFullPath());				
+				OgreMeshLoader::loadScene(RENDERMANAGER->getScene (sceneName).get(), file.getFullPath());
 				break;
 			default:
 			  break;
@@ -1404,8 +1562,6 @@ Nau::loadAsset (std::string aFilename, std::string sceneName, std::string params
 	catch(std::string &s) {
 		throw(s);
 	}
-
-	Profile::Reset();
 }
 
 
@@ -1413,7 +1569,7 @@ void
 Nau::writeAssets (std::string fileType, std::string aFilename, std::string sceneName) {
 
 	if (0 == fileType.compare ("NBO")) {
-		CBOLoader::writeScene (RENDERMANAGER->getScene (sceneName), aFilename);
+		CBOLoader::writeScene (RENDERMANAGER->getScene (sceneName).get(), aFilename);
 	}
 }
 
@@ -1423,6 +1579,8 @@ Nau::setWindowSize (unsigned int width, unsigned int height) {
 	m_WindowWidth = width;
 	m_WindowHeight = height;
 	m_Viewport->setPropf2(Viewport::SIZE, vec2((float)m_WindowWidth, (float)m_WindowHeight));
+
+	TwWindowSize(width, height);
 }
 
 
@@ -1440,74 +1598,11 @@ Nau::getWindowWidth() {
 }
 
 
-//Viewport*
-//Nau::createViewport (const std::string &name, nau::math::vec4 &bgColor) {
-//
-//	Viewport* v = new Viewport;
-//
-//	v->setName(name);
-//	v->setPropf2 (Viewport::ORIGIN, vec2(0.0f,0.0f));
-//	v->setPropf2 (Viewport::SIZE, vec2(m_WindowWidth, m_WindowHeight));
-//
-//	v->setPropf4(Viewport::CLEAR_COLOR, bgColor);
-//	v->setPropb(Viewport::FULL, true);
-//
-//	m_vViewports[name] = v;
-//
-//	return v;
-//}
-//
-//
-//bool 
-//Nau::hasViewport(const std::string &name) {
-//
-//	return (m_vViewports.count(name) != NULL);
-//}
-//
-//
-//Viewport*
-//Nau::createViewport (const std::string &name) {
-//
-//	Viewport* v = new Viewport;
-//
-//	v->setName(name);
-//	v->setPropf2 (Viewport::ORIGIN, vec2(0.0f,0.0f));
-////	v->setPropf2 (Viewport::SIZE, vec2(m_WindowWidth, m_WindowHeight));
-//	v->setPropb(Viewport::FULL, true);
-//
-//	m_vViewports[name] = v;
-//
-//	return v;
-//}
-
-
-//Viewport* 
-//Nau::getViewport (const std::string &name) {
-//
-//	if (m_vViewports.count(name))
-//		return m_vViewports[name];
-//	else
-//		return NULL;
-//}
-
-
-Viewport*
+std::shared_ptr<Viewport>
 Nau::getDefaultViewport() {
 	
 	return m_Viewport;
 }
-
-
-//std::vector<std::string> *
-//Nau::getViewportNames() {
-//
-//	std::vector<std::string> *names = new std::vector<std::string>; 
-//
-//	for( std::map<std::string, nau::render::Viewport*>::iterator iter = m_vViewports.begin(); iter != m_vViewports.end(); ++iter ) {
-//      names->push_back(iter->first); 
-//    }
-//	return names;
-//}
 
 
 void
@@ -1536,33 +1631,6 @@ Nau::getRenderFlag(RenderFlags aFlag) {
 
 	return(m_RenderFlags[aFlag]);
 }
-
-
-int 
-Nau::picking (int x, int y, std::vector<nau::scene::SceneObject*> &objects, nau::scene::Camera &aCamera) {
-
-	return -1;//	RenderManager->pick (x, y, objects, aCamera);
-}
-
-////StateList functions:
-//void 
-//Nau::loadStateXMLFile(std::string file){
-//	State::loadStateXMLFile(file);
-//}
-//
-//
-//std::vector<std::string> 
-//Nau::getStateEnumNames() {
-//	return State::getStateEnumNames();
-//}
-//
-//
-//std::string 
-//Nau::getState(std::string enumName) {
-//	return State::getState(enumName);
-//}
-
-
 
 
 RenderManager* 

@@ -180,8 +180,17 @@ DlgPass::updateDlg() {
 	EVENTMANAGER->addListener("NEW_RENDER_TARGET",this);
 	EVENTMANAGER->addListener("NEW_SCENE",this);
 	EVENTMANAGER->addListener("NEW_VIEWPORT", this);
-
+	resetPanel();
 	updatePipelines();
+}
+
+
+void 
+DlgPass::resetPanel() {
+
+	m_PG->Clear();
+	m_PG->AddPage(wxT("Properties"));
+	setupGrid();
 }
 
 
@@ -205,16 +214,15 @@ DlgPass::getPass() {
 void 
 DlgPass::updatePipelines() {
 
-	std::vector<std::string> *pips = RENDERMANAGER->getPipelineNames();
+	std::vector<std::string> pips;
+	RENDERMANAGER->getPipelineNames(&pips);
 	std::vector<std::string>::iterator iter;
 
 	//wxString sel = m_PipelineList->GetStringSelection();
 	wxString sel = wxString(RENDERMANAGER->getActivePipelineName());
 	m_PipelineList->Clear();
-	for (iter = pips->begin(); iter != pips->end(); ++iter)
+	for (iter = pips.begin(); iter != pips.end(); ++iter)
 		m_PipelineList->Append(wxString(iter->c_str()));
-
-	delete pips;
 
 	if (! m_PipelineList->SetStringSelection(sel)) 
 		m_PipelineList->SetSelection(0);
@@ -223,16 +231,16 @@ DlgPass::updatePipelines() {
 	m_ActivePipText->SetLabelText(sel);
 	std::string pipName = std::string(sel.mb_str());
 
-	Pipeline *pip = RENDERMANAGER->getPipeline(pipName);
-	std::vector<std::string> *passes = pip->getPassNames();
+	std::shared_ptr<Pipeline> &pip = RENDERMANAGER->getPipeline(pipName);
+
+	std::vector<std::string> passes;
+	pip->getPassNames(&passes);
 
 	sel = m_PassList->GetStringSelection();
 	m_PassList->Clear();
 
-	for (iter = passes->begin(); iter != passes->end(); ++iter)
-		m_PassList->Append(wxString(iter->c_str()));
-
-	delete passes;
+	for (auto &name:passes)
+		m_PassList->Append(wxString(name.c_str()));
 
 	if (! m_PassList->SetStringSelection(sel))
 		m_PassList->SetSelection(0);
@@ -262,15 +270,6 @@ DlgPass::updatePipelines() {
 		m_pgPropRenderTarget = new wxEnumProperty(wxT("Render Target"),wxPG_LABEL,m_pgRenderTargetList);
 		m_PG->Append(m_pgPropRenderTarget);
 
-		//m_PG->Append(new wxBoolProperty(wxT("Clear Color"), wxPG_LABEL, true));
-		//m_PG->SetPropertyAttribute( wxT("Clear Color"),
-  //                            wxPG_BOOL_USE_CHECKBOX,
-  //                            true );
-		//m_PG->Append(new wxBoolProperty(wxT("Clear Depth"), wxPG_LABEL, true));
-		//m_PG->SetPropertyAttribute( wxT("Clear Depth"),
-  //                            wxPG_BOOL_USE_CHECKBOX,
-  //                            true );
-
 	updateLists(p);
 	setupGrid();
 	updateProperties(p) ;
@@ -295,131 +294,20 @@ DlgPass::setupGrid() {
 void 
 DlgPass::toolbarPipelineNew(wxCommandEvent& WXUNUSED(event) ) {
 
-
-	//std::string path,libFile,fullName,relativeName,libName;
-
-	//wxFileDialog dialog
- //                (
- //                   this,
- //                   _T("New Material Lib"),
- //                   _T(""),
- //                   _T(""),
- //                   _T("SP Library (*.spl)|*.spl"),
-	//				wxSAVE | wxOVERWRITE_PROMPT
- //                );
-
-	//dialog.SetDirectory(CProject::Instance()->m_path.c_str());
-
-	//if (dialog.ShowModal() != wxID_OK)
-	//	return;
-
-	//path = (char *)dialog.GetDirectory().c_str();
-	//libFile = (char *)dialog.GetFilename().c_str();
-	//fullName = (char *)dialog.GetPath().c_str();
-	//relativeName = CFilename::GetRelativeFileName(CProject::Instance()->m_path,fullName);
-	//libName = CFilename::RemoveExt(relativeName);
-	//
-	//CMaterialLib *ml;
-	//CMaterial *mat;
-
-	//mat = new CMaterial();
-	//mat->setName("Default");
-
-	//ml = new CMaterialLib();
-	//ml->m_filename = libName;
-	//ml->add(mat);
-
-	//m_libManager->addLib(ml);
-
-	//updateDlg();
-	//m_toolbar->EnableTool(LIBMAT_SAVEALL, TRUE);
-	//DlgModelInfo::Instance()->updateDlg();
-
 }
 
 void DlgPass::toolbarPipelineRemove(wxCommandEvent& WXUNUSED(event) ) {
-
-
-	//std::string path,libFile,fullName,relativeName,libName;
-
-	//wxFileDialog dialog
- //                (
- //                   this,
- //                   _T("Open Material Lib"),
- //                   _T(""),
- //                   _T(""),
- //                   _T("SP Library (*.spl)|*.spl"),
-	//				wxOPEN | wxFILE_MUST_EXIST 
- //                );
-
-	//dialog.SetDirectory(CProject::Instance()->m_path.c_str());
-
-	//if (dialog.ShowModal() != wxID_OK)
-	//	return;
-
-	//path = (char *)dialog.GetDirectory().c_str();
-	//libFile = (char *)dialog.GetFilename().c_str();
-	//fullName = (char *)dialog.GetPath().c_str();
-	//relativeName = CFilename::GetRelativeFileName(CProject::Instance()->m_path,fullName);
-
-	//
-	//m_libManager->load(relativeName, path);
-
-	//updateDlg();
-	//m_toolbar->EnableTool(LIBMAT_SAVEALL, TRUE);
-	//DlgModelInfo::Instance()->updateDlg();
 
 }
 
 
 void DlgPass::toolbarPassNew(wxCommandEvent& WXUNUSED(event) ) {
 
-	//std::string lib;
-
-	//m_libManager->save(CProject::Instance()->m_path);
-
 }
 
 
 void DlgPass::toolbarPassRemove(wxCommandEvent& WXUNUSED(event) ) {
 
-	//wxString name;
-	//int exit = 0;
-	//CMaterial *mat;
-	//CMaterialLib *ml;
-	//std::string lib;
-	//int dialogRes;
-
-	//lib = libList->GetValue().c_str();
-	//ml = m_libManager->getLib(lib);
-
-	//do {
-	//	wxTextEntryDialog dialog(this,
-	//							 _T("Enter the new material's name\n"),
-	//							 _T("Material's Name"),
-	//							 _T(name),
-	//							 wxOK | wxCANCEL);
-	//	dialogRes = dialog.ShowModal();
-	//	if (dialogRes == wxID_OK)
-	//	{
-	//		name = dialog.GetValue();
-	//		int status = m_libManager->validMatName(lib,name.c_str());
-	//		if (status == CMaterialLibManager::OK) {
-
-	//			mat = new CMaterial();
-	//			mat->setName(name.c_str());
-	//			ml->add(mat);
-	//			exit = 1;
-	//			updateDlg();
-	//			DlgModelInfo::Instance()->updateDlg();
-	//		}
-	//		else if (status == CMaterialLibManager::INVALID_NAME) 
-	//			wxMessageBox(dialog.GetValue(), _T("Invalid Name (can't begin with a space)"), wxOK | wxICON_INFORMATION, this);
-	//		else if (status == CMaterialLibManager::NAME_EXISTS) 
-	//			wxMessageBox(dialog.GetValue(), _T("Name Already Exists"), wxOK | wxICON_INFORMATION, this);
-	//	}
-	//}
-	//while (dialogRes != wxID_CANCEL && !exit);
 }
 
 
@@ -432,36 +320,13 @@ void DlgPass::toolbarPassRemove(wxCommandEvent& WXUNUSED(event) ) {
 
 
 void 
-DlgPass::eventReceived(const std::string &sender, const std::string &eventType, nau::event_::IEventData *evt) {
+DlgPass::eventReceived(const std::string &sender, const std::string &eventType, 
+	const std::shared_ptr<nau::event_::IEventData> &evt) {
 
 	Pass *p = getPass();
 
 	updatePipelines();
-
-/*	if (eventType == "NEW_RENDERTARGET") {
-		updateRenderTargetList(p);
-	}
-	else if (eventType == "NEW_VIEWPORT") {
-		updateViewportList(p);
-	}
-	else if (eventType == "NEW_CAMERA") {
-		updateCameraList(p);
-		updateScenes(p);
-	}
-	else if (eventType == "NEW_LIGHT") {
-		updateLights(p);
-	}
-	else if (eventType == "NEW_MATERIAL") {
-		updateMaterialList();
-	}
-	else if (eventType == "NEW_SCENE") {
-		wxPGProperty *pid2;
-		pid2 = m_PG->AppendIn(pidScenes,new wxBoolProperty( wxString(sender.c_str()), wxPG_LABEL, false ) );
-		pid2->SetAttribute( wxPG_BOOL_USE_CHECKBOX, true );
-	}
-*/
 }
-
 
 
 
@@ -489,13 +354,13 @@ void DlgPass::updateProperties(Pass *p) {
 	m_PG->SetPropertyValue(wxT("Camera"), wxString(p->getCameraName().c_str()));
 
 	// VIEWPORT
-	nau::render::Viewport *v = p->getViewport();
+	std::shared_ptr<Viewport> v = p->getViewport();
 
 	if (p->hasRenderTarget() && p->isRenderTargetEnabled()) {
 		m_PG->SetPropertyValue(wxT("Viewport"), wxT("From Render Target"));
 		m_PG->DisableProperty(wxT("Viewport"));
 	}
-	else if (v == NULL) {
+	else if (!v) {
 		m_PG->EnableProperty(wxT("Viewport"));
 		m_PG->SetPropertyValue(wxT("Viewport"), wxT("From Camera"));
 	}
@@ -522,11 +387,12 @@ void DlgPass::updateProperties(Pass *p) {
 	m_PG->SetPropertyValue(wxT("Use Render Target"),p->isRenderTargetEnabled());
 
 	// SCENES
-	std::vector<std::string> *names = RENDERMANAGER->getAllSceneNames();
+	std::vector<std::string> names;
+	RENDERMANAGER->getAllSceneNames(&names);
 	std::vector<std::string>::iterator iter;
 	bool b;
 
-	for (iter = names->begin(); iter != names->end(); ++iter) {
+	for (iter = names.begin(); iter != names.end(); ++iter) {
 
 		if (p->hasScene(*iter))
 			b = true;
@@ -536,43 +402,22 @@ void DlgPass::updateProperties(Pass *p) {
 		str.Append(wxString(*iter).c_str());
 		m_PG->SetPropertyValue(str, b);
 	}
-	delete names;
 
 	// LIGHTS
-	names = RENDERMANAGER->getLightNames();
+	std::vector<std::string> lNames;
+	RENDERMANAGER->getLightNames(&lNames);
 
-	for (iter = names->begin(); iter != names->end(); ++iter) {
+	for (auto & name:lNames) {
 
-		if (p->hasLight(*iter))
+		if (p->hasLight(name))
 			b = true;
 		else
 			b = false;
 		wxString str(wxT("Lights."));
-		wxString aux((*iter).c_str());
-		str.Append(wxString((*iter).c_str()));
+		wxString aux(name.c_str());
+		str.Append(wxString(name.c_str()));
 		m_PG->SetPropertyValue(str, b);
 	}
-	delete names;
-
-	//// COLOR & DEPTH
-	//m_PG->SetPropertyValue(wxT("Clear Color"), p->getPropb(Pass::COLOR_CLEAR));
-	//m_PG->SetPropertyValue(wxT("Clear Depth"), p->getPropb(Pass::DEPTH_CLEAR));
-
-
-	//if (m_PG->GetPropertyByName(wxT("Parameters")))
-	//	m_PG->DeleteProperty(wxT("Parameters"));
-	//
-	//std::map<std::string, float> params = p->getParamsf();
-
-	//wxPGProperty* pgprop;
-	//pgprop = m_PG->Append(new wxPGProperty(wxT("Parameters"), wxPG_LABEL));
-
-	//std::map<std::string, float>::iterator pIter = params.begin();
-
-	//for( ; pIter != params.end() ; ++pIter) {
-
-	//	m_PG->AppendIn(pgprop, new wxFloatProperty(wxString(pIter->first.c_str()), wxPG_LABEL, pIter->second));
-	//}
 
 	if (m_PG->GetPropertyByName(wxT("Material Maps")))
 		m_PG->DeleteProperty(wxT("Material Maps"));
@@ -638,24 +483,19 @@ void DlgPass::updateLists(Pass *p)
 
 void DlgPass::updateCameraList(Pass *p) {
 
-	std::vector<std::string>::iterator iter;
-
 	m_PG->ClearSelection();
 	m_pgCamList.RemoveAt(0,m_pgCamList.GetCount());
 
 	int i = 0;
-	std::vector<std::string> *passes = RENDERMANAGER->getCameraNames();
-	for (iter = passes->begin(); iter != passes->end(); ++iter) {
-		m_pgCamList.Add(wxString(iter->c_str()),i++);
+	std::vector<std::string> passes;
+	RENDERMANAGER->getCameraNames(&passes);
+	for (auto& name: passes) {
+		m_pgCamList.Add(wxString(name.c_str()),i++);
 	}
-	delete passes;
-
 	m_pgPropCam->SetChoices(m_pgCamList);
 }	
 	
 void DlgPass::updateViewportList(Pass *p) {
-
-	std::vector<std::string>::iterator iter;
 
 	int i = 0;
 
@@ -666,21 +506,15 @@ void DlgPass::updateViewportList(Pass *p) {
 	if (p->hasRenderTarget()) 
 		m_pgViewportList.Add(wxT("From Render Target"),++i);
 	
-	//if (p->isRenderTargetEnabled()) {
-	//	m_PG->DisableProperty("Viewport");
-	//}
-	//else {
-	//	m_PG->EnableProperty("Viewport");
+	std::vector<std::string> viewports;
+	RENDERMANAGER->getViewportNames(&viewports);
 
-	std::vector<std::string> *viewports = RENDERMANAGER->getViewportNames();
-
-	for (iter = viewports->begin(); iter != viewports->end(); ++iter)
-		m_pgViewportList.Add(wxString(iter->c_str()), ++i);
-
-	delete viewports;
+	for (auto &v:viewports)
+		m_pgViewportList.Add(wxString(v.c_str()), ++i);
 
 	m_pgPropViewport->SetChoices(m_pgViewportList);
 }
+
 
 void DlgPass::updateRenderTargetList(Pass *p) {
 
@@ -701,36 +535,35 @@ void DlgPass::updateRenderTargetList(Pass *p) {
 }
 
 
-void DlgPass::updateScenes(Pass *p)
-{
+void DlgPass::updateScenes(Pass *p) {
+
 	wxPGProperty *m_PidScenes;
-	std::vector<std::string> *names = RENDERMANAGER->getAllSceneNames();
+	std::vector<std::string> names;
+	RENDERMANAGER->getAllSceneNames(&names);
 	std::vector<std::string>::iterator iter;
-	
+
 	m_PidScenes = m_PG->Append(new wxPGProperty(wxT("Scenes"), wxPG_LABEL));
 
 	wxPGProperty *pid2;
-	for (iter = names->begin(); iter != names->end(); ++iter) {
-		pid2 = m_PG->AppendIn(m_PidScenes, new wxBoolProperty( wxString((*iter).c_str()), wxPG_LABEL, false ) );
-		pid2->SetAttribute( wxPG_BOOL_USE_CHECKBOX, true );
+	for (iter = names.begin(); iter != names.end(); ++iter) {
+		pid2 = m_PG->AppendIn(m_PidScenes, new wxBoolProperty(wxString((*iter).c_str()), wxPG_LABEL, false));
+		pid2->SetAttribute(wxPG_BOOL_USE_CHECKBOX, true);
 	}
-	delete names;
 }
 
 
-void DlgPass::updateLights(Pass *p)
-{
-	std::vector<std::string> *names = RENDERMANAGER->getLightNames();
-	std::vector<std::string>::iterator iter;
+void DlgPass::updateLights(Pass *p) {
+
+	std::vector<std::string> names;
+	RENDERMANAGER->getLightNames(&names);
 
 	wxPGProperty *pid = m_PG->Append(new wxPGProperty(wxT("Lights"), wxPG_LABEL));
 
 	wxPGProperty *pid2;
-	for (iter = names->begin(); iter != names->end(); ++iter) {
-		pid2 = m_PG->AppendIn(pid, new wxBoolProperty( wxString((*iter).c_str()), wxPG_LABEL, false ) );
+	for (auto &name:names) {
+		pid2 = m_PG->AppendIn(pid, new wxBoolProperty( wxString(name.c_str()), wxPG_LABEL, false ) );
 		pid2->SetAttribute( wxPG_BOOL_USE_CHECKBOX, true );
 	}
-	delete names;
 }
 
 
@@ -747,7 +580,7 @@ void DlgPass::updateMaterialList() {
 	m_pgMaterialListPlus.Add(wxT("None"));
 
 	std::vector<std::string> libList; 
-	MATERIALLIBMANAGER->getLibNames(&libList);
+	MATERIALLIBMANAGER->getNonEmptyLibNames(&libList);
 
 	wxString libname;
 	for (auto& lib:libList) {
@@ -806,15 +639,15 @@ void DlgPass::OnSelectPipeline(wxCommandEvent& event) {
 	wxString selName;
 	selName = event.GetString();
 
-	Pipeline *pip = RENDERMANAGER->getPipeline(std::string(selName.mb_str()));
-	std::vector<std::string> *passes = pip->getPassNames();
+	std::shared_ptr<Pipeline> &pip = RENDERMANAGER->getPipeline(std::string(selName.mb_str()));
+	std::vector<std::string> passes;
+	pip->getPassNames(&passes);
 
 	m_PassList->Clear();
-	std::vector<std::string>::iterator iter;
-	for (iter = passes->begin(); iter != passes->end(); ++iter)
-		m_PassList->Append(wxString(iter->c_str()));
+	
+	for (auto &name:passes)
+		m_PassList->Append(wxString(name.c_str()));
 
-	delete passes;
 	m_PassList->SetSelection(0);
 		
 	Pass *p = getPass();

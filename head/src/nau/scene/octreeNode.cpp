@@ -34,7 +34,7 @@ OctreeNode::OctreeNode () :
 }
 
 
-OctreeNode::OctreeNode (OctreeNode *parent, IBoundingVolume *aBoundingVolume, int nodeId, int nodeDepth) :
+OctreeNode::OctreeNode (std::shared_ptr<OctreeNode> parent, IBoundingVolume *aBoundingVolume, int nodeId, int nodeDepth) :
 	SceneObject(),
 	m_pParent (parent),
 	m_ChildCount (0),
@@ -51,19 +51,23 @@ OctreeNode::OctreeNode (OctreeNode *parent, IBoundingVolume *aBoundingVolume, in
 	setBoundingVolume (aBoundingVolume);
 }
 
-OctreeNode::~OctreeNode(void)
-{
-	for (int i = 0; i < 8; i++) {
-		delete m_pChilds[i];
-	}
-	delete m_pLocalMesh;
-	/***MARK***/ //Delete children
+
+OctreeNode::~OctreeNode(void) {
+
+}
+
+
+void
+OctreeNode::eventReceived(const std::string &sender,
+	const std::string &eventType,
+	const std::shared_ptr<IEventData> &evt) {
+
 }
 
 
 void 
-OctreeNode::getMaterialNames(std::set<std::string> *nameList)
-{
+OctreeNode::getMaterialNames(std::set<std::string> *nameList) {
+
 	if (m_pLocalMesh)
 		m_pLocalMesh->getMaterialNames(nameList);
 
@@ -75,148 +79,6 @@ OctreeNode::getMaterialNames(std::set<std::string> *nameList)
 	}
 }
 
-//void
-//OctreeNode::addRenderable (nau::render::IRenderable *aRenderable)
-//{
-//	
-//	VertexData &vVertexData = aRenderable->getVertexData();
-//
-//	if (true == m_Divided) {
-//		Mesh *tempMesh[9] = { 0 };
-//
-//		//For each material group
-//		std::vector<IMaterialGroup*> &vMaterialGroups =
-//			aRenderable->getMaterialGroups();
-//		std::vector<IMaterialGroup*>::iterator matIter;
-//
-//		matIter = vMaterialGroups.begin();
-//
-//		for ( ; matIter != vMaterialGroups.end(); matIter++) {
-//			MaterialGroup *tempMaterialGroup[9] = { 0 };
-//
-//			IMaterialGroup *pMaterialGroup = (*matIter);
-//
-//			IndexData &VertexDataMaterialGroup = pMaterialGroup->getIndexData();
-//			std::vector<unsigned int> &vIndexData = VertexDataMaterialGroup.getIndexData();
-//			std::vector<unsigned int>::iterator indexIter;
-//
-//			indexIter = vIndexData.begin();
-//
-//			// For each triangle, index, index + 1, index + 2, check to which octant it belongs to
-//			try {
-//				for ( ; indexIter != vIndexData.end(); indexIter += 3) {
-//					VertexData::Attr &v1 = vVertexData.getDataOf (VertexData::getAttribIndex("position")).at (*(indexIter));
-//					VertexData::Attr &v2 = vVertexData.getDataOf (VertexData::getAttribIndex("position")).at (*(indexIter+1));
-//					VertexData::Attr &v3 = vVertexData.getDataOf (VertexData::getAttribIndex("position")).at (*(indexIter+2));
-//						
-//					int v1Octant = _octantFor (v1);
-//					int v2Octant = _octantFor (v2);
-//					int v3Octant = _octantFor (v3);
-//
-//					int index = v1Octant;
-//
-//					if (v1Octant != v2Octant || v2Octant != v3Octant) {
-//						index = ROOT;
-//					}
-//
-//					if (0 == tempMaterialGroup[index]) {
-//						tempMaterialGroup[index] = new MaterialGroup;
-//
-//						tempMaterialGroup[index]->setMaterialName (pMaterialGroup->getMaterialName());
-//						//tempMaterialGroup[index]->setMaterialId (pMaterialGroup->getMaterialId());
-//
-//					}
-//
-//					std::vector<unsigned int> &vTempIndexData = 
-//						tempMaterialGroup[index]->getIndexData().getIndexData();
-//
-//					if (IndexData::NoIndexData == vTempIndexData) {
-//						std::vector<unsigned int>* newIndexData = new std::vector<unsigned int>;
-//
-//						(tempMaterialGroup[index]->getIndexData()).setIndexData (newIndexData);
-//						newIndexData->push_back (*(indexIter));
-//						newIndexData->push_back (*(indexIter+1));
-//						newIndexData->push_back (*(indexIter+2));
-//					} else {
-//						vTempIndexData.push_back (*(indexIter));
-//						vTempIndexData.push_back (*(indexIter+1));
-//						vTempIndexData.push_back (*(indexIter+2));
-//					}
-//				}
-//
-//			}
-//			catch (std::exception& so) {
-//				LOG_INFO ("Exception: %s", so.what());	
-//				assert (1);
-//			}
-//
-//			for (int index = TOPFRONTLEFT; index <= ROOT; index++) {
-//				if (0 != tempMaterialGroup[index]) {
-//					if (0 == tempMesh[index]) {
-//						tempMesh[index] = (Mesh *)RESOURCEMANAGER->createRenderable("Mesh",_genOctName());//new Mesh;
-//						//tempMesh[index]->setName(_genOctName());
-//					}
-//					tempMesh[index]->addMaterialGroup (tempMaterialGroup[index], aRenderable);
-//					delete tempMaterialGroup[index];
-//					tempMaterialGroup[index] = 0;
-//				}
-//			}
-//		}
-//
-//		for (int index = TOPFRONTLEFT; index <= BOTTOMBACKRIGHT; index++) {
-//			if (0 != tempMesh[index]) {
-//				if (0 == m_pChilds[index]) {
-//					m_pChilds[index] = _createChild (index);
-//				}
-//				m_pChilds[index]->setRenderable (tempMesh[index]);
-//				delete tempMesh[index];
-//				tempMesh[index] = 0;
-//			}
-//		}
-//
-//		if (0 != tempMesh[ROOT]) {
-//			if (0 == m_pLocalMesh) {
-//				m_pLocalMesh = (Mesh *)RESOURCEMANAGER->createRenderable("Mesh", _genOctName());//new Mesh;
-//			//	m_pLocalMesh->setName ();
-//				m_Renderable = m_pLocalMesh;
-//			}
-//			m_pLocalMesh->merge (tempMesh[ROOT]);
-//			delete tempMesh[ROOT];
-//			tempMesh[ROOT] = 0;
-//		}
-//		
-//	} else { //It is not divided
-//		if ((0 != m_pLocalMesh) && (m_pLocalMesh->getNumberOfVertices() / 3) > OctreeNode::MAXPRIMITIVES)
-//		{
-//			m_Divided = true;
-//
-//			Mesh *pTempMesh = m_pLocalMesh;
-//			
-//			m_pLocalMesh = 0;
-//
-//			// Inherited by SceneObject
-//			m_Renderable = 0;
-//
-//			addRenderable (pTempMesh);
-//			delete pTempMesh;
-//
-//			addRenderable (aRenderable);
-//			
-//		} else {
-//			
-//			if (0 == m_pLocalMesh) {
-//				m_pLocalMesh = (Mesh *)RESOURCEMANAGER->createRenderable("Mesh", _genOctName()); //new Mesh;
-//				//m_pLocalMesh->setName ();
-//				m_Renderable = m_pLocalMesh;
-//
-//			}
-//			m_pLocalMesh->merge (aRenderable);
-//
-//		}
-//	}
-////	tightBoundingVolume();
-//}
-
 
 void OctreeNode::tightBoundingVolume() {
 
@@ -226,7 +88,7 @@ void OctreeNode::tightBoundingVolume() {
 
 	m_BoundingVolume = new BoundingBox; /***MARK***/
 	if (0 != m_pLocalMesh)
-		m_BoundingVolume->calculate (m_pLocalMesh->getVertexData().getDataOf (VertexData::GetAttribIndex(std::string("position"))));
+		m_BoundingVolume->calculate (m_pLocalMesh->getVertexData()->getDataOf (VertexData::GetAttribIndex(std::string("position"))));
 
 	for (int i = TOPFRONTLEFT; i < ROOT; i++) {
 	
@@ -238,11 +100,9 @@ void OctreeNode::tightBoundingVolume() {
 }
 
 
-
-
 void 
-OctreeNode::updateNodeTransform(nau::math::mat4 &t)
-{
+OctreeNode::updateNodeTransform(nau::math::mat4 &t) {
+
 	if (0 != m_pLocalMesh) {
 		updateGlobalTransform(t);
 	}
@@ -252,11 +112,11 @@ OctreeNode::updateNodeTransform(nau::math::mat4 &t)
 			m_pChilds[i]->updateNodeTransform(t);
 		}
 	}
-
 }
 
 
-void OctreeNode::unitize(vec3 &center, vec3 &min, vec3 &max) {
+void 
+OctreeNode::unitize(vec3 &center, vec3 &min, vec3 &max) {
 	
 	m_pLocalMesh->unitize(center, min, max);
 
@@ -269,55 +129,46 @@ void OctreeNode::unitize(vec3 &center, vec3 &min, vec3 &max) {
 	tightBoundingVolume();
 }
 
+
 void 
-OctreeNode::setRenderable (nau::render::IRenderable *aRenderable)
+OctreeNode::setRenderable (std::shared_ptr<nau::render::IRenderable> &aRenderable)
 {
 	int vertexArrayPos = VertexData::GetAttribIndex(std::string("position"));
 	int offSet;
 
-	if (m_pLocalMesh) {
-		delete m_pLocalMesh;
-		m_pLocalMesh = 0;
-	}
-
-	m_pLocalMesh = (Mesh *)aRenderable;//dynamic_cast<Mesh*>(aRenderable);
+	m_pLocalMesh = aRenderable;
 	m_Renderable = aRenderable;
 
 	if (m_pLocalMesh->getNumberOfVertices()/3 > MAXPRIMITIVES) {
 	
-		VertexData &vVertexData = aRenderable->getVertexData();
-		Mesh *tempMesh[9] = { 0 };
+		std::shared_ptr<VertexData> &vVertexData = aRenderable->getVertexData();
+		std::shared_ptr<nau::render::IRenderable> tempMesh[9] = { 0 };
 
 		//Octree are only implemented for triangles
 		offSet = 3; // m_pLocalMesh->getPrimitiveOffset();
 
 		//For each material group
-		std::vector<MaterialGroup*> &vMaterialGroups =
+		std::vector<std::shared_ptr<MaterialGroup>> &vMaterialGroups =
 			aRenderable->getMaterialGroups();
-		std::vector<MaterialGroup*>::iterator matIter;
 
-		matIter = vMaterialGroups.begin();
+		for (auto& pMaterialGroup: vMaterialGroups) {
+			std::shared_ptr<MaterialGroup> tempMaterialGroup[9];
 
-		for ( ; matIter != vMaterialGroups.end(); matIter++) {
-			MaterialGroup *tempMaterialGroup[9] = { 0 };
-
-			MaterialGroup *pMaterialGroup = (*matIter);
-
-			IndexData &VertexDataMaterialGroup = pMaterialGroup->getIndexData();
-			std::vector<unsigned int> &vIndexData = VertexDataMaterialGroup.getIndexData();
+			std::shared_ptr<IndexData> &VertexDataMaterialGroup = pMaterialGroup->getIndexData();
+			std::shared_ptr<std::vector<unsigned int>> &vIndexData = VertexDataMaterialGroup->getIndexData();
 			std::vector<unsigned int>::iterator indexIter;
 
-			indexIter = vIndexData.begin();
-			std::vector<VertexData::Attr> vVertices = vVertexData.getDataOf(vertexArrayPos);
+			indexIter = vIndexData->begin();
+			std::shared_ptr<std::vector<VertexData::Attr>> &vVertices = vVertexData->getDataOf(vertexArrayPos);
 
 			// For each triangle, index, index + 1, index + 2, check to which octant it belongs to
 			try {
-				for (unsigned int i = 0; i < vIndexData.size(); i += offSet) {
+				for (unsigned int i = 0; i < vIndexData->size(); i += offSet) {
 					// carefull: three vertices are only for triangles, not lines
 					// strips and fans have their own set of rules for indexes
-					VertexData::Attr &v1 = vVertices.at (vIndexData[i]);
-					VertexData::Attr &v2 = vVertices.at (vIndexData[i+1]);
-					VertexData::Attr &v3 = vVertices.at (vIndexData[i+2]);
+					VertexData::Attr &v1 = vVertices->at (vIndexData->at(i));
+					VertexData::Attr &v2 = vVertices->at (vIndexData->at(i+1));
+					VertexData::Attr &v3 = vVertices->at (vIndexData->at(i+2));
 						
 					int v1Octant = _octantFor (v1);
 					int v2Octant = _octantFor (v2);
@@ -331,25 +182,23 @@ OctreeNode::setRenderable (nau::render::IRenderable *aRenderable)
 
 					if (0 == tempMaterialGroup[index]) {
 						tempMaterialGroup[index] = MaterialGroup::Create(NULL, pMaterialGroup->getMaterialName());
-
-						//tempMaterialGroup[index]->setMaterialName (pMaterialGroup->getMaterialName());
-						//tempMaterialGroup[index]->setMaterialId (pMaterialGroup->getMaterialId());
 					}
 
-					std::vector<unsigned int> &vTempIndexData = 
-						tempMaterialGroup[index]->getIndexData().getIndexData();
+					std::shared_ptr<std::vector<unsigned int>> &vTempIndexData =
+						tempMaterialGroup[index]->getIndexData()->getIndexData();
 
-					if (IndexData::NoIndexData == vTempIndexData) {
-						std::vector<unsigned int>* newIndexData = new std::vector<unsigned int>;
+					if (vTempIndexData) {
+						std::shared_ptr<std::vector<unsigned int>> newIndexData = 
+							std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>);
 						// carefull: order of triangles is relevant for strips
-						(tempMaterialGroup[index]->getIndexData()).setIndexData (newIndexData);
-						newIndexData->push_back (vIndexData[i]);
-						newIndexData->push_back (vIndexData[i+1]);
-						newIndexData->push_back (vIndexData[i+2]);
+						(tempMaterialGroup[index]->getIndexData())->setIndexData (newIndexData);
+						newIndexData->push_back (vIndexData->at(i));
+						newIndexData->push_back (vIndexData->at(i+1));
+						newIndexData->push_back (vIndexData->at(i+2));
 					} else {
-						vTempIndexData.push_back (vIndexData[i]);
-						vTempIndexData.push_back (vIndexData[i+1]);
-						vTempIndexData.push_back (vIndexData[i+2]);
+						vTempIndexData->push_back (vIndexData->at(i));
+						vTempIndexData->push_back (vIndexData->at(i+1));
+						vTempIndexData->push_back (vIndexData->at(i+2));
 					}
 				}
 
@@ -362,12 +211,10 @@ OctreeNode::setRenderable (nau::render::IRenderable *aRenderable)
 			for (int index = TOPFRONTLEFT; index <= ROOT; index++) {
 				if (0 != tempMaterialGroup[index]) {
 					if (0 == tempMesh[index]) {
-						tempMesh[index] = (Mesh *)RESOURCEMANAGER->createRenderable("Mesh", _genOctName()); //new Mesh;
-						//tempMesh[index]->setName(_genOctName());
+						tempMesh[index] = RESOURCEMANAGER->createRenderable("Mesh", _genOctName()); //new Mesh;
 					}
 					tempMesh[index]->addMaterialGroup (tempMaterialGroup[index], aRenderable);
-					delete tempMaterialGroup[index];
-					tempMaterialGroup[index] = 0;
+					tempMaterialGroup[index].reset();
 				}
 			}
 		}
@@ -378,14 +225,7 @@ OctreeNode::setRenderable (nau::render::IRenderable *aRenderable)
 					m_pChilds[index] = _createChild (index);
 				}
 				m_pChilds[index]->setRenderable (tempMesh[index]);
-				//delete tempMesh[index];
-				//tempMesh[index] = 0;
 			}
-		}
-
-		if (m_pLocalMesh) {
-			delete m_pLocalMesh;
-			m_pLocalMesh = 0;
 		}
 
 		if (0 != tempMesh[ROOT]) {		
@@ -402,14 +242,15 @@ OctreeNode::setRenderable (nau::render::IRenderable *aRenderable)
 
 
 std::string 
-OctreeNode::getType (void)
-{
+OctreeNode::getType (void) {
+
 	return "OctreeNode";
 }
 
+
 int
-OctreeNode::_octantFor (VertexAttrib& v)
-{
+OctreeNode::_octantFor (VertexAttrib& v) {
+
 	int octant = 8;
 
 	const vec3 &BBCenter = m_BoundingVolume->getCenter();
@@ -447,9 +288,9 @@ OctreeNode::_octantFor (VertexAttrib& v)
 	return octant;
 }
 
-OctreeNode*
-OctreeNode::_createChild (int octant)
-{
+std::shared_ptr<OctreeNode> &
+OctreeNode::_createChild (int octant) {
+
 	vec3 bbMin;
 	vec3 bbMax;
 
@@ -541,20 +382,19 @@ OctreeNode::_createChild (int octant)
 	}
 	
 	this->m_ChildCount++;
-	return new OctreeNode (this, new BoundingBox (bbMin, bbMax), octant, m_NodeDepth + 1);
+	m_Temp = std::shared_ptr<OctreeNode>(new OctreeNode (std::shared_ptr<OctreeNode>(this), new BoundingBox (bbMin, bbMax), octant, m_NodeDepth + 1));
+	return m_Temp;
 }
 
 void
 OctreeNode::_compile (void)
 {
 	if (0 != m_pLocalMesh) {
-		m_pLocalMesh->getVertexData().compile();
-		std::vector<MaterialGroup*> &matGroups = m_pLocalMesh->getMaterialGroups();
+		m_pLocalMesh->getVertexData()->compile();
+		std::vector<std::shared_ptr<MaterialGroup>> &matGroups = m_pLocalMesh->getMaterialGroups();
 
-		std::vector<MaterialGroup*>::iterator matGroupsIter = matGroups.begin();
-
-		for ( ; matGroupsIter != matGroups.end(); matGroupsIter++){
-			(*matGroupsIter)->compile();
+		for (auto& matGroupsIter: matGroups){
+			matGroupsIter->compile();
 		}
 
 	}
@@ -567,7 +407,7 @@ OctreeNode::_compile (void)
 }
 
 void 
-OctreeNode::_findVisibleSceneObjects (std::vector<SceneObject*> &m_vReturnVector,
+OctreeNode::_findVisibleSceneObjects (std::vector<std::shared_ptr<SceneObject>> *v,
 																Frustum &aFrustum, 
 																Camera &aCamera,
 																bool conservative)
@@ -582,31 +422,31 @@ OctreeNode::_findVisibleSceneObjects (std::vector<SceneObject*> &m_vReturnVector
 	//}
 
 	if (0 != m_pLocalMesh) {
-		m_vReturnVector.push_back (this);
+		v->push_back (std::shared_ptr<SceneObject>(this));
 	}
 
 	for (int i = TOPFRONTLEFT; i <= BOTTOMBACKRIGHT; i++) {
 		if (0 != m_pChilds[i]) {
-			m_pChilds[i]->_findVisibleSceneObjects (m_vReturnVector, aFrustum, aCamera, conservative);	
+			m_pChilds[i]->_findVisibleSceneObjects (v, aFrustum, aCamera, conservative);	
 		}
 	}
 }
 
-OctreeNode*
+std::shared_ptr<OctreeNode> &
 OctreeNode::_getChild (int i) 
 {
 	return m_pChilds[i];
 }
 
 void 
-OctreeNode::_setChild (int i, OctreeNode *aNode)
+OctreeNode::_setChild (int i, std::shared_ptr<OctreeNode> &aNode)
 {
 	m_pChilds[i] = aNode;
 }
 
 
 void
-OctreeNode::_setParent (OctreeNode *parent)
+OctreeNode::_setParent (std::shared_ptr<OctreeNode> &parent)
 {
 	m_pParent = parent;
 }

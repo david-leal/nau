@@ -45,6 +45,8 @@ namespace nau
 			static void loadAssets (TiXmlHandle &hRoot, std::vector<std::string> &matLib);
 			// load the pipelines section
 			static void loadPipelines (TiXmlHandle &hRoots);
+			// load interface elements
+			static void loadInterface(TiXmlHandle &hRoots);
 
 			// check for tags that are not allowed
 			static void checkForNonValidChildTags(std::string parent, std::vector<std::string> &excluded, 
@@ -69,14 +71,11 @@ namespace nau
 											nau::AttribSet &attribs, 
 											std::vector<std::string> &excluded, 
 											TiXmlElement *pElem);
+			// returns a text message to include in the throw statement. 
+			// if message  == "" then attribute is ok
+			static void validateObjectAttribute(std::string type, std::string context, std::string component, std::string *message);
+			static void validateObjectTypeAndComponent(std::string type, std::string component, std::string *message);
 
-			//static void readAttributeList(std::string parent, 
-			//								AttributeValues *anObj, 
-			//								std::map<std::string, std::unique_ptr<nau::Attribute>> &attributes, 
-			//								nau::AttribSet &attribs, 
-			//								std::vector<std::string> &excluded, 
-			//								TiXmlElement *pElem);
-			
 			// converts to lower caps
 			static std::string toLower(std::string strToConvert);
 			// read file and return full path relative to project
@@ -140,21 +139,21 @@ namespace nau
 			static void loadPassComputeSettings(TiXmlHandle hPass, Pass *aPass);
 
 			//Debug Loading
-			static void loadDebug (TiXmlHandle &hRoot);
-			static void loadDebugConfigData (TiXmlHandle &handle, const char *configMapName);
-			static void loadDebugFunctionlog (TiXmlHandle &hRoot);
-			static void loadDebugFunctionlogXmlFormat (TiXmlHandle &hRoot);
-			static void loadDebugLogperframe (TiXmlHandle &hRoot);
-			static void loadDebugErrorchecking (TiXmlHandle &hRoot);
-			static void loadDebugImagelog (TiXmlHandle &hRoot);
-			static void loadDebugImagelogimageicon (TiXmlHandle &hRoot);
-			static void loadDebugShaderlog (TiXmlHandle &hRoot);
-			static void loadDebugFramelog (TiXmlHandle &hRoot);
-			static void loadDebugFramelogFrameicon (TiXmlHandle &hRoot);
-			static void loadDebugFramelogFramemovie (TiXmlHandle &hRoot);
-			static void loadDebugTimerlog (TiXmlHandle &hRoot);
-			static void loadDebugArrayData (TiXmlHandle &hRoot, const char *functionName, void *functionSetPointer);
-			static void loadDebugPlugins (TiXmlHandle &hRoot);
+			//static void loadDebug (TiXmlHandle &hRoot);
+			//static void loadDebugConfigData (TiXmlHandle &handle, const char *configMapName);
+			//static void loadDebugFunctionlog (TiXmlHandle &hRoot);
+			//static void loadDebugFunctionlogXmlFormat (TiXmlHandle &hRoot);
+			//static void loadDebugLogperframe (TiXmlHandle &hRoot);
+			//static void loadDebugErrorchecking (TiXmlHandle &hRoot);
+			//static void loadDebugImagelog (TiXmlHandle &hRoot);
+			//static void loadDebugImagelogimageicon (TiXmlHandle &hRoot);
+			//static void loadDebugShaderlog (TiXmlHandle &hRoot);
+			//static void loadDebugFramelog (TiXmlHandle &hRoot);
+			//static void loadDebugFramelogFrameicon (TiXmlHandle &hRoot);
+			//static void loadDebugFramelogFramemovie (TiXmlHandle &hRoot);
+			//static void loadDebugTimerlog (TiXmlHandle &hRoot);
+			//static void loadDebugArrayData (TiXmlHandle &hRoot, const char *functionName, void *functionSetPointer);
+			//static void loadDebugPlugins (TiXmlHandle &hRoot);
 
 			// load Material Lib elements
 			static void loadMatLibRenderTargets(TiXmlHandle hPass, MaterialLib *aLib, std::string path);
@@ -164,12 +163,12 @@ namespace nau
 			static void loadMatLibBuffers(TiXmlHandle hPass, MaterialLib *aLib, std::string path);
 
 			// load material elements
-			static void loadMaterialColor(TiXmlHandle handle, MaterialLib *aLib, Material *aMat);
-			static void loadMaterialTextures(TiXmlHandle handle, MaterialLib *aLib, Material *aMat);
-			static void loadMaterialImageTextures(TiXmlHandle handle, MaterialLib *aLib, Material *aMat);
-			static void loadMaterialBuffers(TiXmlHandle handle, MaterialLib *aLib, Material *aMat);
-			static void loadMaterialShader(TiXmlHandle handle, MaterialLib *aLib, Material *aMat);
-			static void loadMaterialState(TiXmlHandle handle, MaterialLib *aLib, Material *aMat);
+			static void loadMaterialColor(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat);
+			static void loadMaterialTextures(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat);
+			static void loadMaterialImageTextures(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat);
+			static void loadMaterialBuffers(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat);
+			static void loadMaterialShader(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat);
+			static void loadMaterialState(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat);
 
 			// load state
 			static void loadState(TiXmlElement *pElemAux, MaterialLib *aLib, Material *aMat, IState *s);

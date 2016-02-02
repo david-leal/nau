@@ -116,7 +116,7 @@ OBJLoader::readMTL(std::string &name)
 	}
 	
 	m_NumMaterials = 0;
-	Material *mat;
+	std::shared_ptr<Material> mat;
 	float val; vec4 v4;
 	while(fscanf(file, "%s", buf) != EOF) {
 		switch(buf[0]) {
@@ -124,12 +124,13 @@ OBJLoader::readMTL(std::string &name)
 			/* eat up rest of line */
 			fgets(buf, sizeof(buf), file);
 			break;
-		case 'n':				/* newmtl */
+		case 'n': {				/* newmtl */
 			m_NumMaterials++;
 			fgets(buf, sizeof(buf), file);
 			sscanf(buf, "%s %s", buf, buf);
-			mat = MATERIALLIBMANAGER->createMaterial(strdup(buf));
-			//model->materials[nummaterials].name = strdup(buf);
+			std::string s(buf);
+			mat = MATERIALLIBMANAGER->createMaterial(s);
+		}
 			break;
 		case 'm' :		
 			fgetc(file);
@@ -710,7 +711,6 @@ OBJLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 	// Read OBJ file
 	obj.readOBJ(aFilename);
 
-	std::vector<VertexData::Attr> *v,*t,*n;
 	unsigned int verts;
 
 	if (!obj.m_NumNormals) {
@@ -825,10 +825,16 @@ OBJLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 		}
 
 	}
-	v = new std::vector<VertexData::Attr>; v->reserve(verts);
-	n = new std::vector<VertexData::Attr>; n->reserve(verts);
+	std::shared_ptr<std::vector<VertexData::Attr>> t;
+
+	std::shared_ptr<std::vector<VertexData::Attr>> v = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>); 
+	v->reserve(verts);
+	std::shared_ptr<std::vector<VertexData::Attr>> n = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>);
+	n->reserve(verts);
 	if (obj.m_NumTexCoords) {
-		t = new std::vector<VertexData::Attr>;
+		t = std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>);
 		t->reserve(verts);
 	}	
 	verts = 0;
@@ -853,7 +859,7 @@ OBJLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 
 
 	// Create an object for the Model.  
-	SceneObject *aObject = SceneObjectFactory::create ("SimpleObject");
+	std::shared_ptr<SceneObject> &aObject = SceneObjectFactory::Create("SimpleObject");
 
 	// Get and set name as the model path 
 	aObject->setName(obj.m_Pathname);
@@ -863,7 +869,7 @@ OBJLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 	// Bind it to the object
 	aObject->setBoundingVolume (aBoundingVolume);
 	// Use the vertices list to calculate bounds and center.
-	aBoundingVolume->calculate(*v);
+	aBoundingVolume->calculate(v);
 
 	// Transform
 	mat4 aTransform;
@@ -872,12 +878,11 @@ OBJLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 
 	// Renderable
 	// Set Renderable Factory 
-	IRenderable *aRenderable = 0;
-	aRenderable = RESOURCEMANAGER->createRenderable ("Mesh","unnamed", aObject->getName());
+	std::shared_ptr<IRenderable> &aRenderable = RESOURCEMANAGER->createRenderable ("Mesh","unnamed", aObject->getName());
 	aRenderable->setDrawingPrimitive(primitive);
 
 	// Import VERTEX/NORMAL/TEXTURE data into Renderable
-	VertexData *vdata = &(aRenderable->getVertexData()); //VertexData::create();
+	std::shared_ptr<VertexData> vdata = aRenderable->getVertexData(); 
 
 	vdata->setDataFor(VertexData::GetAttribIndex(std::string("position")), v);
 	vdata->setDataFor(VertexData::GetAttribIndex(std::string("normal")), n);
@@ -891,7 +896,7 @@ OBJLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 		// There HAS to be a material
 		// Create material
 		if (!MATERIALLIBMANAGER->hasMaterial(DEFAULTMATERIALLIBNAME,"DefaultOBJMaterial"))
-			Material* aMaterial = MATERIALLIBMANAGER->createMaterial("DefaultOBJMaterial");
+			MATERIALLIBMANAGER->createMaterial("DefaultOBJMaterial");
 	//}
 
 
@@ -914,12 +919,13 @@ OBJLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 		//		s = "DefaultOBJMat";
 		}
 
-		MaterialGroup *aMatGroup = MaterialGroup::Create(aRenderable, s);
+		std::shared_ptr<MaterialGroup> aMatGroup = MaterialGroup::Create(aRenderable.get(), s);
 
 		// Set up the index array
 
 		// Create array
-		std::vector<unsigned int> *iArr = new std::vector<unsigned int>;
+		std::shared_ptr<std::vector<unsigned int>> iArr = 
+			std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>);
 		iArr->resize(currG->numTriangles*3);
 
 		for (unsigned int i = 0; i < currG->numTriangles; ++i) {
@@ -930,7 +936,7 @@ OBJLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 		// Assign it to Material Group
 		aMatGroup->setIndexList(iArr);
 		if (primitive == IRenderable::TRIANGLES_ADJACENCY)
-			aMatGroup->getIndexData().useAdjacency(true);
+			aMatGroup->getIndexData()->useAdjacency(true);
 
 		// Add it to the Renderable
 		if (currG->numTriangles > 0)

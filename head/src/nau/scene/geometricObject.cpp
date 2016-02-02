@@ -10,8 +10,8 @@ using namespace nau::geometry;
 
 unsigned int GeometricObject::PrimitiveCounter = 0;
 
-GeometricObject::GeometricObject() : SceneObject()
-{
+GeometricObject::GeometricObject() : SceneObject() {
+
 	m_PrimitiveID = GeometricObject::PrimitiveCounter;
 	++GeometricObject::PrimitiveCounter;
 
@@ -23,31 +23,38 @@ GeometricObject::GeometricObject() : SceneObject()
 }
 
 
-GeometricObject::~GeometricObject()
-{
+void
+GeometricObject::eventReceived(const std::string &sender,
+	const std::string &eventType,
+	const std::shared_ptr<IEventData> &evt) {
+
+}
+
+
+GeometricObject::~GeometricObject() {
 	
 }
 
 
 void 
-GeometricObject::setRenderable (nau::render::IRenderable *renderable)
-{
+GeometricObject::setRenderable (std::shared_ptr<IRenderable> &renderable) {
+
 	// It must be a primitive!
 	m_Renderable = renderable;
 }
 
 
 void 
-GeometricObject::setMaterial(const std::string &name) 
-{
-	MaterialGroup *mg = m_Renderable->getMaterialGroups().at(0);
+GeometricObject::setMaterial(const std::string &name) {
+
+	std::shared_ptr<MaterialGroup> &mg = m_Renderable->getMaterialGroups().at(0);
 
 	mg ->setMaterialName(name);
 }
 
 
 std::string 
-GeometricObject::getType (void)
-{
+GeometricObject::getType (void) {
+
 	return "GeometricPrimitive";
 }

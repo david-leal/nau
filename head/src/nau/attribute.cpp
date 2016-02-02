@@ -55,13 +55,13 @@ Attribute::Attribute(const Attribute & source):
 	m_ReadOnlyFlag(source.m_ReadOnlyFlag), m_Requires(source.m_Requires),
 	m_Semantics(source.m_Semantics), m_RangeDefined(source.m_RangeDefined) {
 
-	if (source.m_Max != NULL) {
+	if (source.m_Max) {
 		m_Max = std::shared_ptr<Data>(source.m_Max->clone());
 	}
-	if (source.m_Min != NULL) {
+	if (source.m_Min) {
 		m_Min = std::shared_ptr<Data>(source.m_Min->clone());
 	}
-	if (source.m_Default != NULL) {
+	if (source.m_Default) {
 		m_Default = std::shared_ptr<Data>(source.m_Default->clone());
 	}
 }
@@ -396,7 +396,7 @@ AttribSet::getName(int id, Enums::DataType dt) {
 
 
 void 
-AttribSet::getPropTypeAndId(std::string &s, nau::Enums::DataType *dt, int *id) {
+AttribSet::getPropTypeAndId(const std::string &s, nau::Enums::DataType *dt, int *id) {
 			
 	std::unique_ptr<Attribute> &a = get(s);
 	*id = a->m_Id;

@@ -191,8 +191,9 @@ DlgScenes::setupGrid() {
 void 
 DlgScenes::updateList() {
 
-	std::vector<std::string> *names = RENDERMANAGER->getSceneNames();
-	int num = names->size();
+	std::vector<std::string> names;
+	RENDERMANAGER->getSceneNames(&names);
+	int num = names.size();
 
 	if (num == 0) {
 		m_Active = "";
@@ -204,10 +205,9 @@ DlgScenes::updateList() {
 	for(int i = 0; i < num; i++)  {
 		wxString s;
 		s << i;
-		m_List->Append(wxString(names->at(i).c_str()));
+		m_List->Append(wxString(names[i].c_str()));
 	}
-	m_Active = names->at(0);
-	delete names;
+	m_Active = names[0];
 }
 
 
@@ -216,12 +216,12 @@ void DlgScenes::update()
 	if (m_Active == "")
 		return;
 
-	IScene *scene = RENDERMANAGER->getScene(m_Active);
+	std::shared_ptr<IScene> &scene = RENDERMANAGER->getScene(m_Active);
 
 	/* Is scene a partitioned scene? */
 	if (scene->getType() == "Octree" || scene->getType() == "OctreeByMatScene") {
 	
-		IScenePartitioned *part = (IScenePartitioned *)scene;
+		std::shared_ptr<IScenePartitioned> part = std::dynamic_pointer_cast<IScenePartitioned>(scene);
 
 		if (part->isBuilt() || part->isCompiled())
 			m_toolbar->EnableTool(BUILD, FALSE);
@@ -241,7 +241,7 @@ void DlgScenes::update()
 
 	m_PG->ClearModifiedStatus();
 
-	PropertyManager::updateGrid(m_PG, IScene::Attribs, (AttributeValues *)scene);
+	PropertyManager::updateGrid(m_PG, IScene::Attribs, (AttributeValues *)scene.get());
 	//wxString s;
 	//s.Printf("(%f,%f,%f)",bv.getMax().x, bv.getMax().y, bv.getMax().z);
 	//tBoundingBoxMax->SetLabel(s);
@@ -249,24 +249,24 @@ void DlgScenes::update()
 	//tBoundingBoxMin->SetLabel(s);
 
 	m_Objects->Clear();
-	std::vector<SceneObject*> objList = scene->getAllObjects();
-	std::vector<SceneObject*>::iterator iter = objList.begin();
+	std::vector<std::shared_ptr<SceneObject>> objList;
+	scene->getAllObjects(&objList);
 
-	for ( ; iter != objList.end(); ++iter )
-		m_Objects->AppendString(wxString((*iter)->getName().c_str()));
+	for (auto &so: objList)
+		m_Objects->AppendString(wxString(so->getName().c_str()));
 
 }
 
 
 void DlgScenes::OnPropsChange( wxPropertyGridEvent& e) {
 
-	IScene *scene = RENDERMANAGER->getScene(m_Active);
+	std::shared_ptr<IScene> &scene = RENDERMANAGER->getScene(m_Active);
 	const wxString& name = e.GetPropertyName();
 	unsigned int dotLocation = name.find_first_of(wxT("."), 0);
 	std::string topProp = std::string(name.substr(0, dotLocation).mb_str());
 	std::string prop = std::string(name.substr(dotLocation + 1, name.size() - dotLocation - 1).mb_str());
 
-	PropertyManager::updateProp(m_PG, name.ToStdString(), IScene::Attribs, (AttributeValues *)scene);
+	PropertyManager::updateProp(m_PG, topProp, IScene::Attribs, (AttributeValues *)scene.get());
 
 }
 
@@ -286,7 +286,7 @@ DlgScenes::OnSaveScene( wxCommandEvent& event)
 void 
 DlgScenes::OnCompile( wxCommandEvent& event)
 {
-	IScene *scene = RENDERMANAGER->getScene(m_Active);
+	std::shared_ptr<IScene> &scene = RENDERMANAGER->getScene(m_Active);
 	scene->compile();
 	//((FrmMainFrame *)Parent)->compile(scene);
 
@@ -298,7 +298,8 @@ DlgScenes::OnCompile( wxCommandEvent& event)
 void 
 DlgScenes::OnBuild( wxCommandEvent& event)
 {
-	IScenePartitioned *part = (IScenePartitioned *) RENDERMANAGER->getScene(m_Active);
+	std::shared_ptr<IScenePartitioned> &part = 
+		dynamic_pointer_cast<IScenePartitioned>(RENDERMANAGER->getScene(m_Active));
 	part->build();
 
 	m_toolbar->EnableTool(BUILD, FALSE);

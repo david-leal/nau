@@ -35,24 +35,14 @@ Mesh::Mesh(void) :
 
 Mesh::~Mesh(void) {
 
-	if (0 != m_VertexData) {
-		delete m_VertexData;
-		m_VertexData = 0;
-	}
+}
 
-	if (0 != m_IndexData) {
-		delete m_IndexData;
-		m_IndexData = 0;
-	}
 
-	std::vector<nau::material::MaterialGroup*>::iterator matIter;
+void 
+Mesh::eventReceived(const std::string &sender,
+	const std::string &eventType,
+	const std::shared_ptr<IEventData> &evt) {
 
-	matIter = m_vMaterialGroups.begin();
-	
-	while (!m_vMaterialGroups.empty()){
-		delete((*m_vMaterialGroups.begin()));
-		m_vMaterialGroups.erase(m_vMaterialGroups.begin());
-	}
 }
 
 
@@ -112,31 +102,30 @@ Mesh::getnumberOfVerticesPerPatch() {
 }
 
 
-VertexData& 
+std::shared_ptr<nau::geometry::VertexData>&
 Mesh::getVertexData (void) {
 
-	if (0 == m_VertexData) {
-		m_VertexData = VertexData::create(m_Name);
+	if (!m_VertexData) {
+		m_VertexData = VertexData::Create(m_Name);
 	}
-	return (*m_VertexData);
+	return (m_VertexData);
 }
 
 
-IndexData&
+std::shared_ptr<nau::geometry::IndexData>&
 Mesh::getIndexData() {
 
-	if (m_UnifiedIndex.size() == 0)
+	if (!m_IndexData)
+		m_IndexData = IndexData::Create(m_Name);
+
+	if (!m_IndexData->getIndexData())
 		createUnifiedIndexVector();
 
-	if (!m_IndexData)
-		m_IndexData = IndexData::create(m_Name);
-
-	m_IndexData->setIndexData(&m_UnifiedIndex);
-	return *m_IndexData;
+	return m_IndexData;
 }
 
 
-std::vector<nau::material::MaterialGroup*>&
+std::vector<std::shared_ptr<nau::material::MaterialGroup>>&
 Mesh::getMaterialGroups (void) {
 
 	return (m_vMaterialGroups);
@@ -148,12 +137,8 @@ Mesh::getMaterialNames(std::set<std::string> *nameList) {
 
 	assert(nameList != 0);
 
-	std::vector<nau::material::MaterialGroup*>::iterator iter;
-
-	iter = m_vMaterialGroups.begin();
-
-	for ( ; iter != m_vMaterialGroups.end(); ++iter) {
-		const std::string& s = (*iter)->getMaterialName();
+	for (auto &iter:m_vMaterialGroups) {
+		const std::string& s = iter->getMaterialName();
 		nameList->insert(s);
 	}
 }
@@ -170,8 +155,9 @@ Mesh::prepareTriangleIDs(unsigned int sceneObjectID) {
 		prepareIndexData();
 		createUnifiedIndexVector();
 
-		size_t size = m_VertexData->getDataOf(VertexData::GetAttribIndex(std::string("position"))).size();
-		std::vector<VertexData::Attr>* idsArray = new std::vector<VertexData::Attr>(size);
+		size_t size = m_VertexData->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size();
+		std::shared_ptr<std::vector<VertexData::Attr>> idsArray = 
+			std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(size));
 
 		int primitiveOffset = 3;//getPrimitiveOffset();
 		for (unsigned int i = 0; i < size; i++) {
@@ -186,59 +172,57 @@ Mesh::prepareTriangleIDs(unsigned int sceneObjectID) {
 void 
 Mesh::prepareIndexData() {
 
-	size_t size = m_VertexData->getDataOf(VertexData::GetAttribIndex(std::string("position"))).size();
+	size_t size = m_VertexData->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size();
 	std::vector<int> idsArray = std::vector<int>(size, -1);
 	std::vector<int> outlaws;
 
 	createUnifiedIndexVector();
-
+	std::vector<unsigned int> &unified = *(m_IndexData->getIndexData().get());
 	unsigned int index0, index1, index2, aux0, aux1, aux2;
 	for (unsigned int i = 0 ; i < getNumberOfVertices()/3; i++) {
 	
-		index0 = m_UnifiedIndex[ i * 3 ];
-		index1 = m_UnifiedIndex[ i * 3 + 1 ];
-		index2 = m_UnifiedIndex[ i * 3 + 2 ];
+		index0 = unified[ i * 3 ];
+		index1 = unified[ i * 3 + 1 ];
+		index2 = unified[ i * 3 + 2 ];
 
 		if (idsArray[index2] == -1)
 			idsArray[index2] = i;
 		else if (idsArray[index1] == -1) {
 			idsArray[index1] = i;
-			aux0 = m_UnifiedIndex[ i * 3 ];
-			aux1 = m_UnifiedIndex[ i * 3 + 1];
-			aux2 = m_UnifiedIndex[ i * 3 +2 ];
-			m_UnifiedIndex[ i * 3 ]    = aux2;
-			m_UnifiedIndex[ i * 3 + 1] = aux0;
-			m_UnifiedIndex[ i * 3 + 2] = aux1;
+			aux0 = unified[ i * 3 ];
+			aux1 = unified[ i * 3 + 1];
+			aux2 = unified[ i * 3 +2 ];
+			unified[ i * 3 ]    = aux2;
+			unified[ i * 3 + 1] = aux0;
+			unified[ i * 3 + 2] = aux1;
 		}
 		else if (idsArray[index0] == -1) {
 			idsArray[index0] = i;
-			aux0 = m_UnifiedIndex[ i * 3 ];
-			aux1 = m_UnifiedIndex[ i * 3 + 1];
-			aux2 = m_UnifiedIndex[ i * 3 +2 ];
-			m_UnifiedIndex[ i * 3 ]    = aux1;
-			m_UnifiedIndex[ i * 3 + 1] = aux2;
-			m_UnifiedIndex[ i * 3 + 2] = aux0;
+			aux0 = unified[ i * 3 ];
+			aux1 = unified[ i * 3 + 1];
+			aux2 = unified[ i * 3 +2 ];
+			unified[ i * 3 ]    = aux1;
+			unified[ i * 3 + 1] = aux2;
+			unified[ i * 3 + 2] = aux0;
 		}
 		else {
 			m_VertexData->appendVertex(index2);
-			m_UnifiedIndex[i * 3 + 2] = (unsigned int)size;
+			unified[i * 3 + 2] = (unsigned int)size;
 			size++;
 		}
 	}
 
 	// Copy back from UnifiedIndex to MaterialGroups.index
-	std::vector<nau::material::MaterialGroup*>::iterator iter;
-
-	iter = m_vMaterialGroups.begin();
 	size_t base = 0;
 	std::vector<unsigned int>::iterator indexIter;
-	indexIter = m_UnifiedIndex.begin();
-	for ( ; iter != m_vMaterialGroups.end(); iter ++) {
+	indexIter = m_IndexData->getIndexData()->begin();
+	for (auto &iter:m_vMaterialGroups) {
 
-		size_t size = (*iter)->getIndexData().getIndexData().size();
-		std::vector<unsigned int>* matGroupIndexes = new std::vector<unsigned int>(size);
+		size_t size = iter->getIndexData()->getIndexData()->size();
+		std::shared_ptr<std::vector<unsigned int>> matGroupIndexes = 
+			std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>(size));
 		matGroupIndexes->assign(indexIter+base, indexIter+(base+size));
-		(*iter)->getIndexData().setIndexData(matGroupIndexes);
+		iter->getIndexData()->setIndexData(matGroupIndexes);
 		base += size;
 	}
 }
@@ -247,91 +231,86 @@ Mesh::prepareIndexData() {
 unsigned int 
 Mesh::getNumberOfVertices (void) {
 
-	return (int)(getVertexData().getDataOf (VertexData::GetAttribIndex(std::string("position")))).size();
+	return (int)(getVertexData()->getDataOf (VertexData::GetAttribIndex(std::string("position"))))->size();
 }
 
 
 void 
 Mesh::createUnifiedIndexVector() {
 
-	m_UnifiedIndex.clear();
+	std::shared_ptr<std::vector<unsigned int>> unified = 
+		std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>);
 
-	std::vector<nau::material::MaterialGroup*>::iterator iter;
+	for (auto &iter: m_vMaterialGroups) {
 
-	iter = m_vMaterialGroups.begin();
-	for ( ; iter != m_vMaterialGroups.end(); iter ++) {
-
-		std::vector<unsigned int> matGroupIndexes = (*iter)->getIndexData().getIndexData();
-		m_UnifiedIndex.insert(m_UnifiedIndex.end(), matGroupIndexes.begin(),matGroupIndexes.end());
+		std::shared_ptr<std::vector<unsigned int>> &matGroupIndexes = iter->getIndexData()->getIndexData();
+		unified->insert(unified->end(), matGroupIndexes->begin(),matGroupIndexes->end());
 	}
+	m_IndexData->setIndexData(unified);
 }
 
 
 void 
-Mesh::addMaterialGroup (MaterialGroup* materialGroup, int offset) {
+Mesh::addMaterialGroup (std::shared_ptr<MaterialGroup> &materialGroup, int offset) {
 
 	/*
 	- search material in vector
 	- if it doesn't exist push back
 	- if exists merge them
 	*/
-	std::vector<MaterialGroup*>::iterator matGroupIter;
+	bool found = false;
 
-	matGroupIter = m_vMaterialGroups.begin();
-
-	for ( ; matGroupIter != m_vMaterialGroups.end(); matGroupIter++ ) {
-		MaterialGroup* aMaterialGroup = (*matGroupIter);
+	for (auto &aMaterialGroup :m_vMaterialGroups ) {
 
 		if (aMaterialGroup->getMaterialName() == materialGroup->getMaterialName()){
-			IndexData &indexVertexData = aMaterialGroup->getIndexData();
+			std::shared_ptr<nau::geometry::IndexData> &indexVertexData = aMaterialGroup->getIndexData();
 
-			indexVertexData.add (materialGroup->getIndexData());
+			indexVertexData->add (materialGroup->getIndexData());
+			found = true;
 			break;
 		}
 	}
-	if (m_vMaterialGroups.end() == matGroupIter) {
-		MaterialGroup *newMat = MaterialGroup::Create(this, materialGroup->getMaterialName());
+	if (!found) {
+		std::shared_ptr<MaterialGroup> newMat = MaterialGroup::Create(this, materialGroup->getMaterialName());
 
-		//newMat->setMaterialName (materialGroup->getMaterialName());
-		//newMat->setParent (this);	
-		newMat->getIndexData().add (materialGroup->getIndexData());
+		newMat->getIndexData()->add (materialGroup->getIndexData());
 		m_vMaterialGroups.push_back (newMat);		
 	}
 }
 
 
 void 
-Mesh::addMaterialGroup (MaterialGroup* materialGroup, IRenderable *aRenderable) {
+Mesh::addMaterialGroup (std::shared_ptr<MaterialGroup> &materialGroup, std::shared_ptr<nau::render::IRenderable> &aRenderable) {
 
 	/* In this case it is necessary to copy the vertices from the 
 	 * IRenderable into the local buffer and reindex the materialgroup
 	 */
-	VertexData &renderableVertexData = aRenderable->getVertexData();
+	std::shared_ptr<VertexData> &renderableVertexData = aRenderable->getVertexData();
 
-	VertexData *newData = VertexData::create("dummy"); 
+	std::shared_ptr<VertexData> newData = VertexData::Create("dummy");
 
-	std::vector<VertexData::Attr> *list[VertexData::MaxAttribs], poolList[VertexData::MaxAttribs];
+	std::shared_ptr<std::vector<VertexData::Attr>> list[VertexData::MaxAttribs], poolList[VertexData::MaxAttribs];
 
 	for (int i = 0; i < VertexData::MaxAttribs; i++) {
-		list[i] = new  std::vector<VertexData::Attr>;
+		list[i] = std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>);
 	}
 	std::map<unsigned int, unsigned int> newIndicesMap;
 
-	std::vector<unsigned int>& indices	= materialGroup->getIndexData().getIndexData();
+	std::shared_ptr<std::vector<unsigned int>>& indices	= materialGroup->getIndexData()->getIndexData();
 	std::vector<unsigned int>::iterator indexesIter;
 	
-	indexesIter = indices.begin();
+	indexesIter = indices->begin();
 
 	for (int i = 0 ; i < VertexData::MaxAttribs; i++)
-		poolList[i] = renderableVertexData.getDataOf(i);
+		poolList[i] = renderableVertexData->getDataOf(i);
 
-	for ( ; indexesIter != indices.end(); indexesIter++) {
+	for ( ; indexesIter != indices->end(); indexesIter++) {
 
 		if (0 == newIndicesMap.count ((*indexesIter))) {
 
 			for (int i = 0; i < VertexData::MaxAttribs; i++) {
-				if (poolList[i].size()) 
-					list[i]->push_back(poolList[i].at((*indexesIter)));
+				if (poolList[i].get() && poolList[i]->size()) 
+					list[i]->push_back(poolList[i]->at((*indexesIter)));
 			}
 
 
@@ -344,34 +323,30 @@ Mesh::addMaterialGroup (MaterialGroup* materialGroup, IRenderable *aRenderable) 
 	for ( int i = 0; i < VertexData::MaxAttribs; i++) 
 		newData->setAttributeDataFor(i,list[i]);
 
-	int offset = getVertexData().add (*newData);
-	delete newData;
+	int offset = getVertexData()->add (newData);
 	
-	materialGroup->getIndexData().offsetIndices (offset);
+	materialGroup->getIndexData()->offsetIndices (offset);
 	addMaterialGroup (materialGroup);			
 }
 
 
 void 
-Mesh::merge (nau::render::IRenderable *aRenderable) {
+Mesh::merge (std::shared_ptr<IRenderable> &aRenderable) {
 
-	VertexData &vVertexData = aRenderable->getVertexData();
+	std::shared_ptr<VertexData> &vVertexData = aRenderable->getVertexData();
 
-	int ofs = getVertexData().add (vVertexData);
+	int ofs = getVertexData()->add (vVertexData);
 
-	std::vector<MaterialGroup*> &materialGroups = aRenderable->getMaterialGroups();
-	std::vector<MaterialGroup*>::iterator materialIter;
+	std::vector<std::shared_ptr<nau::material::MaterialGroup>> &materialGroups = aRenderable->getMaterialGroups();
 
-	materialIter = materialGroups.begin();
 
-	for ( ; materialIter != materialGroups.end(); materialIter++) {
-		MaterialGroup *aMaterialGroup = (*materialIter);
-		IndexData &indexData = aMaterialGroup->getIndexData();
-		indexData.offsetIndices (ofs);
+	for (auto &aMaterialGroup : materialGroups) {
+
+		std::shared_ptr<IndexData> &indexData = aMaterialGroup->getIndexData();
+		indexData->offsetIndices (ofs);
 
 		addMaterialGroup (aMaterialGroup);
 	}
-//	delete aRenderable;
 }
 
 

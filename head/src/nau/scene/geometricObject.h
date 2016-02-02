@@ -22,13 +22,15 @@ namespace nau
 			static unsigned int PrimitiveCounter;
 
 			unsigned int m_PrimitiveID;
-			void setRenderable(nau::render::IRenderable *renderable);
+			void setRenderable(std::shared_ptr<IRenderable> &renderable);
 			void setMaterial(const std::string &name);
 
 			std::string getType (void);
 
 		protected:
 			GeometricObject();
+			void eventReceived(const std::string & sender, const std::string & eventType, 
+				const std::shared_ptr<IEventData>& evt);
 		};
 	};
 };

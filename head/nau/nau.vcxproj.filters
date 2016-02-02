@@ -59,6 +59,9 @@
     <Filter Include="Source Files\util">
       <UniqueIdentifier>{becfe7e4-fd9d-41ae-88a4-5d2810dffd16}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\interface">
+      <UniqueIdentifier>{171d6acd-f3bb-41b2-884f-e119203bcdaf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\nau\clogger.cpp">
@@ -83,9 +86,6 @@
       <Filter>Source Files\geometry</Filter>
     </ClCompile>
     <ClCompile Include="..\src\nau\geometry\mesh.cpp">
-      <Filter>Source Files\geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\nau\geometry\primitive.cpp">
       <Filter>Source Files\geometry</Filter>
     </ClCompile>
     <ClCompile Include="..\src\nau\geometry\quad.cpp">
@@ -300,9 +300,6 @@
     </ClCompile>
     <ClCompile Include="..\src\nau\loader\projectLoaderDebugLinker.cpp">
       <Filter>Source Files\loader</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\nau\material\colorMaterial.cpp">
-      <Filter>Source Files\material</Filter>
     </ClCompile>
     <ClCompile Include="..\src\nau\material\iMaterialBuffer.cpp">
       <Filter>Source Files\material</Filter>
@@ -532,6 +529,15 @@
     <ClCompile Include="..\src\nau\render\iRenderTarget.cpp">
       <Filter>Source Files\render</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\nau\material\colorMaterial.cpp">
+      <Filter>Source Files\material</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\nau\geometry\terrain.cpp">
+      <Filter>Source Files\geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\nau\interface\interface.cpp">
+      <Filter>Source Files\interface</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\nau\clogger.h">
@@ -658,12 +664,6 @@
       <Filter>Source Files\event</Filter>
     </ClInclude>
     <ClInclude Include="..\src\nau\event\iEventData.h">
-      <Filter>Source Files\event</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\nau\event\ilistener.h">
-      <Filter>Source Files\event</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\nau\event\interpolator.h">
       <Filter>Source Files\event</Filter>
     </ClInclude>
     <ClInclude Include="..\src\nau\event\interpolatorFactory.h">
@@ -1061,6 +1061,18 @@
     </ClInclude>
     <ClInclude Include="..\src\nau\math\data.h">
       <Filter>Source Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\nau\event\iInterpolator.h">
+      <Filter>Source Files\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\nau\event\iListener.h">
+      <Filter>Source Files\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\nau\geometry\terrain.h">
+      <Filter>Source Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\nau\interface\interface.h">
+      <Filter>Source Files\interface</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

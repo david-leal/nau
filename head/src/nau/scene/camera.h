@@ -11,6 +11,7 @@
 #include "nau/scene/sceneObject.h"
 #include "nau/render/viewport.h"
 
+#include <memory>
 #include <string>
 
 using namespace nau::math;
@@ -23,7 +24,12 @@ namespace nau
 
 		class Camera : public SceneObject
 		{
+			friend class nau::render::RenderManager;
 		public:
+
+			//std::shared_ptr<Camera> shared() {
+			//	return std::shared_from_this();
+			//}
 
 			typedef enum {
 				ORTHO,
@@ -59,7 +65,6 @@ namespace nau
 
 			static AttribSet Attribs;
 
-			Camera (const std::string &name);
 			virtual ~Camera (void);
 
 
@@ -67,53 +72,52 @@ namespace nau
 			void setPropf4(Float4Property prop, float r, float g, float b, float a);
 			void setPropf(FloatProperty prop, float value);
 			void setPrope(EnumProperty prop, int value);
-			// Note: no validation is performed!
-			//void setProp(int prop, Enums::DataType type, void *value);
 
-			//const mat4 &getPropm4(Mat4Property prop);
-			void *getProp(int prop, Enums::DataType type);
+			//void *getProp(int prop, Enums::DataType type);
+
 
 			void setOrtho (float left, float right, float bottom, float top, float near, float far);
 			void setPerspective (float fov, float near, float far);
 
-			void eventReceived(const std::string &sender, const std::string &eventType, nau::event_::IEventData *evt);
+			void eventReceived(const std::string &sender, const std::string &eventType, 
+				const std::shared_ptr<IEventData> &evt);
 
 			void setCamera (vec3 position, vec3 view, vec3 up);
 
 			// Viewport
-			nau::render::Viewport* getViewport (void);
-			void setViewport (nau::render::Viewport* aViewport);
+			std::shared_ptr<Viewport> &getViewport (void);
+			void setViewport (std::shared_ptr<Viewport> aViewport);
 
 			// Adjusts the frustum of the current Camera to include
 			// the frustum of the target camera
 			// usefull for shadow mapping for instance
-			void adjustMatrix (nau::scene::Camera *targetCamera);
+			void adjustMatrix (std::shared_ptr<Camera> &targetCamera);
 			// This version considers only a fraction of the target camera
 			// the params near and far relate to the targets camera frustum
-			void adjustMatrixPlus (float cNear, float cFar, nau::scene::Camera *targetCamera);
+			void adjustMatrixPlus (float cNear, float cFar, std::shared_ptr<Camera> &targetCamera);
 
 			// Bounding Volume 	
 			virtual nau::geometry::IBoundingVolume* getBoundingVolume();
 
 			// Renderable is the graphic representation of the camera
 			// usefull for debug purposes
-			nau::render::IRenderable& getRenderable();
+			std::shared_ptr<IRenderable> &getRenderable();
 
 			// used for Physics
 			bool isDynamic();
 			void setDynamic(bool value);
 			void setPositionOffset (float value);
 
+		private:
+			Camera(const std::string &name);
+			static std::shared_ptr<Camera> m_Temp;
 		protected:
 
+			static std::shared_ptr<Camera> Create(const std::string &name);
 			static bool Init();
 			static bool Inited;
 
-			//std::map<int,mat4> m_Mat4Props;
-
-			nau::event_::EventVec3 m_Event;
-			nau::render::Viewport *m_pViewport;
-			//void setPropm4(Mat4Property prop, mat4 &mat);
+			std::shared_ptr<Viewport> m_pViewport;
 
 			vec3 result;
 			// LookAt settings

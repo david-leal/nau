@@ -15,23 +15,23 @@ namespace nau
 		{
 		public:
 
-			static MaterialGroup *Create(nau::render::IRenderable *parent, std::string materialName);
+			static std::shared_ptr<MaterialGroup> Create(IRenderable *parent, std::string materialName);
 
 			const std::string& getMaterialName ();
 			void setMaterialName (std::string name);
 		   
 			unsigned int getNumberOfPrimitives(void);
 
-			nau::geometry::IndexData& getIndexData (void);
+			std::shared_ptr<nau::geometry::IndexData>& getIndexData (void);
 			size_t getIndexOffset(void);
 			size_t getIndexSize(void);
 
-			void setParent (nau::render::IRenderable* parent);
+			void setParent (std::shared_ptr<nau::render::IRenderable> &parent);
 			nau::render::IRenderable& getParent ();
 
 			void updateIndexDataName();
 
-			void setIndexList(std::vector<unsigned int>* indices);
+			void setIndexList(std::shared_ptr<std::vector<unsigned int>> &indices);
 
 			std::string &getName();
 
@@ -44,13 +44,13 @@ namespace nau
 			~MaterialGroup();
 
 		protected:
-			nau::render::IRenderable* m_Parent;
+			IRenderable *m_Parent;
 			std::string m_MaterialName;
-			nau::geometry::IndexData *m_IndexData;
+			std::shared_ptr<nau::geometry::IndexData> m_IndexData;
 			std::string m_Name;
 
 			MaterialGroup();
-			MaterialGroup(nau::render::IRenderable *parent, std::string materialName);
+			MaterialGroup(IRenderable *parent, std::string materialName);
 		};
 
 	};

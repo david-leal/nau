@@ -12,7 +12,7 @@
 #include "nau/attributeValues.h"
 
 #include "nau/event/eventManager.h"
-#include "nau/event/ilistener.h"
+#include "nau/event/iListener.h"
 #include "nau/math/vec3.h"
 #include "nau/math/vec4.h"
 #include "nau/render/pipeline.h"
@@ -70,7 +70,7 @@ namespace nau {
 		// if in doubt call validate first
 
 		// Fully validate - context must refer to an existing object
-		virtual bool validateAttribute(std::string type, std::string context, std::string component) = 0;
+		//virtual bool validateAttribute(std::string type, std::string context, std::string component) = 0;
 		// Only validates the existence of the component in a particular type/context of object
 		virtual bool validateShaderAttribute(std::string type, std::string context, std::string component) = 0;
 		virtual bool setAttribute(std::string type, std::string context,
@@ -78,14 +78,14 @@ namespace nau {
 				 Data *values) = 0;
 		virtual void *getAttribute(std::string type, std::string context,
 			std::string component, int number) = 0;
-		virtual AttributeValues *getObjectAttributes(std::string type, std::string context, int number=0) = 0;
-		virtual AttributeValues *getCurrentObjectAttributes(std::string context, int number = 0) = 0;
+		virtual AttributeValues *getObjectAttributes(const std::string &type, const std::string &context, int number=0) = 0;
+		virtual AttributeValues *getCurrentObjectAttributes(const std::string &context, int number = 0) = 0;
 
 		virtual void registerAttributes(std::string s, AttribSet *attrib) = 0;
-		virtual bool validateUserAttribContext(std::string s) = 0;
+		virtual bool validateUserAttribType(std::string s) = 0;
 		virtual bool validateUserAttribName(std::string context, std::string name) = 0;
 		virtual AttribSet *getAttribs(std::string context) = 0;
-		virtual std::vector<std::string> &getContextList() = 0;
+		virtual void getObjTypeList(std::vector<std::string> *) = 0;
 
 		virtual nau::scene::Camera *getActiveCamera() = 0;
 
@@ -93,7 +93,7 @@ namespace nau {
 		virtual unsigned int getWindowWidth() = 0;
 
 		// Viewports
-		virtual nau::render::Viewport* getDefaultViewport () = 0;
+		virtual std::shared_ptr<Viewport> getDefaultViewport () = 0;
 		virtual void setWindowSize(unsigned int width, unsigned int height) = 0;
 
 
@@ -108,7 +108,6 @@ namespace nau {
 		virtual void setProjectName(std::string name) = 0;
 		virtual void loadAsset(std::string aFilename, std::string sceneName, std::string params = "") throw (std::string) = 0;
 
-		virtual void resetFrameCount() = 0;
 		virtual bool getTraceStatus() = 0;
 		virtual bool getRenderFlag(RenderFlags aFlag) = 0;
 

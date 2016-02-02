@@ -3,7 +3,7 @@
 
 #include "nau/attribute.h"
 #include "nau/attributeValues.h"
-#include "nau/event/ilistener.h"
+#include "nau/event/iListener.h"
 #include "nau/geometry/frustum.h"
 #include "nau/scene/camera.h"
 #include "nau/scene/light.h"
@@ -42,6 +42,12 @@ namespace nau
 			static AttribSet Attribs;
 
 		protected:
+
+			IScene(void) : m_Compiled(false), m_Visible(true) {
+				registerAndInitArrays(Attribs);
+				m_EmptySOptr = NULL;
+			};
+
 			std::string m_Name;
 			bool m_Compiled;
 			//ITransform *m_Transform;
@@ -49,6 +55,9 @@ namespace nau
 			bool m_Visible;
 			std::set<std::string> m_MaterialNames;
 			std::string m_Type;
+
+			std::shared_ptr<SceneObject> m_EmptySOptr;
+
 
 			void updateTransform();
 
@@ -59,29 +68,29 @@ namespace nau
 
 			virtual void setPropf4(Float4Property prop, vec4& aVec);
 			virtual void setPrope(EnumProperty prop, int v);
-			//void *getProp(unsigned int prop, Enums::DataType type);
 			vec3 &getPropf3(Float3Property prop);
 
 			virtual void setName(std::string name) {
 				m_Name = name; 
 			};
+
 			virtual std::string &getName() {
 				return m_Name;
 			};
 		  
-			virtual void add (SceneObject *aSceneObject) = 0;
+			virtual void add (std::shared_ptr<SceneObject> &aSceneObject) = 0;
 
 			virtual void show (void) {m_Visible = true; }			
 			virtual void hide (void) {m_Visible = false; }
 			virtual bool isVisible (void) {return m_Visible; }
 
-			virtual std::vector <SceneObject*>& findVisibleSceneObjects 
-																(nau::geometry::Frustum &aFrustum, 
-																Camera &aCamera, 
-																bool conservative = false) = 0;
-			virtual std::vector<SceneObject*>& getAllObjects (void) = 0;
-			virtual SceneObject* getSceneObject (std::string name) = 0; 
-			virtual SceneObject* getSceneObject (int index) = 0;
+			virtual void findVisibleSceneObjects(std::vector<std::shared_ptr<SceneObject>> *v,
+														nau::geometry::Frustum &aFrustum,
+														Camera &aCamera, 
+														bool conservative = false) = 0;
+			virtual void getAllObjects(std::vector<std::shared_ptr<SceneObject>> *) = 0;
+			virtual std::shared_ptr<SceneObject> &getSceneObject (std::string name) = 0;
+			virtual std::shared_ptr<SceneObject> &getSceneObject (int index) = 0;
 
 			virtual const std::set<std::string> &getMaterialNames() = 0;
 
@@ -101,9 +110,6 @@ namespace nau
 			virtual const std::string &getType (void);
 
 			virtual ~IScene(void) {};
-			IScene(void) : m_Compiled(false), m_Visible(true) {
-				registerAndInitArrays(Attribs);
-			};
 
 		};
 	};

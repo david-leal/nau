@@ -21,12 +21,15 @@ namespace nau
 	{
 
 		class PassOptixPrime : public Pass {
+			friend class PassFactory;
 
 		public:
-			PassOptixPrime(const std::string &passName);
 			virtual ~PassOptixPrime();
 
-			static Pass *Create(const std::string &name);
+			INT_PROP(RAY_COUNT, 201);
+
+
+			static std::shared_ptr<Pass> Create(const std::string &name);
 
 			virtual void prepare (void);
 			virtual void restore (void);
@@ -38,11 +41,15 @@ namespace nau
 			bool setQueryType(std::string);
 			void addRayBuffer(IBuffer *b);
 			void addHitBuffer(IBuffer *b);
+			void setBufferForRayCount(IBuffer *b, unsigned int offset);
 		
 		protected:
+			PassOptixPrime(const std::string &passName);
 			static bool Init();
 			static bool Inited;
 
+			IBuffer *m_RayCountBuffer;
+			unsigned int m_RayCountBufferOffset;
 			bool m_Init = false;
 			IBuffer *m_Rays = NULL, *m_Hits = NULL;
 			RTPcontext m_Context;

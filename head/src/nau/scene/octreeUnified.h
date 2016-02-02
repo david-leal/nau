@@ -11,22 +11,24 @@ namespace nau {
 
 		class OctreeUnified : public IScenePartitioned
 		{
+			friend class SceneFactory;
+
 		private:
-			std::vector<SceneObject*> m_vReturnVector;
-			SceneObject *m_SceneObject;
+			std::shared_ptr<SceneObject> m_SceneObject;
 
 			nau::geometry::BoundingBox m_BoundingBox;
 
 		protected:
+			OctreeUnified(void);
 			void updateSceneObjectTransforms();
 
 		public:
-			OctreeUnified(void);
 			~OctreeUnified(void);
 
 			void clear();
 
-			virtual void eventReceived(const std::string &sender, const std::string &eventType, nau::event_::IEventData *evt);
+			virtual void eventReceived(const std::string &sender, const std::string &eventType, 
+				const std::shared_ptr<IEventData> &evt);
 
 			virtual void build(void);
 			virtual void compile(void);
@@ -35,16 +37,15 @@ namespace nau {
 
 			virtual void unitize();
 
-			virtual void add(nau::scene::SceneObject *aSceneObject);
+			virtual void add(std::shared_ptr<SceneObject> &aSceneObject);
 
-			virtual std::vector <SceneObject*>& findVisibleSceneObjects
-				(nau::geometry::Frustum &aFrustum,
+			virtual void findVisibleSceneObjects(std::vector<std::shared_ptr<SceneObject>> *v,
+				nau::geometry::Frustum &aFrustum,
 				Camera &aCamera,
-				bool conservative = false);
-
-			virtual std::vector<SceneObject*>& getAllObjects();
-			virtual nau::scene::SceneObject* getSceneObject(std::string name);
-			virtual nau::scene::SceneObject* getSceneObject(int index);
+				bool conservative = false) ;
+			virtual void getAllObjects(std::vector<std::shared_ptr<SceneObject>> *);
+			virtual std::shared_ptr<SceneObject> &getSceneObject(std::string name);
+			virtual std::shared_ptr<SceneObject> &getSceneObject(int index);
 
 			virtual const std::set<std::string> &getMaterialNames();
 

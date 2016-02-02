@@ -17,9 +17,9 @@
 
 
 
-#ifdef GLINTERCEPTDEBUG
-#include "..\..\GLIntercept\Src\MainLib\ConfigDataExport.h"
-#endif
+//#ifdef GLINTERCEPTDEBUG
+//#include "..\..\GLIntercept\Src\MainLib\ConfigDataExport.h"
+//#endif
 
 #include <iostream>
 
@@ -105,34 +105,38 @@ GLCanvas::_setCamera() {
 void 
 GLCanvas::OnPaint (wxPaintEvent &event) {
 
-	PROFILE("Nau");
-	wxPaintDC dc(this);
+	{
+		PROFILE("Nau");
+		wxPaintDC dc(this);
 
 
-	if (!isPaused) {
-		this->Render();
-		if (APISupport->apiSupport(IAPISupport::BUFFER_ATOMICS))
-			DlgAtomics::Instance()->update();
+		if (!isPaused) {
+			this->Render();
+			if (APISupport->apiSupport(IAPISupport::BUFFER_ATOMICS))
+				DlgAtomics::Instance()->update();
+		}
+		//	if(!isPaused){
+		//
+		//		Render();
+		//
+		//		if (step != 0){
+		//			DlgTrace::Instance()->loadLog();
+		//
+		//#ifdef GLINTERCEPTDEBUG
+		//			gliSetIsGLIActive(false);
+		//			if (gliIsLogPerFrame()){
+		//				DlgTrace::Instance()->clear();
+		//			}
+		//
+		//			DlgDbgStep::Instance()->updateDlg();
+		//#endif
+		//			step = 0;
+		//		}
+		//	}
+		event.Skip();
 	}
-//	if(!isPaused){
-//
-//		Render();
-//
-//		if (step != 0){
-//			DlgTrace::Instance()->loadLog();
-//
-//#ifdef GLINTERCEPTDEBUG
-//			gliSetIsGLIActive(false);
-//			if (gliIsLogPerFrame()){
-//				DlgTrace::Instance()->clear();
-//			}
-//
-//			DlgDbgStep::Instance()->updateDlg();
-//#endif
-//			step = 0;
-//		}
-//	}
-	event.Skip ();
+	if (m_pEngine && m_pEngine->getProfileResetRequest())
+		Profile::Reset();
 }
 
 
@@ -140,14 +144,19 @@ void
 GLCanvas::OnIdle(wxIdleEvent& event) {
 
 	//Refresh();
-	PROFILE("Nau");
+	{
+		PROFILE("Nau");
 
-	if (!isPaused) {
-		this->Render();
-		if (APISupport->apiSupport(IAPISupport::BUFFER_ATOMICS))
-			DlgAtomics::Instance()->update();
+		if (!isPaused) {
+			this->Render();
+			if (APISupport->apiSupport(IAPISupport::BUFFER_ATOMICS))
+				DlgAtomics::Instance()->update();
+		}
+		event.RequestMore();
 	}
-	event.RequestMore();
+	// moved to nau
+	if (m_pEngine->getProfileResetRequest())
+		Profile::Reset();
 }
 
 
@@ -160,9 +169,12 @@ GLCanvas::OnSize (wxSizeEvent &event) {
 	GetClientSize (&width, &height);
 
 	if (0 != m_pEngine) {
-		EventVec3 *e3 = new EventVec3(vec3(width, height, 0));
+		std::shared_ptr<nau::event_::IEventData> e3 = nau::event_::EventFactory::Create("Vec3");
+		vec3 *v = new vec3(width, height, 0);
+		e3->setData(v);
+		delete v;
 		EVENTMANAGER->notifyEvent("WINDOW_SIZE_CHANGED","Canvas","",e3);
-		delete e3;
+
 	}
 }
 
@@ -197,8 +209,8 @@ GLCanvas::Render () {
 	}
 
 	{
-	PROFILE ("Zi swap");
-	SwapBuffers();
+		PROFILE ("Zi swap");
+		SwapBuffers();
 	}
 	Profile::CollectQueryResults();
 
@@ -231,16 +243,28 @@ GLCanvas::Render () {
 void 
 GLCanvas::OnKeyUp(wxKeyEvent & event) {
 
-	if (m_pCamera && true == m_pCamera->isDynamic()) {
-		vec3 v3;
-		v3.set(0.0f, 0.0f, 0.0f);
-		m_pEngine->getWorld().setVelocity ("testCamera", v3);
-	}
+	//if (m_pCamera && true == m_pCamera->isDynamic()) {
+	//	vec3 v3;
+	//	v3.set(0.0f, 0.0f, 0.0f);
+	//	m_pEngine->getWorld().setVelocity ("testCamera", v3);
+	//}
 }
 
 
 void 
 GLCanvas::OnKeyDown(wxKeyEvent & event) {
+
+	int mod = 0;
+	if (true == event.ShiftDown()) 
+		mod |= Nau::KEY_MOD_SHIFT;
+	if (true == event.AltDown())
+		mod |= Nau::KEY_MOD_ALT;
+	if (true == event.ControlDown())
+		mod |= Nau::KEY_MOD_CTRL;
+
+	if (m_pEngine->keyPressed(event.GetKeyCode(), mod))
+		return;
+
 
 	static bool physics = true;
 
@@ -248,6 +272,7 @@ GLCanvas::OnKeyDown(wxKeyEvent & event) {
 	if (0 == m_pCamera) {
 		return;
 	}
+
 
 	vec4 camPosition = m_pCamera->getPropf4(Camera::POSITION);
 	vec4 camUp = m_pCamera->getPropf4(Camera::UP_VEC);
@@ -313,7 +338,7 @@ GLCanvas::OnKeyDown(wxKeyEvent & event) {
 
 	//}
 
-	//if ('O' == event.GetKeyCode()) {
+	//if ('0' == event.GetKeyCode()) {
 	//	RENDERER->saveScreenShot();
 	//}
 
@@ -337,175 +362,141 @@ GLCanvas::OnKeyDown(wxKeyEvent & event) {
 	}
 
 	if ('S' == event.GetKeyCode()) {
-		if (true == m_pCamera->isDynamic()) {
-			vec4 vel (camView);
+		//if (true == m_pCamera->isDynamic()) {
+		//	vec4 vel (camView);
 
-			vel.y = 0.0f;
-			vel.normalize();
-			vel *= -direction;
-			vec3 v3;
-			v3.set(vel.x,vel.y,vel.z);
-			m_pEngine->getWorld().setVelocity ("testCamera", v3);
-		} 
-		else {
+		//	vel.y = 0.0f;
+		//	vel.normalize();
+		//	vel *= -direction;
+		//	vec3 v3;
+		//	v3.set(vel.x,vel.y,vel.z);
+		//	m_pEngine->getWorld().setVelocity ("testCamera", v3);
+		//} 
+		//else
+		{
 			nau::event_::CameraMotion c("BACKWARD", direction);
-			nau::event_::IEventData *e= nau::event_::EventFactory::create("Camera Motion");
+			std::shared_ptr<IEventData> e= nau::event_::EventFactory::Create("Camera Motion");
 			e->setData(&c);
 			EVENTMANAGER->notifyEvent("CAMERA_MOTION", "MainCanvas", "", e);
-			delete e;
 		}
 		DlgCameras::Instance()->updateInfo(m_pCamera->getName());
 	}
 
 	if ('W' == event.GetKeyCode()) {
-		if (true == m_pCamera->isDynamic()) {
-			vec4 vel (camView);
-			
-			vel.y = 0.0f;
-			vel.normalize();
-			vel *= direction; 
-			
-			vec3 v3;
-			v3.set(vel.x,vel.y,vel.z);
-			m_pEngine->getWorld().setVelocity ("testCamera", v3);
-		} 
-		else {
+		//if (true == m_pCamera->isDynamic()) {
+		//	vec4 vel (camView);
+		//	
+		//	vel.y = 0.0f;
+		//	vel.normalize();
+		//	vel *= direction; 
+		//	
+		//	vec3 v3;
+		//	v3.set(vel.x,vel.y,vel.z);
+		//	m_pEngine->getWorld().setVelocity ("testCamera", v3);
+		//} 
+		//else 
+		{
 
 			nau::event_::CameraMotion c("FORWARD", direction);
-			nau::event_::IEventData *e= nau::event_::EventFactory::create("Camera Motion");
+			std::shared_ptr<IEventData> e = nau::event_::EventFactory::Create("Camera Motion");
 			e->setData(&c);
 			EVENTMANAGER->notifyEvent("CAMERA_MOTION", "MainCanvas", "", e);
-			delete e;
-
 		}
 		DlgCameras::Instance()->updateInfo(m_pCamera->getName());
 	}
 
 	if ('A' == event.GetKeyCode()){
-		if (true == m_pCamera->isDynamic()) {
-			vec4 vel (camView.cross (camUp));
+		//if (true == m_pCamera->isDynamic()) {
+		//	vec4 vel (camView.cross (camUp));
 
-			vel *= -direction;
-			vel.y = 0.0f;
-			vec3 v3;
-			v3.set(vel.x,vel.y,vel.z);
-			m_pEngine->getWorld().setVelocity ("testCamera", v3);
+		//	vel *= -direction;
+		//	vel.y = 0.0f;
+		//	vec3 v3;
+		//	v3.set(vel.x,vel.y,vel.z);
+		//	m_pEngine->getWorld().setVelocity ("testCamera", v3);
 
-		} 
-		else {
+		//} 
+		//else 
+		{
 
 			nau::event_::CameraMotion c("LEFT", direction);
-			nau::event_::IEventData *e= nau::event_::EventFactory::create("Camera Motion");
+			std::shared_ptr<IEventData> e = nau::event_::EventFactory::Create("Camera Motion");
 			e->setData(&c);
 			EVENTMANAGER->notifyEvent("CAMERA_MOTION", "MainCanvas", "", e);
-			delete e;
 		}
 		DlgCameras::Instance()->updateInfo(m_pCamera->getName());
 
 	}
 	if ('D' == event.GetKeyCode()){
-		if (true == m_pCamera->isDynamic()) {
-			vec4 vel (camView.cross (camUp));
+		//if (true == m_pCamera->isDynamic()) {
+		//	vec4 vel (camView.cross (camUp));
 
-			vel *= direction;
-			vel.y = 0.0f;
-			vec3 v3;
-			v3.set(vel.x,vel.y,vel.z);
-			m_pEngine->getWorld().setVelocity ("testCamera", v3);
-		} 
-		else {
+		//	vel *= direction;
+		//	vel.y = 0.0f;
+		//	vec3 v3;
+		//	v3.set(vel.x,vel.y,vel.z);
+		//	m_pEngine->getWorld().setVelocity ("testCamera", v3);
+		//} 
+		//else 
+		{
 			nau::event_::CameraMotion c("RIGHT", direction);
-			nau::event_::IEventData *e= nau::event_::EventFactory::create("Camera Motion");
+			std::shared_ptr<IEventData> e = nau::event_::EventFactory::Create("Camera Motion");
 			e->setData(&c);
 			EVENTMANAGER->notifyEvent("CAMERA_MOTION", "MainCanvas", "", e);
-			delete e;
 		}
 		DlgCameras::Instance()->updateInfo(m_pCamera->getName());
 	}
 	if ('Q' == event.GetKeyCode()){
-		if (false == m_pCamera->isDynamic()) {
+		//if (false == m_pCamera->isDynamic()) 
+		{
 			nau::event_::CameraMotion c("UP", direction);
-			nau::event_::IEventData *e= nau::event_::EventFactory::create("Camera Motion");
+			std::shared_ptr<IEventData> e = nau::event_::EventFactory::Create("Camera Motion");
 			e->setData(&c);
 			EVENTMANAGER->notifyEvent("CAMERA_MOTION", "MainCanvas", "", e);
-			delete e;
 		}
 		DlgCameras::Instance()->updateInfo(m_pCamera->getName());
 	}
 	if ('Z' == event.GetKeyCode()){
-		if (false == m_pCamera->isDynamic()) {
+		//if (false == m_pCamera->isDynamic()) 
+		{
 			nau::event_::CameraMotion c("DOWN", direction);
-			nau::event_::IEventData *e= nau::event_::EventFactory::create("Camera Motion");
+			std::shared_ptr<IEventData> e = nau::event_::EventFactory::Create("Camera Motion");
 			e->setData(&c);
 			EVENTMANAGER->notifyEvent("CAMERA_MOTION", "MainCanvas", "", e);
-			delete e;
 		}
 		DlgCameras::Instance()->updateInfo(m_pCamera->getName());
 	}
 
-	if (m_pCamera->isDynamic()){
-		EVENTMANAGER->notifyEvent("DYNAMIC_CAMERA", "MainCanvas", "", NULL);
-	}
+	//if (m_pCamera->isDynamic()){
+	//	EVENTMANAGER->notifyEvent("DYNAMIC_CAMERA", "MainCanvas", "", NULL);
+	//}
 
 	if ('N' == event.GetKeyCode()) {
 		RENDERER->setPropb(IRenderer::DEBUG_DRAW_CALL, true);
 	}
 
-/*	if (WXK_SPACE == event.GetKeyCode()) {
-		if (true == m_pCamera->m_IsDynamic) {
-			vec3 vel (camUp);
+	//if ('+' == event.GetKeyCode() || WXK_NUMPAD_ADD == event.GetKeyCode()) {
+	//	SceneObject *aObject = RENDERMANAGER->getScene ("MainScene")->getSceneObject ("pPlane1");
 
-			vel *= direction * 3;
-			vel.x = 0.0f;
-			vel.z = 0.0f;
-			
-			m_pEngine->getWorld().setVelocity ("MainCamera", vel);
+	//	aObject->_getTransformPtr()->translate (0.0f, 0.5f, 0.0f);
+	//}
 
-			m_WaterState = changeWaterState (m_WaterState);
+	//if ('-' == event.GetKeyCode() || WXK_NUMPAD_SUBTRACT == event.GetKeyCode()) {
+	//	SceneObject *aObject = RENDERMANAGER->getScene ("MainScene")->getSceneObject ("pPlane1");
 
-			
-		}
-	}
-*/
-/*	if ('N' == event.GetKeyCode()){
-		m_pCamera->setNearPlane (m_pCamera->getNearPlane() + 0.5f);
-	}
+	//	aObject->_getTransformPtr()->translate (0.0f, -0.5f, 0.0f);
+	//}
 
-	if ('M' == event.GetKeyCode()){
-		m_pCamera->setNearPlane (m_pCamera->getNearPlane() - 0.5f);
-	}
-
-
-	if ('F' == event.GetKeyCode()){
-		m_pCamera->setFarPlane (m_pCamera->getFarPlane() + 1.0f);
-	}
-
-	if ('G' == event.GetKeyCode()){
-		m_pCamera->setFarPlane (m_pCamera->getFarPlane() - 1.0f);
-	}
-*/
-	if ('+' == event.GetKeyCode() || WXK_NUMPAD_ADD == event.GetKeyCode()) {
-		SceneObject *aObject = RENDERMANAGER->getScene ("MainScene")->getSceneObject ("pPlane1");
-
-		aObject->_getTransformPtr()->translate (0.0f, 0.5f, 0.0f);
-	}
-
-	if ('-' == event.GetKeyCode() || WXK_NUMPAD_SUBTRACT == event.GetKeyCode()) {
-		SceneObject *aObject = RENDERMANAGER->getScene ("MainScene")->getSceneObject ("pPlane1");
-
-		aObject->_getTransformPtr()->translate (0.0f, -0.5f, 0.0f);
-	}
-
-	nau::scene::Camera *cam = RENDERMANAGER->getCamera ("testCamera");
+	//std::shared_ptr<Camera> &cam = RENDERMANAGER->getCamera ("testCamera");
 
 	if ('L' == event.GetKeyCode()){
 		
 		if (false == physics) {
 			m_pEngine->enablePhysics();
-			cam->setDynamic(true);
+			//cam->setDynamic(true);
 		} else {
 			m_pEngine->disablePhysics();
-			cam->setDynamic(false);
+			//cam->setDynamic(false);
 		}
 		physics = !physics;
 	}
@@ -515,6 +506,9 @@ GLCanvas::OnKeyDown(wxKeyEvent & event) {
 
 void 
 GLCanvas::OnMouseMove (wxMouseEvent& event) {
+
+	if (m_pEngine->mouseMotion(event.GetX(), event.GetY()))
+		return;
 
 	static bool first = true; // Can't be here!
 
@@ -615,13 +609,17 @@ GLCanvas::OnMouseMove (wxMouseEvent& event) {
 void
 GLCanvas::OnMiddleUp(wxMouseEvent &event) {
 
-	m_pEngine->setClickPosition(event.GetX(), event.GetY());
+	if (m_pEngine->mouseButton(Nau::MouseAction::PRESSED, Nau::MouseButton::MIDDLE, event.GetX(), event.GetY()))
+		event.Skip();
 	event.Skip();
 }
 
 
 void
 GLCanvas::OnRightUp(wxMouseEvent &event) {
+
+	if (m_pEngine->mouseButton(Nau::MouseAction::RELEASED, Nau::MouseButton::RIGHT, event.GetX(), event.GetY()))
+		return;
 
 	m_tracking = false;
 	event.Skip();
@@ -631,6 +629,8 @@ GLCanvas::OnRightUp(wxMouseEvent &event) {
 void
 GLCanvas::OnRightDown(wxMouseEvent &event) {
 
+	if (m_pEngine->mouseButton(Nau::MouseAction::PRESSED, Nau::MouseButton::RIGHT, event.GetX(), event.GetY()))
+		return;
 	_setCamera();
 	if (m_pCamera) {
 		m_OldX = event.GetX();
@@ -658,6 +658,9 @@ GLCanvas::OnRightDown(wxMouseEvent &event) {
 void
 GLCanvas::OnLeftDown (wxMouseEvent& event) {
 
+	if (m_pEngine->mouseButton(Nau::MouseAction::PRESSED, Nau::MouseButton::LEFT, event.GetX(), event.GetY()))
+		event.Skip();
+
 	_setCamera();
 	if (m_pCamera) {
 		m_OldX = event.GetX();
@@ -678,6 +681,9 @@ GLCanvas::OnLeftDown (wxMouseEvent& event) {
 void
 GLCanvas::OnLeftUp (wxMouseEvent &event) {
 	
+	if (m_pEngine->mouseButton(Nau::MouseAction::RELEASED, Nau::MouseButton::LEFT, event.GetX(), event.GetY()))
+		event.Skip();
+
 	m_tracking = false;
 
 

@@ -1,5 +1,7 @@
 #include "profile.h"
 
+#include "nau/slogger.h"
+
 #include <ctime>
 
 #include <glbinding/gl/gl.h>
@@ -147,7 +149,7 @@ void Profile::createNewSection(std::string &name, pTime w, bool profileGL) {
 	s.totalTime = 0;
 	s.totalQueryTime = 0;
 	
-	sLevels[sCurrLevel].cursor++;
+	sLevels[sCurrLevel].cursor = (int)sLevels[sCurrLevel].sec.size();
 
 	if (profileGL) {
 		queryPair p;
@@ -159,6 +161,7 @@ void Profile::createNewSection(std::string &name, pTime w, bool profileGL) {
 	GetTicks(&(s.startTime));
 	s.wastedTime = s.startTime - w;
 	sLevels[sCurrLevel].sec.push_back(s);
+	//SLOG("opening %s", s.name.c_str());
 }
 
 
@@ -203,13 +206,14 @@ void Profile::accumulate() {
 
 	s = &(sLevels[sCurrLevel].sec[sLevels[sCurrLevel].cursor]);
 
-	if (s->profileGL) {
+	if (s->profileGL) { 
 		glQueryCounter(s->queriesGL[sBackBuffer][s->queriesGL[sBackBuffer].size()-1].queries[1], GL_TIMESTAMP);
 	}
 	// to measure wasted time when accumulating
 	GetTicks(&t2);
 	s->wastedTime += (t2-t);
 	s->totalTime += (t - s->startTime);
+	//SLOG("closing %s", s->name.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -230,8 +234,15 @@ void Profile::Reset() {
 			}
 		}
 		sLevels[i].sec.clear();
+		sLevels[i].cursor = 0;
 	}
-	sTotalLevels = 0;
+	
+	sTotalLevels = 0; 
+	sBackBuffer = 0;
+	sFrontBuffer = 1;
+	sCurrLevel = -1;
+	sDisp = 0;
+
 }
 
 
@@ -312,7 +323,7 @@ void
 Profile::CollectQueryResults() {
 
 #if NAU_PROFILE == NAU_PROFILE_CPU_AND_GPU
-	int siz;
+	size_t siz;
 	section *sec;
 	int availableEnd = 0;
 	GLuint64 timeStart=0, timeEnd = 0;
@@ -321,7 +332,7 @@ Profile::CollectQueryResults() {
 	for (int l = 0; l < sTotalLevels; ++l) {
 		siz = sLevels[l].sec.size();
 
-		for(int cur = 0; cur < siz; ++cur) {
+		for(unsigned int cur = 0; cur < siz; ++cur) {
 			sec = &(sLevels[l].sec[cur]);
 
 			if (sec->profileGL) {

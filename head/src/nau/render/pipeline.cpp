@@ -9,9 +9,9 @@
 #include "nau/render/passFactory.h"
 #include "nau/render/renderManager.h"
 
-#ifdef GLINTERCEPTDEBUG
-#include "nau/loader/projectLoaderDebugLinker.h"
-#endif 
+//#ifdef GLINTERCEPTDEBUG
+//#include "nau/loader/projectLoaderDebugLinker.h"
+//#endif 
 
 #include <glbinding/gl/gl.h>
 using namespace gl;
@@ -37,9 +37,10 @@ Pipeline::Pipeline (std::string pipelineName) :
 
 Pipeline::~Pipeline() {
 
-	for (auto pass : m_Passes) {
-		delete pass;
-	}
+	//for (auto pass : m_Passes) {
+	//	if (pass->getClassName() != "depthmap2")
+	//	delete pass;
+	//}
 }
 
 
@@ -102,42 +103,12 @@ Pipeline::getNumberOfPasses() {
 }
 
 
-std::vector<std::string> * 
-Pipeline::getPassNames() {
+void
+Pipeline::getPassNames(std::vector<std::string> *names) {
 
-	std::vector<std::string> *names = new std::vector<std::string>; 
-
-	for( std::deque<nau::render::Pass*>::iterator iter = m_Passes.begin(); iter != m_Passes.end(); ++iter ) {
-      names->push_back((*iter)->getName()); 
+	for(auto& p:m_Passes) {
+      names->push_back(p->getName()); 
     }
-	return names;
-}
-
-
-void 
-Pipeline::addPass (Pass* aPass, int PassIndex) {
-
-	// Pass index must be valid
-	assert(PassIndex > -2 && PassIndex < (int)m_Passes.size());
-
-	if (PassIndex < -1) {
-		return;
-	}
-
-	switch (PassIndex) {
-  
-		case -1: 
-			m_Passes.push_back (aPass);
-			break;
-		case 0:
-		    m_Passes.push_front (aPass);
-			break;
-		default:
-			unsigned int pos = static_cast<unsigned int>(PassIndex);
-			if (pos < m_Passes.size()) {
-				m_Passes.insert (m_Passes.begin() + pos, aPass);
-			}
-	}
 }
 
 
@@ -154,21 +125,18 @@ Pipeline::createPass (const std::string &name, const std::string &passType)
 	s << m_Name;
 	s << "#" << name;
 
-	Pass *pass = PASSFACTORY->create (passType, s.str());
+	std::shared_ptr<Pass> &pass = PASSFACTORY->create (passType, s.str());
 	m_Passes.push_back(pass);
 
-	return pass;
+	return pass.get();
 }
 
 
 bool
 Pipeline::hasPass(const std::string &passName)
 {
-	std::deque<Pass*>::iterator passIter;
-	passIter = m_Passes.begin();
-
-	for ( ; passIter != m_Passes.end(); ++passIter) {
-		if ((*passIter)->getName() == passName) {
+	for (auto& p:m_Passes) {
+		if (p->getName() == passName) {
 			return true;
 		}
 	}
@@ -182,12 +150,9 @@ Pipeline::getPass (const std::string &passName)
 	// Pass must exist
 	assert(hasPass(passName));
 
-	std::deque<Pass*>::iterator passIter;
-	passIter = m_Passes.begin();
-
-	for ( ; passIter != m_Passes.end(); passIter++) {
-		if ((*passIter)->getName() == passName) {
-			return (*passIter);
+	for (auto& p : m_Passes) {
+		if (p->getName() == passName) {
+			return (p.get());
 		}
 	}
 	return 0;
@@ -200,7 +165,7 @@ Pipeline::getPass (int n)
 	// n must be with range
 	assert(n < (int)m_Passes.size());
 
-	return m_Passes.at (n);
+	return m_Passes.at (n).get();
 }
 
 
@@ -222,8 +187,9 @@ Pipeline::getPassCounter() {
 
 
 void 
-Pipeline::executePass(Pass *pass) {
+Pipeline::executePass(std::shared_ptr<Pass> &pass) {
 
+	bool run = false;
 	m_CurrentPass = pass;
 	pass->callPreScript();
 	bool keepRunning = false;
@@ -235,29 +201,30 @@ Pipeline::executePass(Pass *pass) {
 		if (NAU->getTraceStatus()) {
 			LOG_trace("#NAU(PASS START %s)", pass->getName().c_str());
 		}
-#ifdef GLINTERCEPTDEBUG
-		addMessageToGLILog(("\n#NAU(PASS,START," + pass->getName() + ")").c_str());
-#endif //GLINTERCEPTDEBUG
+//#ifdef GLINTERCEPTDEBUG
+//		addMessageToGLILog(("\n#NAU(PASS,START," + pass->getName() + ")").c_str());
+//#endif //GLINTERCEPTDEBUG
 
 		if (RENDERER->getPropb(IRenderer::DEBUG_DRAW_CALL))
 			SLOG("Pass: %s", pass->getName().c_str());
+		{
+			PROFILE(pass->getName());
 
-		PROFILE(pass->getName());
-
-		bool run = pass->renderTest();
-		if (run) {
-			pass->prepare();
-			pass->executePreProcessList();
-			pass->doPass();
-			pass->executePostProcessList();
-			pass->restore();
+			run = pass->renderTest();
+			if (run) {
+				pass->prepare();
+				pass->executePreProcessList();
+				pass->doPass();
+				pass->executePostProcessList();
+				pass->restore();
+			}
 		}
 		if (NAU->getTraceStatus()) {
 			LOG_trace("#NAU(PASS END %s)", pass->getName().c_str());
 		}
-#ifdef GLINTERCEPTDEBUG
-		addMessageToGLILog(("\n#NAU(PASS,END," + pass->getName() + ")").c_str());
-#endif //GLINTERCEPTDEBUG
+//#ifdef GLINTERCEPTDEBUG
+//		addMessageToGLILog(("\n#NAU(PASS,END," + pass->getName() + ")").c_str());
+//#endif //GLINTERCEPTDEBUG
 
 		keepRunning = keepRunning && run;
 	} while (keepRunning);
@@ -277,7 +244,7 @@ Pipeline::execute() {
 		PROFILE("Pipeline execute");
 
 		RENDERER->setDefaultState();			
-		for ( auto pass:m_Passes) {
+		for ( auto &pass:m_Passes) {
 
 			int mode = pass->getPrope(Pass::RUN_MODE);
 			// most common case: run pass in all frames
@@ -315,7 +282,7 @@ Pipeline::executeNextPass() {
 		callScript(m_PreScriptName);
 
 	try {
-		Pass *p = m_Passes[m_NextPass];
+		std::shared_ptr<Pass> &p = m_Passes[m_NextPass];
 		executePass(p);
 
 		m_NextPass++;
@@ -336,7 +303,7 @@ Pipeline::getCurrentPass() {
 	//if (m_Passes.size() > m_NextPass){
 	//	m_CurrentPass = m_Passes[m_NextPass];
 	//}
-	return m_CurrentPass;
+	return m_CurrentPass.get();
 }
 
 

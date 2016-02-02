@@ -306,7 +306,7 @@ GLRenderer::removeLights() {
 // -----------------------------------------------------------------
 
 void
-GLRenderer::setViewport(nau::render::Viewport *aViewport) {
+GLRenderer::setViewport(std::shared_ptr<Viewport> aViewport) {
 
 	m_Viewport = aViewport;
 	const vec2& vpOrigin = aViewport->getPropf2(Viewport::ABSOLUT_ORIGIN);
@@ -321,7 +321,7 @@ GLRenderer::setViewport(nau::render::Viewport *aViewport) {
 }
 
 
-Viewport *
+std::shared_ptr<Viewport>
 GLRenderer::getViewport() {
 
 	return m_Viewport;
@@ -329,7 +329,7 @@ GLRenderer::getViewport() {
 
 
 void
-GLRenderer::setCamera(nau::scene::Camera *aCamera) {
+GLRenderer::setCamera(std::shared_ptr<Camera> &aCamera) {
 
 	m_Camera = aCamera;
 	setViewport(aCamera->getViewport());
@@ -340,7 +340,7 @@ GLRenderer::setCamera(nau::scene::Camera *aCamera) {
 }
 
 
-Camera *
+std::shared_ptr<Camera> &
 GLRenderer::getCamera() {
 
 	return m_Camera;
@@ -390,25 +390,25 @@ GLRenderer::getCounter(Counters c) {
 unsigned int
 GLRenderer::getNumberOfPrimitives(MaterialGroup *m) {
 
-	unsigned int indices = (unsigned int)m->getIndexData().getIndexSize();
+	unsigned int indices = (unsigned int)m->getIndexData()->getIndexSize();
 	unsigned int primitive = (unsigned int)m->getParent().getRealDrawingPrimitive();
 
 	switch (primitive) {
 
-	case GL_TRIANGLES_ADJACENCY:
+	case (unsigned int)GL_TRIANGLES_ADJACENCY:
 		return (indices / 6);
-	case GL_TRIANGLES:
+	case (unsigned int)GL_TRIANGLES:
 		return (indices / 3);
-	case GL_TRIANGLE_STRIP:
-	case GL_TRIANGLE_FAN:
+	case (unsigned int)GL_TRIANGLE_STRIP:
+	case (unsigned int)GL_TRIANGLE_FAN:
 		return (indices - 2);
-	case GL_LINES:
+	case (unsigned int)GL_LINES:
 		return (indices / 2);
-	case GL_LINE_LOOP:
+	case (unsigned int)GL_LINE_LOOP:
 		return (indices - 1);
-	case GL_POINTS:
+	case (unsigned int)GL_POINTS:
 		return indices;
-	case GL_PATCHES:
+	case (unsigned int)GL_PATCHES:
 		assert(APISupport->apiSupport(IAPISupport::TESSELATION_SHADERS) && "invalid primitive type");
 		return indices / m->getParent().getnumberOfVerticesPerPatch();
 	default:
@@ -417,6 +417,28 @@ GLRenderer::getNumberOfPrimitives(MaterialGroup *m) {
 	}
 }
 
+
+unsigned int 
+GLRenderer::getVerticesPerPrimitive(unsigned int primitive) {
+
+
+	switch (primitive) {
+
+	case (unsigned int)GL_TRIANGLES_ADJACENCY:
+		return  6;
+	case (unsigned int)GL_TRIANGLES:
+	case (unsigned int)GL_TRIANGLE_STRIP:
+	case (unsigned int)GL_TRIANGLE_FAN:
+		return  3;
+	case (unsigned int)GL_LINES:
+	case (unsigned int)GL_LINE_LOOP:
+		return 2;
+	case (unsigned int)GL_POINTS:
+		return 1;
+	default:
+		return (0);
+	}
+}
 
 
 // -----------------------------------------------------------------
@@ -480,29 +502,51 @@ GLRenderer::rotate(MatrixMode mode, float angle, nau::math::vec3 &axis) {
 // -----------------------------------------------------------------
 
 
-void
-GLRenderer::setMaterial(vec4 &diffuse, vec4 &ambient, vec4 &emission, vec4 &specular, float shininess) {
+void 
+GLRenderer::setMaterial(const std::shared_ptr<Material> &aMat) {
 
-	m_Material.setPropf(ColorMaterial::SHININESS, shininess);
-	m_Material.setPropf4(ColorMaterial::DIFFUSE, diffuse);
-	m_Material.setPropf4(ColorMaterial::AMBIENT, ambient);
-	m_Material.setPropf4(ColorMaterial::EMISSION, emission);
-	m_Material.setPropf4(ColorMaterial::SPECULAR, specular);
+	m_Material = aMat;
+	m_Material->prepare();
 }
 
 
 void
-GLRenderer::setMaterial(ColorMaterial &mat) {
+GLRenderer::resetMaterial() {
 
-	m_Material = mat;
+	m_Material.reset();
+}
+
+
+const std::shared_ptr<Material> &
+GLRenderer::getMaterial() {
+
+	return m_Material;
+}
+
+
+void
+GLRenderer::setColorMaterial(vec4 &diffuse, vec4 &ambient, vec4 &emission, vec4 &specular, float shininess) {
+
+	m_ColorMaterial.setPropf(ColorMaterial::SHININESS, shininess);
+	m_ColorMaterial.setPropf4(ColorMaterial::DIFFUSE, diffuse);
+	m_ColorMaterial.setPropf4(ColorMaterial::AMBIENT, ambient);
+	m_ColorMaterial.setPropf4(ColorMaterial::EMISSION, emission);
+	m_ColorMaterial.setPropf4(ColorMaterial::SPECULAR, specular);
+}
+
+
+void
+GLRenderer::setColorMaterial(ColorMaterial &mat) {
+
+	m_ColorMaterial = mat;
 	//m_Material.clone(mat);
 }
 
 
 ColorMaterial *
-GLRenderer::getMaterial() {
+GLRenderer::getColorMaterial() {
 
-	return &m_Material;
+	return &m_ColorMaterial;
 }
 
 
@@ -783,13 +827,13 @@ void
 GLRenderer::saveScreenShot() {
 
 	int w, h;
-	char *pixels;
+	unsigned char *pixels;
 	w = NAU->getWindowWidth();
 	h = NAU->getWindowHeight();
-	pixels = (char *)malloc(w * h * 4);
+	pixels = (unsigned char *)malloc(w * h * 4);
 
+	glFlush();
 	glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-	
 	nau::loader::ITextureLoader::Save(w, h, pixels);
 	free (pixels);
 }
@@ -828,12 +872,10 @@ GLRenderer::setRenderMode(TRenderMode mode) {
 
 
 void
-GLRenderer::drawGroup(MaterialGroup* aMatGroup) {
+GLRenderer::drawGroup(std::shared_ptr<MaterialGroup> aMatGroup) {
 
-	if (aMatGroup->getMaterialName() == "__Emission Green" || aMatGroup->getMaterialName() == "__Emission Red")
-		int x = 3;
 	IRenderable& aRenderable = aMatGroup->getParent();
-	IndexData &indexData = aMatGroup->getIndexData();
+	std::shared_ptr<nau::geometry::IndexData> &indexData = aMatGroup->getIndexData();
 
 	unsigned int drawPrimitive = aRenderable.getRealDrawingPrimitive();
 
@@ -841,6 +883,10 @@ GLRenderer::drawGroup(MaterialGroup* aMatGroup) {
 		assert(APISupport->apiSupport(IAPISupport::TESSELATION_SHADERS));
 		int k = aRenderable.getnumberOfVerticesPerPatch();
 		glPatchParameteri(GL_PATCH_VERTICES, k);
+	}
+	else if (m_Shader->hasTessellationShader()) {
+		drawPrimitive = (unsigned int)GL_PATCHES;
+		glPatchParameteri(GL_PATCH_VERTICES, getVerticesPerPrimitive(drawPrimitive));
 	}
 	// this forces compilation for everything that is rendered!
 	// required for animated objects
@@ -858,7 +904,7 @@ GLRenderer::drawGroup(MaterialGroup* aMatGroup) {
 	{
 		PROFILE_GL("Draw elements");
 
-		size = (GLsizei)indexData.getIndexSize();
+		size = (GLsizei)indexData->getIndexSize();
 
 		if (size != 0) {
 			if (m_UIntProps[IRenderer::BUFFER_DRAW_INDIRECT]) {
@@ -884,7 +930,7 @@ GLRenderer::drawGroup(MaterialGroup* aMatGroup) {
 				glDrawElements((GLenum)drawPrimitive, size, GL_UNSIGNED_INT, 0);
 		}
 		else {
-			size = aRenderable.getVertexData().getNumberOfVertices();
+			size = aRenderable.getVertexData()->getNumberOfVertices();
 						
 			if (m_UIntProps[IRenderer::BUFFER_DRAW_INDIRECT]) {
 
@@ -941,14 +987,14 @@ GLRenderer::showDrawDebugInfo(PassCompute *p) {
 
 	nau::util::Tree *t = m_ShaderDebugTree.appendBranch("Pass", p->getName());
 	t->appendItem("Class", "Compute");
-	Material *mat = p->getMaterial();
+	std::shared_ptr<Material> &mat = p->getMaterial();
 	showDrawDebugInfo(mat,t);
 	showDrawDebugInfo(mat->getProgram(), t);
 }
 
 
 void
-GLRenderer::showDrawDebugInfo(MaterialGroup *mg) {
+GLRenderer::showDrawDebugInfo(std::shared_ptr<MaterialGroup> &mg) {
 
 	Pass *p = RENDERMANAGER->getCurrentPass();
 	std::string passName = p->getName();
@@ -961,7 +1007,7 @@ GLRenderer::showDrawDebugInfo(MaterialGroup *mg) {
 	else
 		tree = tree->getBranch("Pass", passName);
 
-	GLMaterialGroup *glMG = (GLMaterialGroup *)mg;
+	std::shared_ptr<GLMaterialGroup> glMG = dynamic_pointer_cast<GLMaterialGroup>(mg);
 	std::string s = mg->getMaterialName();
 	std::map<string, MaterialID> m = RENDERMANAGER->getCurrentPass()->getMaterialMap();
 	if (m.count(s) == 0)
@@ -982,13 +1028,13 @@ GLRenderer::showDrawDebugInfo(MaterialGroup *mg) {
 		tree = tree->getBranch("Material", matName);
 	SLOG("Drawing with Material: %s", matName.c_str());
 
-	Material *mat = MATERIALLIBMANAGER->getMaterial(m[s]);
+	std::shared_ptr<Material> &mat = MATERIALLIBMANAGER->getMaterial(m[s]);
 
 	showDrawDebugInfo(mat, tree);
 
 	SLOG("VAO: %d", glMG->getVAO());
 	int buffID;
-	buffID = glMG->getIndexData().getBufferID();
+	buffID = glMG->getIndexData()->getBufferID();
 	nau::util::Tree *tVAO, *tInputs;
 	if (!tree->hasKey("Uniforms and Attributes"))
 		tInputs = tree->appendBranch("Uniforms and Attributes");
@@ -1003,7 +1049,7 @@ GLRenderer::showDrawDebugInfo(MaterialGroup *mg) {
 		SLOG("\tIndex Buffer: %d", buffID);
 	}
 	for (int i = 0; i < VertexData::MaxAttribs; ++i) {
-		buffID = glMG->getParent().getVertexData().getBufferID(i);
+		buffID = glMG->getParent().getVertexData()->getBufferID(i);
 		if (buffID) {
 			buffName = RESOURCEMANAGER->getBufferByID(buffID)->getLabel();
 			tVAO->appendItem("Attribute " + VertexData::Syntax[i], " Buffer " + buffName + " (" + std::to_string(buffID) + ")");
@@ -1016,7 +1062,7 @@ GLRenderer::showDrawDebugInfo(MaterialGroup *mg) {
 
 
 void
-GLRenderer::showDrawDebugInfo(Material *mat, nau::util::Tree *tree) {
+GLRenderer::showDrawDebugInfo(std::shared_ptr<Material> &mat, nau::util::Tree *tree) {
 
 	std::string programName = mat->getProgram()->getName();
 	if (!tree->hasElement("Program", programName))
@@ -1075,7 +1121,7 @@ GLRenderer::showDrawDebugInfo(Material *mat, nau::util::Tree *tree) {
 		bufferTree = tree->appendBranch("Buffers");
 		SLOG("Buffers");
 		for (unsigned int i = 0; i < vi.size(); ++i) {
-			IMaterialBuffer *b = mat->getBuffer(vi[i]);
+			IMaterialBuffer *b = mat->getMaterialBuffer(vi[i]);
 			IBuffer *buff = b->getBuffer();
 			bufferIDTree = bufferTree->appendBranch("Binding Point", std::to_string(vi[i]));
 			bufferIDTree->appendItem("Label", buff->getLabel());

@@ -263,7 +263,13 @@ bool PassOptixPrime::Inited = PassOptixPrime::Init();
 bool
 PassOptixPrime::Init() {
 
+	Attribs.add(Attribute(RAY_COUNT, "RAY_COUNT", Enums::INT, false, new NauInt(-1)));
+#ifndef _WINDLL
+	NAU->registerAttributes("PASS", &Attribs);
+#endif
+
 	PASSFACTORY->registerClass("optixPrime", Create);
+
 	return true;
 }
 
@@ -272,6 +278,7 @@ PassOptixPrime::PassOptixPrime(const std::string &passName) : Pass(passName) {
 
 	m_ClassName = "optix prime";
 	m_Context = NULL;
+	m_RayCountBuffer = NULL;
 }
 
 
@@ -282,10 +289,10 @@ PassOptixPrime::~PassOptixPrime() {
 }
 
 
-Pass *
+std::shared_ptr<Pass>
 PassOptixPrime::Create(const std::string &passName) {
 
-	return new PassOptixPrime(passName);
+	return dynamic_pointer_cast<Pass>(std::shared_ptr<PassOptixPrime>(new PassOptixPrime(passName)));
 }
 
 
@@ -324,6 +331,19 @@ PassOptixPrime::restore(void) {
 void
 PassOptixPrime::doPass(void) {
 
+	if (m_RayCountBuffer) {
+		m_RayCountBuffer->getData(m_RayCountBufferOffset, sizeof(int), &m_IntProps[RAY_COUNT]);
+	}
+
+	if (m_IntProps[RAY_COUNT] == -1) {
+		m_IntProps[RAY_COUNT] = m_Hits->getPropui(IBuffer::SIZE) / 16;
+	}
+	CHK_PRIME(rtpBufferDescSetRange(m_RaysDesc, 0, m_IntProps[RAY_COUNT]));
+	CHK_PRIME(rtpBufferDescSetRange(m_HitsDesc, 0, m_IntProps[RAY_COUNT]));
+	CHK_PRIME(rtpQuerySetRays(m_Query, m_RaysDesc));
+	CHK_PRIME(rtpQuerySetHits(m_Query, m_HitsDesc));
+	const char *err_string;
+	rtpContextGetLastErrorString(m_Context, &err_string);
 	CHK_PRIME(rtpQueryExecute(m_Query, 0 /* hints */));
 	//CHK_PRIME(rtpQueryFinish(m_Query));
 }
@@ -336,10 +356,10 @@ PassOptixPrime::initOptixPrime() {
 	CHK_PRIME(rtpContextCreate(RTP_CONTEXT_TYPE_CUDA, &m_Context));
 
 	// Create Vertex Buffer
-	IRenderable * renderable = &RENDERMANAGER->getScene(m_SceneVector[0])->getSceneObject(0)->getRenderable();
-	int vbo = renderable->getVertexData().getBufferID(0);
-	int numVert = renderable->getVertexData().getNumberOfVertices();
-	std::vector<VertexAttrib> &vertex = renderable->getVertexData().getDataOf(0);
+	std::shared_ptr<IRenderable> &renderable = RENDERMANAGER->getScene(m_SceneVector[0])->getSceneObject(0)->getRenderable();
+	int vbo = renderable->getVertexData()->getBufferID(0);
+	int numVert = renderable->getVertexData()->getNumberOfVertices();
+	//std::shared_ptr<std::vector<VertexAttrib>> &vertex = renderable->getVertexData()->getDataOf(0);
 
 	size_t size;
 	void * devPtr;
@@ -357,19 +377,18 @@ PassOptixPrime::initOptixPrime() {
 	CHK_PRIME(rtpBufferDescSetRange(m_VerticesDesc, 0, numVert));
 
 	// Create Index Buffer
-	IndexData *ind = &(renderable->getIndexData());
-	std::vector<int> *v = ind->getIndexDataAsInt();
+	std::shared_ptr<IndexData> &ind = renderable->getIndexData();
+	std::vector<int> v; 
+	ind->getIndexDataAsInt(&v);
 	GLuint index;
 	IBuffer *b;
 	b = RESOURCEMANAGER->createBuffer(m_Name);
 	index = b->getPropi(IBuffer::ID);
 	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, v->size() * sizeof(int), &(*v)[0], GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, v.size() * sizeof(int), &(v)[0], GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	int numInd = (int)v->size();
-
-	delete v;
+	int numInd = (int)v.size();
 
 	void * devPtrInd;
 	k = cudaGraphicsGLRegisterBuffer(&cglInd, index, cudaGraphicsRegisterFlagsReadOnly);
@@ -378,7 +397,7 @@ PassOptixPrime::initOptixPrime() {
 	CHK_PRIME(rtpBufferDescCreate(
 		m_Context,
 		RTP_BUFFER_FORMAT_INDICES_INT3,
-		RTP_BUFFER_TYPE_CUDA_LINEAR, // CUDA or HOST?
+		RTP_BUFFER_TYPE_CUDA_LINEAR, 
 		devPtrInd,
 		&m_IndicesDesc)
 		);
@@ -387,7 +406,7 @@ PassOptixPrime::initOptixPrime() {
 	// Create Model
 	CHK_PRIME(rtpModelCreate(m_Context, &m_Model));
 	CHK_PRIME(rtpModelSetTriangles(m_Model, m_IndicesDesc, m_VerticesDesc));
-	int useCallerTris = 1;
+	int useCallerTris = 0;
 	CHK_PRIME(rtpModelSetBuilderParameter(m_Model, RTP_BUILDER_PARAM_USE_CALLER_TRIANGLES, sizeof(int), &useCallerTris));
 	CHK_PRIME(rtpModelUpdate(m_Model, 0));
 	CHK_PRIME(rtpModelFinish(m_Model));
@@ -457,6 +476,13 @@ void
 PassOptixPrime::addHitBuffer(IBuffer *b) {
 
 	m_Hits = b;
+}
+
+void 
+PassOptixPrime::setBufferForRayCount(IBuffer * b, unsigned int offset) {
+
+	m_RayCountBuffer = b;
+	m_RayCountBufferOffset = offset;
 }
 
 

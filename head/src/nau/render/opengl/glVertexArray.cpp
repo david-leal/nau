@@ -18,8 +18,8 @@ using namespace nau::math;
 
 
 //	CONST e DEST
-GLVertexArray::GLVertexArray(void):
-	VertexData (),
+GLVertexArray::GLVertexArray(const std::string &name):
+	VertexData (name),
 	m_IsCompiled (false) {
 
 	for (int i = 0; i < VertexData::MaxAttribs; i++){
@@ -76,9 +76,10 @@ GLVertexArray::getNumberOfVertices()
 
 
 void 
-GLVertexArray::setAttributeDataFor (unsigned int type, std::vector<VertexData::Attr>* dataArray, int location) {
+GLVertexArray::setAttributeDataFor (unsigned int type, std::shared_ptr<std::vector<VertexData::Attr>> &dataArray, int location) {
 
-	if (*dataArray != VertexData::NoData) {
+	if (dataArray) {
+		m_InternalArrays[type].reset();
 		m_InternalArrays[type] = dataArray;
 		if (NOLOC == m_AttributesLocations[type]) {
 			m_AttributesLocations[type] = location;
@@ -108,7 +109,7 @@ GLVertexArray::prepareTriangleIDs(unsigned int sceneObjID,
 						 && m_InternalArrays[0]) {
 
 		unsigned int size = (unsigned int)m_InternalArrays[0]->size();
-		m_InternalArrays[TriID_index] = new std::vector<VertexData::Attr>(size);
+		m_InternalArrays[TriID_index].reset(new std::vector<VertexData::Attr>(size));
 
 		unsigned int begin;
 		if (primitiveOffset != 1) // no strips or fans
@@ -176,8 +177,8 @@ GLVertexArray::compile (void) {
 
 	for (int i = 0; i < VertexData::MaxAttribs; i++){
 
-		if (0 != m_InternalArrays[i]){
-			std::vector<VertexData::Attr>* pArray = m_InternalArrays[i];
+		if (0 != m_InternalArrays[i] && m_InternalArrays[i]->size() != 0){
+			std::shared_ptr<std::vector<VertexData::Attr>> &pArray = m_InternalArrays[i];
 
 			IBuffer *b = NULL;
 
@@ -191,9 +192,6 @@ GLVertexArray::compile (void) {
 				b = RESOURCEMANAGER->getBuffer(s);
 			}
 			b->setData(pArray->size() * 4 * sizeof(float), (float*)&(*pArray)[0]);
-			//glBindBuffer(GL_ARRAY_BUFFER, m_GLBuffers[i]);
-			//glBufferData(GL_ARRAY_BUFFER, pArray->size() * 4 * sizeof(float), (float*)&(*pArray)[0], GL_STATIC_DRAW);
-			//glBindBuffer(GL_ARRAY_BUFFER, 0);
 		}
 	}
 	return true;

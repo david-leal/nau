@@ -3,9 +3,9 @@
 #include <nau/debug/profile.h>
 
 
-#ifdef GLINTERCEPTDEBUG
-#include "..\..\GLIntercept\Src\MainLib\ConfigDataExport.h"
-#endif
+//#ifdef GLINTERCEPTDEBUG
+//#include "..\..\GLIntercept\Src\MainLib\ConfigDataExport.h"
+//#endif
 
 BEGIN_EVENT_TABLE(DlgDbgStep, wxDialog)
 	EVT_BUTTON(DLG_BTN_NEXTPASS, OnNextPass)
@@ -61,14 +61,10 @@ DlgDbgStep::DlgDbgStep(): wxDialog(DlgDbgStep::m_Parent, -1, wxT("Nau - Frame pa
 
 	wxBoxSizer *sizerh = new wxBoxSizer(wxHORIZONTAL);
 	wxStaticText *stg1 = new wxStaticText(this, -1, wxT("Pipeline: "));
-	//wxTextCtrl  *pipename = new wxTextCtrl(this, DLG_TXT_PIPELINE, wxT(""));
 
 	sizerh->Add(stg1, 0, wxGROW | wxALL, 5);
-	//sizerh->Add(pipename, 0, wxGROW | wxALL, 5);
-
 
 	bSizer1->Add(sizerh, 0, wxGROW | wxALL, 5);
-
 
 	wxStaticBoxSizer * sbSizer1;
 	sbSizer1 = new wxStaticBoxSizer(new wxStaticBox(this, wxID_ANY, wxEmptyString), wxVERTICAL);
@@ -102,20 +98,13 @@ DlgDbgStep::DlgDbgStep(): wxDialog(DlgDbgStep::m_Parent, -1, wxT("Nau - Frame pa
 	this->Layout();
 	this->Centre(wxBOTH);
 
-	passes = 0;
 	pipenameString = "";
 }
 
 
 void
-DlgDbgStep::updateDlg()
-{
-	//if (pipename){
-	//	std::string pipenameString = RENDERMANAGER->getActivePipelineName();
-	//	wxString str = wxString(pipenameString.c_str());
-	//	pipename->SetValue(str);
-	//}
-	std::vector<std::string>::iterator iter;
+DlgDbgStep::updateDlg() {
+
 	std::string newPipeName = RENDERMANAGER->getActivePipelineName();
 	if (pipenameString.compare(newPipeName) != 0){
 		pipenameString = newPipeName;
@@ -124,7 +113,7 @@ DlgDbgStep::updateDlg()
 	int nextIndex = 0;
 	m_list->Clear();
 	
-	if (pipenameString.size() > 0 && passes){
+	if (pipenameString.size() > 0 && passes.size()){
 
 		Pass *currentPass = RENDERMANAGER->getCurrentPass();
 		std::string passCurrentName;
@@ -132,11 +121,7 @@ DlgDbgStep::updateDlg()
 			passCurrentName = currentPass->getName();
 		}
 
-
-
-		
-		for (iter = passes->begin(); iter != passes->end(); ++iter){
-			std::string passName = *iter;
+		for (auto &passName :passes){
 			if (passCurrentName.compare(passName) == 0){
 				m_list->AppendAndEnsureVisible(wxString("Next:> " + passName));
 				m_list->SetSelection(nextIndex);
@@ -154,30 +139,28 @@ DlgDbgStep::updateDlg()
 
 
 void
-DlgDbgStep::getPasses(std::string pipenameString){
-	Pipeline *pip = RENDERMANAGER->getPipeline(pipenameString);
+DlgDbgStep::getPasses(std::string pipenameString) {
 
-	if (passes){
-		delete passes;
+	std::shared_ptr<Pipeline> &pip = RENDERMANAGER->getPipeline(pipenameString);
 
-	}
-	passes = pip->getPassNames();
-
+	passes.clear();
+	pip->getPassNames(&passes);
 }
 
 
 
 
 std::string &
-DlgDbgStep::getName ()
-{
+DlgDbgStep::getName () {
+
 	name = "DlgDbgStep";
 	return(name);
 }
 
 
 void
-DlgDbgStep::eventReceived(const std::string &sender, const std::string &eventType, nau::event_::IEventData *evt)
+DlgDbgStep::eventReceived(const std::string &sender, const std::string &eventType, 
+	const std::shared_ptr<nau::event_::IEventData> &evt)
 {
 }
 
@@ -187,18 +170,16 @@ void DlgDbgStep::append(std::string s) {
 }
 
 
-
-
 void DlgDbgStep::OnNextPass(wxCommandEvent& event){
 
 	if (m_Canvas->IsPaused()){
-#ifdef GLINTERCEPTDEBUG 
-		gliSetIsGLIActive(true);
-#endif
+//#ifdef GLINTERCEPTDEBUG 
+//		gliSetIsGLIActive(true);
+//#endif
 		m_Canvas->StepPass();
-#ifdef GLINTERCEPTDEBUG 
-		gliSetIsGLIActive(false);
-#endif
+//#ifdef GLINTERCEPTDEBUG 
+//		gliSetIsGLIActive(false);
+//#endif
 		updateDlg();
 	}
 }
@@ -207,13 +188,13 @@ void DlgDbgStep::OnNextPass(wxCommandEvent& event){
 void DlgDbgStep::OnNextFrame(wxCommandEvent& event){
 
 	if (m_Canvas->IsPaused()){
-#ifdef GLINTERCEPTDEBUG 
-		gliSetIsGLIActive(true);
-#endif
+//#ifdef GLINTERCEPTDEBUG 
+//		gliSetIsGLIActive(true);
+//#endif
 		m_Canvas->StepToEndOfFrame();
-#ifdef GLINTERCEPTDEBUG 
-		gliSetIsGLIActive(false);
-#endif
+//#ifdef GLINTERCEPTDEBUG 
+//		gliSetIsGLIActive(false);
+//#endif
 		updateDlg();
 	}
 }
@@ -223,13 +204,13 @@ void DlgDbgStep::OnToPass(wxCommandEvent& event){
 
 
 	if (m_Canvas->IsPaused()){
-#ifdef GLINTERCEPTDEBUG 
-		gliSetIsGLIActive(true);
-#endif
+//#ifdef GLINTERCEPTDEBUG 
+//		gliSetIsGLIActive(true);
+//#endif
 		m_Canvas->StepUntilSamePassNextFrame();
-#ifdef GLINTERCEPTDEBUG 
-		gliSetIsGLIActive(false);
-#endif
+//#ifdef GLINTERCEPTDEBUG 
+//		gliSetIsGLIActive(false);
+//#endif
 		updateDlg();
 	}
 }

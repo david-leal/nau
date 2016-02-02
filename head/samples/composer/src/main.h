@@ -106,11 +106,13 @@ private:
 
 	void startStandAlone (void);
 
+	void loadProject(const char *s);
+
    DECLARE_EVENT_TABLE();
 
-	void buildPhysics (void);
-	void OnPhysicsBuild (wxCommandEvent &event);
-	void OnPhysicsMode (wxCommandEvent &event);
+	//void buildPhysics (void);
+	//void OnPhysicsBuild (wxCommandEvent &event);
+	//void OnPhysicsMode (wxCommandEvent &event);
 	
 };
 

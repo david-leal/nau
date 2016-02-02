@@ -4,17 +4,19 @@
 #include "nau/render/pass.h"
 #include "nau/geometry/quad.h"
 
-namespace nau
-{
-	namespace render
-	{
-		class PassQuad : public Pass
-		{
+namespace nau {
+
+	namespace render {
+
+		class PassQuad : public Pass {
+			friend class PassFactory;
 		public:
-			PassQuad (const std::string &name);
 			~PassQuad(void);
 
-			static Pass *Create(const std::string &name);
+			static std::shared_ptr<Pass> Create(const std::string &name);
+
+			void eventReceived(const std::string & sender, const std::string & eventType, 
+				const std::shared_ptr<IEventData>& evt);
 
 			void prepare (void);
 			void restore (void);
@@ -24,7 +26,9 @@ namespace nau
 			
 
 		protected:
-			nau::geometry::Quad *m_QuadObject;
+			PassQuad (const std::string &name);
+			std::shared_ptr<nau::scene::SceneObject> m_QuadObject;
+			//nau::geometry::Quad *m_QuadObject;
 			static bool Init();
 			static bool Inited;
 

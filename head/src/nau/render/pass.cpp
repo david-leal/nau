@@ -147,15 +147,16 @@ Pass::~Pass() {
 }
 
 
-Pass *
+std::shared_ptr<Pass>
 Pass::Create(const std::string &passName) {
 
-	return new Pass(passName);
+	return dynamic_pointer_cast<Pass>(std::shared_ptr<Pass>(new Pass(passName)));
 }
 
 
 void
-Pass::eventReceived(const std::string &sender, const std::string &eventType, IEventData *evtData)  {
+Pass::eventReceived(const std::string &sender, const std::string &eventType, 
+	const std::shared_ptr<IEventData> &evt)  {
 
 	if (eventType == "SCENE_CHANGED") 
 		updateMaterialMaps(sender);
@@ -204,6 +205,26 @@ void
 Pass::addPostProcessItem(PassProcessItem *pp) {
 
 	m_PostProcessList.push_back(pp);
+}
+
+
+PassProcessItem *
+Pass::getPreProcessItem(unsigned int i) {
+
+	if (i < m_PreProcessList.size())
+		return m_PreProcessList[i];
+	else
+		return NULL;
+}
+
+
+PassProcessItem *
+Pass::getPostProcessItem(unsigned int i) {
+
+	if (i < m_PostProcessList.size())
+		return m_PostProcessList[i];
+	else
+		return NULL;
 }
 
 
@@ -300,32 +321,31 @@ Pass::prepare (void) {
 void
 Pass::doPass (void) {
 
-	Camera *aCam = 0;
 	Frustum camFrustum;
 	std::vector<SceneObject*>::iterator objsIter;
 	std::vector<std::string>::iterator scenesIter;
-	std::vector<nau::scene::SceneObject*> sceneObjects;
+	std::vector<std::shared_ptr<SceneObject>> sceneObjects;
 
 	prepareBuffers();
 
+	std::shared_ptr<Camera> &aCam = RENDERMANAGER->getCamera (m_CameraName);
 	const float *a = (float *)((mat4 *)RENDERER->getProp(IRenderer::PROJECTION_VIEW_MODEL, Enums::MAT4))->getMatrix();
 	camFrustum.setFromMatrix (a);
-	aCam = RENDERMANAGER->getCamera (m_CameraName);
 	RENDERMANAGER->clearQueue();
 
 	scenesIter = m_SceneVector.begin();
 
 	for ( ; scenesIter != m_SceneVector.end(); ++scenesIter) {
 
-		IScene *aScene = RENDERMANAGER->getScene (*scenesIter);
+		std::shared_ptr<IScene> &aScene = RENDERMANAGER->getScene (*scenesIter);
 		{
 			PROFILE("View Frustum Culling");
-			sceneObjects = aScene->findVisibleSceneObjects(camFrustum, *aCam);
+			aScene->findVisibleSceneObjects(&sceneObjects, camFrustum, *aCam);
 		//	sceneObjects = aScene->getAllObjects();
 		}
-		objsIter = sceneObjects.begin();
-		for ( ; objsIter != sceneObjects.end(); ++objsIter) {
-			RENDERMANAGER->addToQueue ((*objsIter), m_MaterialMap);
+		
+		for (auto &so: sceneObjects) {
+			RENDERMANAGER->addToQueue (so, m_MaterialMap);
 		}
 	}
 	RENDERMANAGER->processQueue();	
@@ -415,14 +435,14 @@ Pass::callPostScript() {
 
 
 void
-Pass::setViewport(nau::render::Viewport *aViewport) {
+Pass::setViewport(std::shared_ptr<Viewport> aViewport) {
 
 	m_Viewport = aViewport;
 	m_ExplicitViewport = true;
 }
 
 
-nau::render::Viewport *
+std::shared_ptr<Viewport>
 Pass::getViewport() {
 
 	return (m_Viewport);
@@ -621,8 +641,8 @@ void
 Pass::setRenderTarget (nau::render::IRenderTarget* rt) {
 	
 	if (rt == NULL) {
-		if (m_RenderTarget != NULL) 
-			delete m_Viewport;
+		if (m_RenderTarget != NULL && !m_ExplicitViewport) 
+			m_Viewport.reset();
 		m_UseRT = true;
 	}
 	else {
@@ -660,17 +680,11 @@ Pass::setRTSize(uivec2 &v) {
 void
 Pass::setupCamera (void) {
 
-	Camera *aCam = 0;
-
-	aCam = RENDERMANAGER->getCamera (m_CameraName);
+	std::shared_ptr<Camera> &aCam = RENDERMANAGER->getCamera (m_CameraName);
 	
-	if (0 == aCam) {
-		return; 
-	}
-
-	Viewport *v = aCam->getViewport();
+	std::shared_ptr<Viewport> v = aCam->getViewport();
 	// if pass has a viewport 
-	if (0 != m_Viewport ) {
+	if (m_Viewport) {
 		m_RestoreViewport = v;
 		aCam->setViewport (m_Viewport);
 	}
@@ -682,14 +696,9 @@ Pass::setupCamera (void) {
 void
 Pass::restoreCamera (void) {
 
-	Camera *aCam = 0;
-	aCam = RENDERMANAGER->getCamera (m_CameraName);
+	std::shared_ptr<Camera> &aCam = RENDERMANAGER->getCamera(m_CameraName);
 
-	if (0 == aCam) {
-		return; 
-	}
-	
-	if (0 != m_Viewport ) {
+	if (m_ExplicitViewport) {
 		aCam->setViewport (m_RestoreViewport);
 	}
 }
@@ -707,10 +716,6 @@ Pass::setCamera (const std::string &cameraName) {
 
 	m_CameraName = cameraName;
 }
-
-
-
-
 
 
 // --------------------------------------------------

@@ -13,10 +13,17 @@ using namespace nau::render;
 using namespace nau::math;
 
 
-GLIndexArray::GLIndexArray(void):
-	IndexData (),
+//GLIndexArray::GLIndexArray(void):
+//	IndexData (),
+//	m_GLBuffer(0),
+//	m_IsCompiled (false) {
+//
+//}
+
+GLIndexArray::GLIndexArray(std::string & name):
+	IndexData(name),
 	m_GLBuffer(0),
-	m_IsCompiled (false) {
+	m_IsCompiled(false) {
 
 }
 
@@ -44,14 +51,14 @@ GLIndexArray::setBuffer(unsigned int id) {
 }
 
 
-std::vector<unsigned int>&
-GLIndexArray::getIndexData (void) {
-
-	if (0 == m_InternalIndexArray) { 
-		return IndexData::NoIndexData;
-	}
-	return (*m_InternalIndexArray);
-}
+//std::vector<unsigned int>&
+//GLIndexArray::getIndexData (void) {
+//
+//	if (0 == m_InternalIndexArray) { 
+//		return IndexData::NoIndexData;
+//	}
+//	return (*m_InternalIndexArray);
+//}
 
 
 //bool 
@@ -108,10 +115,10 @@ GLIndexArray::compile() {
 
 	if (0 != m_InternalIndexArray && m_InternalIndexArray->size() != 0) {
 
-		std::vector<unsigned int>* pArray;
+		std::shared_ptr<std::vector<unsigned int>> pArray;
 		if (m_UseAdjacency) {
 			buildAdjacencyList();
-			pArray = &m_AdjIndexArray;
+			pArray = m_AdjIndexArray;
 		}
 		else
 			pArray = m_InternalIndexArray;

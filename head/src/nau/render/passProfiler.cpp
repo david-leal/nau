@@ -35,13 +35,13 @@ PassProfiler::Init() {
 
 
 PassProfiler::PassProfiler (const std::string &name) :
-	Pass (name), m_pCam(0)
+	Pass (name)
 {
 	m_ClassName = "profiler";
 
 	m_CameraName = "__ProfilerCamera";
 	m_pCam = RENDERMANAGER->getCamera("__ProfilerCamera");
-	m_pSO = SceneObjectFactory::create("SimpleObject");
+	m_pSO = SceneObjectFactory::Create("SimpleObject");
 	m_pSO->setRenderable(RESOURCEMANAGER->createRenderable("Mesh", "__ProfilerResult", "Profiler"));
 
 	m_Viewport = RENDERMANAGER->createViewport("__Profiler", vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -65,10 +65,10 @@ PassProfiler::~PassProfiler(void)
 }
 
 
-Pass *
+std::shared_ptr<Pass>
 PassProfiler::Create(const std::string &passName) {
 
-	return new PassProfiler(passName);
+	return dynamic_pointer_cast<Pass>(std::shared_ptr<PassProfiler>(new PassProfiler(passName)));
 }
 
 
@@ -131,7 +131,7 @@ PassProfiler::doPass (void)
 //	nau::scene::SceneObject *string;
 
 	m_pFont.createSentenceRenderable(m_pSO->getRenderable(), Profile::DumpLevels());
-	m_pSO->getRenderable().resetCompilationFlags();
+	m_pSO->getRenderable()->resetCompilationFlags();
 	//m_pSO->setRenderable(r);//Profile::DumpLevels()));
 	//string = m_pFont.createSentenceSceneObject(Profile::DumpLevels());
 	RENDERMANAGER->clearQueue();

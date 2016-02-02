@@ -14,27 +14,24 @@ using namespace nau::material;
 
 
 OctreeUnified::OctreeUnified(void) : IScenePartitioned(),
-	m_vReturnVector(),
 	m_SceneObject(NULL),
-	m_BoundingBox()
-{
+	m_BoundingBox() {
+
 	EVENTMANAGER->addListener("SET_POSITION", this);
 	EVENTMANAGER->addListener("SET_ROTATION", this);
 	m_Type = "OctreeUnified";
 }
 
 
-OctreeUnified::~OctreeUnified(void)
-{
-	delete m_SceneObject;
+OctreeUnified::~OctreeUnified(void) {
 
-	m_vReturnVector.clear();
 }
 
 
 void
-OctreeUnified::eventReceived(const std::string &sender, const std::string &eventType, nau::event_::IEventData *evt)
-{
+OctreeUnified::eventReceived(const std::string &sender, const std::string &eventType, 
+	const std::shared_ptr<IEventData> &evt) {
+
 	vec4 *p = (vec4 *)evt->getData();
 	//	SLOG("Scene %s %s %s %f %f %f", m_Name.c_str(), sender.c_str(), eventType.c_str(), p->x, p->y, p->z);
 
@@ -54,53 +51,51 @@ OctreeUnified::eventReceived(const std::string &sender, const std::string &event
 
 
 mat4 &
-OctreeUnified::getTransform()
-{
+OctreeUnified::getTransform() {
 	return m_Transform;
 }
 
 
-
 void
-OctreeUnified::setTransform(nau::math::mat4 &t)
-{
+OctreeUnified::setTransform(nau::math::mat4 &t) {
+
 	m_Transform = t;
 	updateSceneObjectTransforms();
 }
 
 
 void
-OctreeUnified::transform(nau::math::mat4 &t)
-{
+OctreeUnified::transform(nau::math::mat4 &t) {
+
 	m_Transform *= t;
 	updateSceneObjectTransforms();
 }
 
 
 void
-OctreeUnified::updateSceneObjectTransforms()
-{
+OctreeUnified::updateSceneObjectTransforms() {
+
 	if (m_SceneObject)
 		m_SceneObject->updateGlobalTransform(m_Transform);
 }
 
 
 void
-OctreeUnified::build(void)
-{
+OctreeUnified::build(void) {
+
 }
 
 
 IBoundingVolume&
-OctreeUnified::getBoundingVolume(void)
-{
+OctreeUnified::getBoundingVolume(void) {
+
 	return m_BoundingBox;
 }
 
 
 void
-OctreeUnified::compile(void)
-{
+OctreeUnified::compile(void) {
+
 	if (true == m_Compiled) {
 		return;
 	}
@@ -108,7 +103,7 @@ OctreeUnified::compile(void)
 	m_Compiled = true;
 	
 	if (m_SceneObject) {
-		std::vector<MaterialGroup*> &matGroups = m_SceneObject->getRenderable().getMaterialGroups();
+		std::vector<std::shared_ptr<MaterialGroup>> &matGroups = m_SceneObject->getRenderable()->getMaterialGroups();
 
 		for (auto mg : matGroups) {
 			mg->compile();
@@ -118,28 +113,25 @@ OctreeUnified::compile(void)
 
 
 void
-OctreeUnified::add(SceneObject *aSceneObject)
-{
+OctreeUnified::add(std::shared_ptr<SceneObject> &aSceneObject) {
+
 	aSceneObject->updateGlobalTransform(m_Transform);
 	aSceneObject->burnTransform();
 
 	if (!m_SceneObject) {
-		m_SceneObject = SceneObjectFactory::create("SimpleObject");
-		m_SceneObject->setRenderable(&(aSceneObject->getRenderable()));
+		m_SceneObject = SceneObjectFactory::Create("SimpleObject");
+		m_SceneObject->setRenderable(aSceneObject->getRenderable());
 	}
 	else {
 		//aSceneObject->burnTransform();
-		m_SceneObject->getRenderable().merge(&(aSceneObject->getRenderable()));
+		m_SceneObject->getRenderable()->merge(aSceneObject->getRenderable());
 	}
 	m_BoundingBox.compound(aSceneObject->getBoundingVolume());
 }
 
 
-std::vector <SceneObject*>&
-OctreeUnified::findVisibleSceneObjects(Frustum &aFrustum, Camera &aCamera, bool conservative)
-{
-	m_vReturnVector.clear();
-
+void
+OctreeUnified::findVisibleSceneObjects(std::vector<std::shared_ptr<SceneObject>> *v, Frustum &aFrustum, Camera &aCamera, bool conservative) {
 
 	/* The objects NOT on the octree */
 	int side = Frustum::OUTSIDE;
@@ -147,51 +139,45 @@ OctreeUnified::findVisibleSceneObjects(Frustum &aFrustum, Camera &aCamera, bool 
 		side = aFrustum.isVolumeInside(m_SceneObject->getBoundingVolume(), conservative);
 
 	if (Frustum::OUTSIDE != side) {
-		m_vReturnVector.push_back(m_SceneObject);
+		v->push_back(m_SceneObject);
 	}
-
-	return m_vReturnVector;
 }
 
 
-std::vector<SceneObject*>&
-OctreeUnified::getAllObjects()
-{
-	m_vReturnVector.clear();
+void
+OctreeUnified::getAllObjects(std::vector<std::shared_ptr<SceneObject>> *v) {
 
 	if (m_SceneObject)
-		m_vReturnVector.push_back(m_SceneObject);
-
-	return m_vReturnVector;
+		v->push_back(m_SceneObject);
 }
 
 
 const std::set<std::string> &
-OctreeUnified::getMaterialNames()
-{
+OctreeUnified::getMaterialNames() {
+
 	m_MaterialNames.clear();
 	if (m_SceneObject)
-		m_SceneObject->getRenderable().getMaterialNames(&m_MaterialNames);
+		m_SceneObject->getRenderable()->getMaterialNames(&m_MaterialNames);
 
 	return m_MaterialNames;
 }
 
 
-SceneObject*
-OctreeUnified::getSceneObject(std::string name)
-{
+std::shared_ptr<SceneObject> &
+OctreeUnified::getSceneObject(std::string name) {
+
 	if (m_SceneObject && m_SceneObject->getName() == name)
 		return m_SceneObject;
 	else
-		return NULL;
+		return m_EmptySOptr;
 }
 
 
-SceneObject*
-OctreeUnified::getSceneObject(int index)
-{
+std::shared_ptr<SceneObject> &
+OctreeUnified::getSceneObject(int index) {
+
 	if (index != 0)
-		return NULL;
+		return m_EmptySOptr;
 	else
 		return m_SceneObject;
 }

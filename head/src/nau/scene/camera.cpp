@@ -23,6 +23,8 @@ using namespace nau::geometry;
 using namespace nau::render;
 using namespace nau::material;
 
+
+
 bool
 Camera::Init() {
 
@@ -66,13 +68,25 @@ Camera::Init() {
 
 AttribSet Camera::Attribs;
 bool Camera::Inited = Init();
+std::shared_ptr<Camera> Camera::m_Temp = NULL;
+
+
+std::shared_ptr<Camera> 
+Camera::Create(const std::string &name) {
+
+	m_Temp = std::make_shared<Camera>(Camera(name));
+	std::shared_ptr<IScene> &s = RENDERMANAGER->createScene(name, "SceneAux");
+	s->add(std::dynamic_pointer_cast<SceneObject>(m_Temp));
+	EVENTMANAGER->addListener("VIEWPORT_CHANGED", m_Temp.get());
+
+	return m_Temp;
+}
 
 
 Camera::Camera (const std::string &name) :
 	SceneObject(),
 
 	m_IsDynamic (false),
-	m_pViewport (0),
 	m_LookAt(false),
 	//m_LookAtPoint(0.0f, 0.0f, 0.0f),
 	m_PositionOffset (0.0f)
@@ -89,21 +103,23 @@ Camera::Camera (const std::string &name) :
 
 	m_StaticCondition = false;
 
-	m_BoundingVolume = new BoundingBox;
+	//m_BoundingVolume = new BoundingBox;
 	setVectorsFromSpherical();
 
 	// Adding a Mesh with the frustum lines
-	Mesh *renderable =  (Mesh *)RESOURCEMANAGER->createRenderable("Mesh", m_Name, "Camera");
+	std::shared_ptr<IRenderable> &renderable =  RESOURCEMANAGER->createRenderable("Mesh", m_Name, "Camera");
 	//int drawPrimitive = IRenderer::Attribs.getID("LINES");
 	//renderable->setDrawingPrimitive(drawPrimitive/*nau::render::IRenderer::LINES*/);
 	renderable->setDrawingPrimitive(nau::render::IRenderable::LINES);
-	std::vector<VertexData::Attr> *vertices = new std::vector<VertexData::Attr>(8);
-	VertexData &vertexData = renderable->getVertexData();
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("position")), vertices);
+	std::shared_ptr<std::vector<VertexData::Attr>> vertices = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(8));
+	std::shared_ptr<VertexData> &vertexData = renderable->getVertexData();
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("position")), vertices);
 
-	MaterialGroup *aMaterialGroup = MaterialGroup::Create(renderable, "__Emission Green");
+	std::shared_ptr<MaterialGroup> aMaterialGroup = MaterialGroup::Create(renderable.get(), "__Emission Green");
 	
-	std::vector<unsigned int> *indices = new std::vector<unsigned int>(16);
+	std::shared_ptr<std::vector<unsigned int>> indices =
+		std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>(16));
 	indices->at (0) = Camera::TOP_LEFT_NEAR;		indices->at (1) = Camera::TOP_LEFT_FAR;
 	indices->at (2) = Camera::TOP_RIGHT_NEAR;		indices->at (3) = Camera::TOP_RIGHT_FAR;
 	indices->at (4) = Camera::BOTTOM_RIGHT_NEAR;	indices->at (5) = Camera::BOTTOM_RIGHT_FAR;
@@ -117,13 +133,13 @@ Camera::Camera (const std::string &name) :
 	aMaterialGroup->setIndexList (indices);
 
 	renderable->addMaterialGroup (aMaterialGroup);
-	delete aMaterialGroup;
 
 	m_Transform = m_Mat4Props[VIEW_INVERSE_MATRIX];
-	setRenderable (renderable);
+//	setRenderable (renderable);
 
-	aMaterialGroup = MaterialGroup::Create(renderable, "__Emission Red");
-	indices = new std::vector<unsigned int>(8);
+	aMaterialGroup.reset();
+	aMaterialGroup = MaterialGroup::Create(renderable.get(), "__Emission Red");
+	indices.reset(new std::vector<unsigned int>(8));
 	indices->at (0) = Camera::TOP_LEFT_NEAR;		indices->at (1) = Camera::TOP_RIGHT_NEAR;
 	indices->at (2) = Camera::TOP_RIGHT_NEAR;		indices->at (3) = Camera::BOTTOM_RIGHT_NEAR;
 	indices->at (4) = Camera::BOTTOM_RIGHT_NEAR;	indices->at (5) = Camera::BOTTOM_LEFT_NEAR;
@@ -132,14 +148,13 @@ Camera::Camera (const std::string &name) :
 	aMaterialGroup->setIndexList (indices);
 
 	renderable->addMaterialGroup (aMaterialGroup);
-	delete aMaterialGroup;
 
 	setRenderable (renderable);
 
-	IScene *s = RENDERMANAGER->createScene(name, "SceneAux");
-	s->add(this);
+	//std::shared_ptr<IScene> &s = RENDERMANAGER->createScene(name, "SceneAux");
+	//std::shared_ptr<Camera> p = shared_from_this();
+	//s->add(std::dynamic_pointer_cast<SceneObject>(shared_from_this()));
 
-	EVENTMANAGER->addListener("VIEWPORT_CHANGED", this);
 }
 
 
@@ -320,13 +335,14 @@ Camera::setPrope(EnumProperty prop, int value) {
 //}
 
 
-IRenderable& 
+std::shared_ptr<IRenderable> &
 Camera::getRenderable (void) {
 
 	vec3 frustumPoints[8];
 
 	/// MARK - This can be done only when modifying the camera parameters
-	std::vector<VertexData::Attr> *vertices = new std::vector<VertexData::Attr>(8);
+	std::shared_ptr<std::vector<VertexData::Attr>> vertices = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(8));
 
 	if (m_EnumProps[PROJECTION_TYPE] == ORTHO) {
 
@@ -353,8 +369,8 @@ Camera::getRenderable (void) {
 		vertices->at (BOTTOM_LEFT_FAR).set (-hw*m_FloatProps[FARP], -hh*m_FloatProps[FARP], -m_FloatProps[FARP]);	
 	}
 
-	VertexData &vertexData = m_Renderable->getVertexData();
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("position")), vertices);
+	std::shared_ptr<VertexData> &vertexData = m_Renderable->getVertexData();
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("position")), vertices);
 
 	//std::vector<VertexData::Attr> *normals = new std::vector<VertexData::Attr>(8);
 	//for (int i = 0; i < 8 ; ++i) 
@@ -364,7 +380,7 @@ Camera::getRenderable (void) {
 	buildInverses();
 	m_ResultTransform.copy(m_GlobalTransform);
 	m_ResultTransform *= m_Mat4Props[VIEW_INVERSE_MATRIX];
-	return (*m_Renderable);
+	return m_Renderable;
 }
 
 
@@ -511,7 +527,7 @@ Camera::buildProjectionMatrix() {
 	
 
 void
-Camera::setViewport (Viewport* aViewport) {
+Camera::setViewport (std::shared_ptr<Viewport> aViewport) {
 
 	m_pViewport = aViewport;
 
@@ -527,7 +543,7 @@ Camera::setViewport (Viewport* aViewport) {
 }
 
 
-Viewport *
+std::shared_ptr<Viewport> &
 Camera::getViewport (void) {
 
 	return (m_pViewport);
@@ -589,7 +605,7 @@ Camera::buildViewMatrix (void) {
 
 
 void
-Camera::adjustMatrix(Camera* aCamera) {
+Camera::adjustMatrix(std::shared_ptr<Camera> &aCamera) {
 
 	float cNear = aCamera->getPropf(NEARP);
 	float cFar = aCamera->getPropf(FARP);
@@ -599,7 +615,7 @@ Camera::adjustMatrix(Camera* aCamera) {
 
 
 void
-Camera::adjustMatrixPlus(float cNear, float cFar, Camera  *aCamera) {
+Camera::adjustMatrixPlus(float cNear, float cFar, std::shared_ptr<Camera> &aCamera) {
 
 	float ratio, fov, hNear, hFar, wNear, wFar;
 	int camType = aCamera->getPrope(Camera::PROJECTION_TYPE);
@@ -736,22 +752,12 @@ Camera::adjustMatrixPlus(float cNear, float cFar, Camera  *aCamera) {
 
 
 void 
-Camera::eventReceived(const std::string &sender, const std::string &eventType, nau::event_::IEventData *evt) {
+Camera::eventReceived(const std::string &sender, const std::string &eventType, 
+	const std::shared_ptr<IEventData> &evt) {
 
 	if (eventType == "VIEWPORT_CHANGED" && m_pViewport != NULL && m_pViewport->getName() == sender)
 		updateProjection();
 
-	//if (eventType == "DYNAMIC_CAMERA") {
-
-	//	vec3 p = m_Transform->getTranslation();
-	//	setPropf4(POSITION,p.x,p.y,p.z,1.0f);
-	//	buildViewMatrix();
-
-	//	result.set(p.x,p.y,p.z); 
-	//	m_Event.setData(&result);
-	//	EVENTMANAGER->notifyEvent("CAMERA_POSITION", m_Name,"", &m_Event);
-
-	//}
 	if(eventType == "CAMERA_ORIENTATION"  && !m_LookAt) {
 		CameraOrientation *f=(CameraOrientation *)evt->getData();
 		m_FloatProps[ELEVATION_ANGLE] = f->getBeta();
@@ -818,8 +824,8 @@ Camera::eventReceived(const std::string &sender, const std::string &eventType, n
 		}
 
 		result.set(m_Float4Props[POSITION].x, m_Float4Props[POSITION].y, m_Float4Props[POSITION].z); 
-		m_Event.setData(&result);
-		EVENTMANAGER->notifyEvent("CAMERA_POSITION", m_Name,"", &m_Event);
+		std::shared_ptr<IEventData> e = nau::event_::EventFactory::Create("Vec3");
+		EVENTMANAGER->notifyEvent("CAMERA_POSITION", m_Name,"", e);
 	}
 }
 

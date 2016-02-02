@@ -27,9 +27,10 @@ void PatchLoader::loadScene(nau::scene::IScene *aScene, std::string &aFilename) 
 
 	int numPatches, numVert;
 	unsigned int verticesPerPatch;
-	std::vector<unsigned int> *indices = new std::vector<unsigned int>;
-	std::vector<VertexData::Attr>* vertices = new std::vector<VertexData::Attr>;
-
+	std::shared_ptr<std::vector<unsigned int>> indices =
+		std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>);
+	std::shared_ptr<std::vector<VertexData::Attr>> vertices = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>);
 
 	fscanf(fp, "%d\n", &verticesPerPatch);
 	fscanf(fp, "%d\n", &numPatches);
@@ -86,22 +87,20 @@ void PatchLoader::loadScene(nau::scene::IScene *aScene, std::string &aFilename) 
 	tmp = maxY - minY > tmp? maxY - minY:tmp;
 	tmp = maxZ - minZ > tmp? maxZ - minZ:tmp;
 
-	SceneObject *anObject = SceneObjectFactory::create("SimpleObject"); 
+	std::shared_ptr<SceneObject> &anObject = SceneObjectFactory::Create("SimpleObject");
 	anObject->setName(aFilename);
 
 	IBoundingVolume *aBoundingVolume = BoundingVolumeFactory::create("BoundingBox");
 	aBoundingVolume->set(vec3(minX,minY,minZ), vec3(maxX, maxY, maxZ));
 	anObject->setBoundingVolume(aBoundingVolume);
 
-	IRenderable *aRenderable;
-	aRenderable = RESOURCEMANAGER->createRenderable("Mesh", "patch", aFilename);
+	std::shared_ptr<IRenderable> &aRenderable = RESOURCEMANAGER->createRenderable("Mesh", "patch", aFilename);
 
-	VertexData *vData = &(aRenderable->getVertexData());
+	std::shared_ptr<VertexData> vData = aRenderable->getVertexData();
 	vData->setDataFor(VertexData::GetAttribIndex(std::string("position")), vertices);
 
-	MaterialGroup *aMatGroup = MaterialGroup::Create(aRenderable, "dirLightDifAmbPix");
-	//aMatGroup->setParent(aRenderable);
-	//aMatGroup->setMaterialName("dirLightDifAmbPix");
+	std::shared_ptr<MaterialGroup> aMatGroup = MaterialGroup::Create(aRenderable.get(), "dirLightDifAmbPix");
+
 	if (hasIndices[0] == 'y')
 		aMatGroup->setIndexList(indices);
 

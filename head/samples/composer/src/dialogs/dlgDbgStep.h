@@ -27,7 +27,7 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
-#include <nau/event/ilistener.h>
+#include <nau/event/iListener.h>
 #include "../glcanvas.h"
 
 
@@ -47,7 +47,7 @@ protected:
 	wxButton *m_bNextFrame;
 	wxButton *m_bNextToPass;
 	std::string name;
-	std::vector<std::string> *passes;
+	std::vector<std::string> passes;
 	std::string pipenameString;
 	int currentPassIndex;
 
@@ -61,7 +61,8 @@ public:
 	static void SetParent(wxWindow *parent);
 	static void SetCanvas(GLCanvas *c);
 	virtual std::string &getName ();
-	void eventReceived(const std::string &sender, const std::string &eventType, nau::event_::IEventData *evt);
+	void eventReceived(const std::string &sender, const std::string &eventType, 
+		const std::shared_ptr<IEventData> &evt);
 	void updateDlg();
 	void append(std::string s);
 	void clear();

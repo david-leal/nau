@@ -23,20 +23,31 @@ PassQuad::PassQuad (const std::string &name) :
 	m_QuadObject (0)
 {
 	m_ClassName = "quad";
-	m_QuadObject = new Quad;
+	m_QuadObject = std::shared_ptr<SceneObject>(new Quad);
+	std::string mat = "__Quad";
+	std::string lib = DEFAULTMATERIALLIBNAME;
+	setMaterialName(lib, mat);
 }
 
 
 PassQuad::~PassQuad(void) {
 
-	delete m_QuadObject;
 }
 
 
-Pass *
+std::shared_ptr<Pass>
 PassQuad::Create(const std::string &passName) {
 
-	return new PassQuad(passName);
+	return dynamic_pointer_cast<Pass>(std::shared_ptr<PassQuad>(new PassQuad(passName)));
+}
+
+
+void
+PassQuad::eventReceived(const std::string &sender,
+	const std::string &eventType,
+	const std::shared_ptr<IEventData> &evt) {
+
+
 }
 
 

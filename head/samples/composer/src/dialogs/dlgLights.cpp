@@ -55,7 +55,7 @@ void
 DlgLights::notifyUpdate(Notification aNot, std::string lightName, std::string value) {
 
 	// sends events on behalf of the light
-	nau::event_::IEventData *e= nau::event_::EventFactory::create("String");
+	std::shared_ptr<nau::event_::IEventData> e= nau::event_::EventFactory::Create("String");
 	if (aNot == NEW_LIGHT) {
 		e->setData(&lightName);
 		EVENTMANAGER->notifyEvent("NEW_LIGHT", lightName,"", e);
@@ -64,7 +64,6 @@ DlgLights::notifyUpdate(Notification aNot, std::string lightName, std::string va
 		e->setData(&value);
 		EVENTMANAGER->notifyEvent("LIGHT_CHANGED", lightName ,"", e);
 	}
-	delete e;
 }
 
 
@@ -207,19 +206,18 @@ DlgLights::setupGrid() {
 void 
 DlgLights::updateList() {
 
-	std::vector<std::string> *names = RENDERMANAGER->getLightNames();
-	int num = names->size();
+	std::vector<std::string> names;
+	RENDERMANAGER->getLightNames(&names);
+	int num = names.size();
 
 	m_List->Clear();
 
 	for(int i = 0; i < num; i++)  {
 		wxString s;
 		s << i;
-		m_List->Append(wxString(names->at(i).c_str()));
+		m_List->Append(wxString(names[i].c_str()));
 	}
-	m_active = names->at(0);
-
-	delete names;
+	m_active = names[0];
 }
 
 

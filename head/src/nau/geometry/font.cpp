@@ -34,24 +34,25 @@ Font::Font():
 {}
 
 
-Font::~Font()
-{
+Font::~Font() {
+
 	mChars.clear();
 }
 
 
-
 void 
-Font::setName(std::string fontName) 
-{
+Font::setName(std::string fontName) {
+
 	mFontName = fontName;
 }
 
+
 void
-Font::setFontHeight(unsigned int height) 
-{
+Font::setFontHeight(unsigned int height) {
+
 	mHeight = height;
 }
+
 
 void
 Font::setMaterialName(std::string aMatName) {
@@ -59,15 +60,17 @@ Font::setMaterialName(std::string aMatName) {
 	mMaterialName = aMatName;
 }
 
+
 const std::string &
-Font::getMaterialName()
-{
+Font::getMaterialName() {
+
 	return mMaterialName;
 }
 
+
 void 
-Font::addChar(char code, int width, float x1, float x2, float y1, float y2, int A, int C)
-{
+Font::addChar(char code, int width, float x1, float x2, float y1, float y2, int A, int C) {
+
 	Char aChar;
 
 	aChar.A = A;
@@ -81,9 +84,10 @@ Font::addChar(char code, int width, float x1, float x2, float y1, float y2, int 
 	mNumChars++;
 }
 
+
 void
-Font::createSentenceRenderable(IRenderable &renderable, std::string sentence)
-{
+Font::createSentenceRenderable(std::shared_ptr<IRenderable> &renderable, std::string sentence) {
+
 	assert(mMaterialName != "");
 
 	size_t aux = sentence.length();
@@ -102,9 +106,12 @@ Font::createSentenceRenderable(IRenderable &renderable, std::string sentence)
 	//Mesh *renderable = (Mesh *)RESOURCEMANAGER->createRenderable("Mesh", sentence, "Sentence");
 	//renderable->setDrawingPrimitive(nau::render::IRenderer::TRIANGLES);
 
-	std::vector<VertexData::Attr> *vertices = new std::vector<VertexData::Attr>(size*6);
-	std::vector<VertexData::Attr> *texCoords = new std::vector<VertexData::Attr>(size*6);
-	std::vector<VertexData::Attr> *normals = new std::vector<VertexData::Attr>(size*6);
+	std::shared_ptr<std::vector<VertexData::Attr>> vertices =
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(size * 6));
+	std::shared_ptr<std::vector<VertexData::Attr>> texCoords =
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(size * 6));
+	std::shared_ptr<std::vector<VertexData::Attr>> normals =
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(size * 6));
 
 	int i = 0;
 	float hDisp = 0.0f, vDisp = 0.0f;
@@ -155,46 +162,44 @@ Font::createSentenceRenderable(IRenderable &renderable, std::string sentence)
 		}
 	}
 
-	VertexData &vertexData = renderable.getVertexData();
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("position")), vertices);
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("normal")), normals);
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("texCoord0")), texCoords);
+	std::shared_ptr<VertexData> &vertexData = renderable->getVertexData();
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("position")), vertices);
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("normal")), normals);
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("texCoord0")), texCoords);
 
-	std::vector<unsigned int> *indices = new std::vector<unsigned int>(size*6);
+	std::shared_ptr<std::vector<unsigned int>> indices = 
+		std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>(size*6));
 	for (int j = 0; j < size*6 ; j++)
 		indices->push_back(j);
 
-	MaterialGroup* auxMG;
-
-	std::vector<MaterialGroup *> aMatG = renderable.getMaterialGroups();
+	std::vector<std::shared_ptr<MaterialGroup>> aMatG = renderable->getMaterialGroups();
 	if (aMatG.size()) {
-		auxMG = (MaterialGroup *)aMatG[0];
-		auxMG->setIndexList (indices);
+		aMatG[0]->setIndexList (indices);
 	}
 	else {
-		auxMG = MaterialGroup::Create(&renderable, mMaterialName);
-//		auxMG->setMaterialName(mMaterialName);
-//		auxMG->setParent(&renderable);
+		std::shared_ptr<MaterialGroup> auxMG = MaterialGroup::Create(renderable.get(), mMaterialName);
 		auxMG->setIndexList (indices);
-		renderable.addMaterialGroup(auxMG);
+		renderable->addMaterialGroup(auxMG);
 	}
 }
 
 
 const std::string &
-Font::getFontName()
-{
+Font::getFontName() {
+
 	return mFontName;
 }
 
+
 bool
-Font::getFixedSize()
-{
+Font::getFixedSize() {
+
 	return(mFixedSize);
 }
 
+
 void
-Font::setFixedSize(bool f)
-{
+Font::setFixedSize(bool f) {
+
 	mFixedSize = f;
 }

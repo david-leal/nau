@@ -2,10 +2,6 @@
 #define RENDERMANAGER_H
 
 
-#include <map>
-#include <string>
-#include <vector>
-
 #include "nau/render/pipeline.h"
 #include "nau/render/iRenderer.h"
 #include "nau/render/iRenderQueue.h"
@@ -15,7 +11,12 @@
 #include "nau/scene/light.h"
 #include "nau/scene/sceneObject.h"
 
-namespace nau 
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace nau
 {
 	namespace render 
 	{
@@ -26,16 +27,16 @@ namespace nau
 		class RenderManager
 		{
 		private:
-			IRenderer* m_pRenderer;
-			IRenderQueue* m_pRenderQueue;
-//			std::map<std::string, Pipeline*> m_Pipelines;
-			std::vector<Pipeline*> m_Pipelines;
-			std::map<std::string, nau::scene::Camera*> m_Cameras;
-			std::map<std::string, std::shared_ptr<nau::scene::Light>> m_Lights;
-			std::map<std::string, nau::scene::IScene*> m_Scenes;
-			std::vector<nau::scene::SceneObject*> m_SceneObjects;
-			std::map <std::string, nau::render::Viewport*> m_Viewports; 
-			//Pipeline *m_ActivePipeline;
+			std::unique_ptr<IRenderer> m_pRenderer;
+			std::unique_ptr<IRenderQueue> m_pRenderQueue;
+			std::vector<std::shared_ptr<Pipeline>> m_Pipelines;
+			//std::vector<SceneObject*> m_SceneObjects;
+
+			std::map<std::string, std::shared_ptr<IScene>> m_Scenes;
+			std::map<std::string, std::shared_ptr<Camera>> m_Cameras;
+			std::map<std::string, std::shared_ptr<Light>> m_Lights;
+			std::map<std::string, std::shared_ptr<Viewport>> m_Viewports;
+
 			unsigned int m_ActivePipelineIndex;
 			
 			typedef enum {
@@ -58,40 +59,36 @@ namespace nau
 			unsigned char renderActivePipeline();
 			void renderActivePipelineNextPass();
 
-			// OCTREE STUFF
-			//! Creates an octree for every OctreeScene
-			void buildOctrees();
-
-			//! Create VBOs for every IScene, erases all vertex data, except vertex coordinates 
-			void compile();
 			
 			// VIEWPORTS
-			nau::render::Viewport* createViewport(const std::string &name, nau::math::vec4 &bgColor);
-			nau::render::Viewport* createViewport(const std::string &name);
-			nau::render::Viewport* getViewport(const std::string &name);
-			std::vector<std::string> *getViewportNames();
+			std::shared_ptr<Viewport> createViewport(const std::string &name, nau::math::vec4 &bgColor);
+			std::shared_ptr<Viewport> createViewport(const std::string &name);
+			std::shared_ptr<Viewport> getViewport(const std::string &name);
+			void getViewportNames(std::vector<std::string> *);
 			bool hasViewport(const std::string &name);
 
 
 			// PIPELINES
+			std::shared_ptr<Pipeline> &createPipeline(const std::string &pipelineName);
 			//! Checks if a given named pipeline exists
 			bool hasPipeline (const std::string &pipelineName);
 			//! Returns a pointer to the named pipeline
-			Pipeline* getPipeline (const std::string &pipelineName);
+			std::shared_ptr<Pipeline> &getPipeline (const std::string &pipelineName);
 			unsigned int getPipelineIndex (const std::string &pipelineName);
 			//! Returns a pointer to the active pipeline
-			Pipeline* getActivePipeline();
+			std::shared_ptr<Pipeline> &getActivePipeline();
 
 			//! Returns the active pipeline name
 			std::string getActivePipelineName();
 			//! Sets the named pipeline as the active pipeline for rendering purposes
 			void setActivePipeline (const std::string &pipelineName);
+			void setActivePipeline(int index);
 			//! Sets the named pipeline as the active pipeline for rendering purposes
 			void setActivePipeline (unsigned int index);
 			//! Returns the number of pipelines
 			unsigned int getNumPipelines();
 			//! Returns a vector with the name of all the defined pipelines
-			std::vector<std::string> *getPipelineNames();
+			void getPipelineNames(std::vector<std::string> *);
 
 			bool setRunMode(std::string s);
 
@@ -112,25 +109,22 @@ namespace nau
 			//! Returns the name of the last pass' camera from the active pipeline
 			const std::string &getDefaultCameraName();
 
-			//void reload (void);
-			//void sendKeyToEngine (char keyCode); 
-
 			//! Currently does nothing. Returns -1
-			int pick (int x, int y, std::vector<nau::scene::SceneObject*> &objects, nau::scene::Camera &aCamera);
+			int pick (int x, int y, std::vector<std::shared_ptr<SceneObject>> &objects, nau::scene::Camera &aCamera);
 		
 			// TRIANGLE IDS
 			void prepareTriangleIDs(bool ids);
 			void getVertexData(unsigned int sceneObjID, 
 									 unsigned int triID);
-			SceneObject *getSceneObject(int id);
-			void addSceneObject(SceneObject *s);
-			void deleteSceneObject(int id);
+			//SceneObject *getSceneObject(int id);
+			//void addSceneObject(SceneObject *s);
+			//void deleteSceneObject(int id);
 
 			// RENDER QUEUE
 			//! Clear Renderqueue
 			void clearQueue (void);
 			//! Add an ISceneObject to the IRenderQueue
-			void addToQueue (nau::scene::SceneObject *aObject, 
+			void addToQueue (std::shared_ptr<SceneObject> &aObject,
 				std::map<std::string, nau::material::MaterialID> &materialMap);
 			//! Calls the IRenderQueue processQueue method
 			void processQueue (void);
@@ -140,17 +134,14 @@ namespace nau
 			//! Checks if the given named camera exists
 			bool hasCamera (const std::string &cameraName);
 			//! Returns a pointer to the given named camera
-			nau::scene::Camera* getCamera (const std::string &cameraName);
+			std::shared_ptr<Camera> &getCamera (const std::string &cameraName);
 			//! Returns the number of cameras
 			unsigned int getNumCameras();
 			//! Returns a vector with the name of all cameras
-			std::vector<std::string> *getCameraNames();
+			void getCameraNames(std::vector<std::string> *);
 			//! Returns the camera of the pass currently in execution. if no pass is being rendered it returns the pipeline's default camera
-			nau::scene::Camera* getCurrentCamera();
+			std::shared_ptr<Camera> &getCurrentCamera();
 
-			// VIEWPORTS
-			//! Calls the Renderer to set the viewport
-			void setViewport(nau::render::Viewport *vp);
 
 			// LIGHTS
 			//! Checks to see if the given named light exists
@@ -162,17 +153,23 @@ namespace nau
 			//! Returns the number of lights
 			unsigned int getNumLights();
 			//! Returns a vector with the name of all the lights
-			std::vector<std::string> *getLightNames();
+			void getLightNames(std::vector<std::string> *);
 
 			// SCENES
 			bool hasScene (const std::string &sceneName);
-			nau::scene::IScene* createScene (const std::string &sceneName, const std::string &sceneType = "OctreeUnified");
+			std::shared_ptr<IScene> & createScene (const std::string &sceneName, const std::string &sceneType = "OctreeUnified");
 			//! Return the named scene. If it does not exist it creates one
-			nau::scene::IScene* getScene (const std::string &sceneName);
+			std::shared_ptr<IScene> & getScene (const std::string &sceneName);
 			//! Returns all the scene names, but the SceneAux type
-			std::vector<std::string> *getSceneNames();
+			void getSceneNames(std::vector<std::string> *);
 			//! Returns ALL the scene names
-			std::vector<std::string> *getAllSceneNames();
+			void getAllSceneNames(std::vector<std::string> *);
+			// OCTREE STUFF
+			//! Creates an octree for every OctreeScene
+			void buildOctrees();
+
+			//! Create VBOs for every IScene, erases all vertex data, except vertex coordinates 
+			void compile();
 
 			// MATERIALS
 			//! Returns all the material names from the loaded scenes

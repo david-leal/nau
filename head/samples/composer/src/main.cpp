@@ -15,10 +15,6 @@
 #include <nau/debug/profile.h>
 #include <nau/render/iAPISupport.h>
 
-#ifdef GLINTERCEPTDEBUG
-#include "..\..\GLIntercept\Src\MainLib\ConfigDataExport.h"
-#endif
-
 #include <wx/bitmap.h>
 #include <wx/dir.h>
 #include <wx/filename.h>
@@ -109,9 +105,9 @@ int idMenuProfileReset = wxNewId();
 int idMenuAbout = wxNewId();
 int idMenuDlgOGL = wxNewId();
 
-int idMenuPhysicsBuild = wxNewId();
-int idMenuPhysicsOn = wxNewId();
-int idMenuPhysicsOff = wxNewId();
+//int idMenuPhysicsBuild = wxNewId();
+//int idMenuPhysicsOn = wxNewId();
+//int idMenuPhysicsOff = wxNewId();
 
 
 BEGIN_EVENT_TABLE(FrmMainFrame, wxFrame)
@@ -155,8 +151,8 @@ EVT_MENU(idMenuAbout, FrmMainFrame::OnAbout)
 
 EVT_KEY_DOWN(FrmMainFrame::OnKeyDown)
 	
-EVT_MENU_RANGE(idMenuPhysicsOn, idMenuPhysicsOff, FrmMainFrame::OnPhysicsMode)
-EVT_MENU(idMenuPhysicsBuild, FrmMainFrame::OnPhysicsBuild)
+//EVT_MENU_RANGE(idMenuPhysicsOn, idMenuPhysicsOff, FrmMainFrame::OnPhysicsMode)
+//EVT_MENU(idMenuPhysicsBuild, FrmMainFrame::OnPhysicsBuild)
 	
 EVT_CLOSE(FrmMainFrame::OnClose)
 	
@@ -265,7 +261,7 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 
 	debugMenu = new wxMenu(_T(""));
     debugMenu->Append(idMenuDlgLog, _("&Log\tCtrl-L"), _("Show Log"));
-	debugMenu->Append(idMenuProfileReset, _("&Reset Profiler"), _(""));
+	debugMenu->Append(idMenuProfileReset, _("Reset Profiler\tCtrl-R"), _(""));
 	debugMenu->AppendSeparator();
 	debugMenu->Append(idMenuDbgBreak, _("&Pause"), _("Pauses or resumes rendering"));
 	debugMenu->Append(idMenuDlgStep, _("&Advanced Pass Controller"), _("Aditional Pass control options"));
@@ -275,6 +271,8 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 	debugMenu->Append(idMenuDlgTrace, _("&Trace Log Window\tCtrl-T"), _("Displays Trace Info"));
 	debugMenu->Append(idMenuTraceSingle, _("Trace Single Frame\tShift+T"), _("Trace 3D API calls for a single frame"));
 	debugMenu->Append(idMenuTracing, _("Trace Start\tT"), _("Start/Stop tracing 3D API calls"));
+	debugMenu->AppendSeparator();
+	debugMenu->Append(idMenuScreenShot, _("Screen Shot\tCtrl-0"), _(""));
 
 	debugMenu->Enable(idMenuDbgBreak, false);
 	debugMenu->Enable(idMenuDlgStep, false);
@@ -294,12 +292,12 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 
     mbar->Append(aboutMenu, _("&Help"));
 
-	wxMenu* physicsMenu = new wxMenu(_T(""));
-	physicsMenu->Append (idMenuPhysicsBuild, _("&Build physics"), _("Builds physics"));
-	physicsMenu->AppendRadioItem (idMenuPhysicsOn, _("Physics On"), _("Physics On"));
-	physicsMenu->AppendRadioItem (idMenuPhysicsOff, _("Physics Off"), _("Physics Off"));
-	physicsMenu->Check (idMenuPhysicsOn, true);
-	mbar->Append (physicsMenu, _("Physics"));
+	//wxMenu* physicsMenu = new wxMenu(_T(""));
+	//physicsMenu->Append (idMenuPhysicsBuild, _("&Build physics"), _("Builds physics"));
+	//physicsMenu->AppendRadioItem (idMenuPhysicsOn, _("Physics On"), _("Physics On"));
+	//physicsMenu->AppendRadioItem (idMenuPhysicsOff, _("Physics Off"), _("Physics Off"));
+	//physicsMenu->Check (idMenuPhysicsOff, true);
+	//mbar->Append (physicsMenu, _("Physics"));
 
     SetMenuBar(mbar);
 
@@ -326,6 +324,7 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 
 
 	m_pRoot = nau::Nau::Create();
+
 
 	bool nauInit (false);
         
@@ -357,7 +356,7 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 			//WGL_CONTEXT_MAJOR_VERSION_ARB, major,
             //WGL_CONTEXT_MINOR_VERSION_ARB, minor, 
             //WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
-            //WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+            WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
  
 			0};
 
@@ -368,7 +367,9 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 	}
 	catch(std::string &s) {
 		wxMessageBox((wxString)s.c_str());
+		exit(1);
 	}
+
 
 	if (true != nauInit){
 		wxMessageBox (_("Nau error!"), _("Kaput!"));
@@ -397,9 +398,9 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 	DlgDbgStep::SetParent(this);
 	DlgDbgStep::SetCanvas(m_Canvas);
 	DlgRenderTargets::SetParent(this);
-#ifdef GLINTERCEPTDEBUG
-	gliSetIsGLIActive(true);
-#endif
+//#ifdef GLINTERCEPTDEBUG
+//	gliSetIsGLIActive(true);
+//#endif
 
 #ifdef FINAL
 	startStandAlone();
@@ -408,14 +409,34 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 	int w, h;
 	GetClientSize(&w, &h);
 	SetClientSize(w+1, h+1);
+
+	if (wxGetApp().argc > 1) {
+		int param = 1;
+		if (wxGetApp().argv[1].c_str()[0] != '-') {
+			loadProject(wxGetApp().argv[1].c_str());
+			param = 2;
+		}
+		for (int i = param; i < wxGetApp().argc; ++i) {
+			if (wxGetApp().argv[i].ToStdString() == "-trace") {
+				long frames;
+				if (i + 1 < wxGetApp().argc && wxGetApp().argv[i + 1].ToLong(&frames)) {
+					m_pRoot->setTrace((int)frames);
+					++i;
+				}
+				else
+					m_pRoot->setTrace(1);
+			}
+		}
+	}
+
 }
 
 
 FrmMainFrame::~FrmMainFrame() {
 
-#ifdef GLINTERCEPTDEBUG
-	gliSetIsGLIActive(true);
-#endif
+//#ifdef GLINTERCEPTDEBUG
+//	gliSetIsGLIActive(true);
+//#endif
 }
 
 
@@ -565,7 +586,7 @@ FrmMainFrame::updateDlgs() {
 void 
 FrmMainFrame::OnResetFrameCount(wxCommandEvent& event) {
 
-	m_pRoot->resetFrameCount();
+	RENDERER->setPropui(IRenderer::FRAME_COUNT, 0);
 }
 
 
@@ -635,6 +656,7 @@ FrmMainFrame::OnDirectoryLoad (wxCommandEvent& event) {
 			wxMessageBox("An exception has occured during folder load");
 		}
 	}
+	delete openDirDlg;
 }
 
 
@@ -664,6 +686,7 @@ FrmMainFrame::OnModelLoad (wxCommandEvent& event) {
 			wxMessageBox(wxString(s.c_str()));
 		}
 	}
+	delete openFileDlg;
 }
 
 
@@ -675,36 +698,72 @@ FrmMainFrame::OnProjectLoad(wxCommandEvent& event) {
 
 	if (wxID_OK == openFileDlg->ShowModal ()) {
 		wxString path = openFileDlg->GetPath ();
-		wxStopWatch aTimer;
-		aTimer.Start();
-
-		try {
-			m_pRoot->clear();
-			DlgLog::Instance()->updateDlg();
-			DlgLog::Instance()->clear();
-			int width=0, height=0;
-			std::string ProjectFile ((const char *) path.c_str());
-			m_pRoot->readProjectFile (ProjectFile, &width,&height);
-			if (width)
-				SetClientSize(width,height);
-			m_Canvas->setCamera();
-			updateDlgs();
-#ifndef FINAL
-
-			float t =  aTimer.Time()/1000.0;
-			SLOG("Elapsed time: %f", t);
-#endif
-
-			DlgTrace::Instance()->clear();
-
-		} catch (nau::ProjectLoaderError &e) {
-		  wxMessageBox (wxString (e.getException().c_str()));
-		} 	
-		catch (std::string s) {
-			wxMessageBox(wxString (s.c_str()));
-		}
+		loadProject(path.c_str());
+//		wxStopWatch aTimer;
+//		aTimer.Start();
+//
+//		try {
+//			m_pRoot->clear();
+//			DlgLog::Instance()->updateDlg();
+//			DlgLog::Instance()->clear();
+//			int width=0, height=0;
+//			std::string ProjectFile ((const char *) path.c_str());
+//			m_pRoot->readProjectFile (ProjectFile, &width,&height);
+//			if (width)
+//				SetClientSize(width,height);
+//			m_Canvas->setCamera();
+//			updateDlgs();
+//#ifndef FINAL
+//
+//			float t =  aTimer.Time()/1000.0;
+//			SLOG("Elapsed time: %f", t);
+//#endif
+//
+//			DlgTrace::Instance()->clear();
+//
+//		} catch (nau::ProjectLoaderError &e) {
+//		  wxMessageBox (wxString (e.getException().c_str()));
+//		} 	
+//		catch (std::string s) {
+//			wxMessageBox(wxString (s.c_str()));
+//		}
 	}
 	delete openFileDlg;
+}
+
+
+void 
+FrmMainFrame::loadProject(const char *s) {
+
+	wxStopWatch aTimer;
+	aTimer.Start();
+
+	try {
+		m_pRoot->clear();
+		DlgLog::Instance()->updateDlg();
+		DlgLog::Instance()->clear();
+		int width = 0, height = 0;
+		std::string ProjectFile(s);
+		m_pRoot->readProjectFile(ProjectFile, &width, &height);
+		if (width)
+			SetClientSize(width, height);
+		m_Canvas->setCamera();
+		updateDlgs();
+#ifndef FINAL
+
+		float t = aTimer.Time() / 1000.0;
+		SLOG("Elapsed time: %f", t);
+#endif
+
+		DlgTrace::Instance()->clear();
+
+	}
+	catch (nau::ProjectLoaderError &e) {
+		wxMessageBox(wxString(e.getException().c_str()));
+	}
+	catch (std::string s) {
+		wxMessageBox(wxString(s.c_str()));
+	}
 }
 
 
@@ -808,7 +867,7 @@ FrmMainFrame::startStandAlone (void) {
 	}
 
 	//initScene();
-	buildPhysics();
+	//buildPhysics();
 
 	RENDERMANAGER->getScene ("MainScene")->compile();
 
@@ -840,29 +899,29 @@ FrmMainFrame::OnBreakResume(wxCommandEvent& event) {
 	m_Canvas->BreakResume();
 	if (m_Canvas->IsPaused()){
 		
-#ifdef GLINTERCEPTDEBUG
-		FreezeGLI();
-#endif
+//#ifdef GLINTERCEPTDEBUG
+//		FreezeGLI();
+//#endif
 		debugMenu->Enable(idMenuDlgStep, true);
 		debugMenu->SetLabel(idMenuDbgBreak, "Resume");
 	}
 	else{
 
-#ifdef GLINTERCEPTDEBUG		
-		gliSetIsGLIActive(true);
-#endif
+//#ifdef GLINTERCEPTDEBUG		
+//		gliSetIsGLIActive(true);
+//#endif
 		debugMenu->Enable(idMenuDlgStep, false);
 		debugMenu->SetLabel(idMenuDbgBreak, "Pause");
 	}
 }
 
 
-void
-FrmMainFrame::FreezeGLI(){
-#ifdef GLINTERCEPTDEBUG
-	gliSetIsGLIActive(false);
-#endif
-}
+//void
+//FrmMainFrame::FreezeGLI(){
+//#ifdef GLINTERCEPTDEBUG
+//	gliSetIsGLIActive(false);
+//#endif
+//}
 
 
 void
@@ -901,66 +960,43 @@ FrmMainFrame::OnDlgDbgStep(wxCommandEvent& event) {
 }
 
 
-void
-FrmMainFrame::OnPhysicsBuild (wxCommandEvent &event)
-{
-	buildPhysics();
-}
+//void
+//FrmMainFrame::OnPhysicsBuild (wxCommandEvent &event)
+//{
+//	buildPhysics();
+//}
 
-void
-FrmMainFrame::buildPhysics(void) {
-
-	nau::scene::Camera *cam = RENDERMANAGER->getCamera("testCamera");
-
-	if (0 != m_pRoot) {
-		//std::vector<std::string>* names = RENDERMANAGER->getAllSceneNames();
-		//m_pRoot->getWorld().setScene(RENDERMANAGER->getScene("plane"));
-		m_pRoot->getWorld().build();//glcanvas; onPaint; idle 
-
-		EVENTMANAGER->addListener("DYNAMIC_CAMERA", cam);
-		//m_pRoot->getWorld()._add(60.1f, cam, cam->getName(), vec3(0.3f, 0.3f, 0.5f));//descartar
-
-		IScene* planeScene = RENDERMANAGER->getScene("plane");
-		//vector<SceneObject*> ballObjects = ballScene->getAllObjects();
-		SceneObject* plane = planeScene->getSceneObject(0);
-		m_pRoot->getWorld()._add(
-			10.0f,
-			plane,
-			"plane",
-			vec3(0.5f, 0.5f, 0.5f)
-			);
-
-		IScene* ballScene = RENDERMANAGER->getScene("ball");
-		//vector<SceneObject*> ballObjects = ballScene->getAllObjects();
-		SceneObject* ball = ballScene->getSceneObject(0);
-		m_pRoot->getWorld()._add(
-			10.0f,
-			ball,
-			ball->getName(),
-			vec3(0.5f, 0.5f, 0.5f)
-		);
-	}
-}
+//void
+//FrmMainFrame::buildPhysics(void) {
+//
+//	nau::scene::Camera *cam = RENDERMANAGER->getCamera("testCamera");
+//
+//	if (0 != m_pRoot) {
+//		m_pRoot->getWorld().build();
+//		EVENTMANAGER->addListener("DYNAMIC_CAMERA", cam);
+//		m_pRoot->getWorld()._add(60.1f, cam, cam->getName(), vec3(0.3f, 0.3f, 0.5f));
+//	}
+//}
+//
+//
+//
 
 
-
-
-
-void
-FrmMainFrame::OnPhysicsMode (wxCommandEvent &event)
-{
-	nau::scene::Camera *cam = NAU->getActiveCamera ();
-
-	if (idMenuPhysicsOn == event.GetId()) {
-		m_pRoot->enablePhysics();		
-		cam->setDynamic(true);
-	}
-	
-	if (idMenuPhysicsOff == event.GetId()) {
-		m_pRoot->disablePhysics();	
-		cam->setDynamic(false);
-	}
-}
+//void
+//FrmMainFrame::OnPhysicsMode (wxCommandEvent &event)
+//{
+//	nau::scene::Camera *cam = NAU->getActiveCamera ();
+//
+//	if (idMenuPhysicsOn == event.GetId()) {
+//		m_pRoot->enablePhysics();		
+//		cam->setDynamic(true);
+//	}
+//	
+//	if (idMenuPhysicsOff == event.GetId()) {
+//		m_pRoot->disablePhysics();	
+//		cam->setDynamic(false);
+//	}
+//}
 
 
 

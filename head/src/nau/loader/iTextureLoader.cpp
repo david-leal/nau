@@ -40,7 +40,7 @@ ITextureLoader::Save(ITexture *t, FileType ft) {
 
 
 void
-ITextureLoader::Save(int width, int height, char *data, std::string filename) {
+ITextureLoader::Save(int width, int height, unsigned char *data, std::string filename) {
 
 
 	if (filename == "") {
@@ -53,12 +53,13 @@ ITextureLoader::Save(int width, int height, char *data, std::string filename) {
 		timeinfo = localtime(&rawtime);
 		float k = (float)clock();
 		strftime(buffer, 80, "%Y-%m-%d_%H-%M-%S", timeinfo);
-		sprintf(buffer2, "%s.%f.png", buffer, k);
+		sprintf(buffer2, "%s.%f.jpg", buffer, k);
 		filename = std::string(buffer2);
 	}
 
 	nau::loader::ITextureLoader *loader = nau::loader::ITextureLoader::create();
 	loader->save(width, height, data, filename);
+	delete loader;
 
 }
 

@@ -41,7 +41,7 @@ Material::~Material() {
 
 
 
-Material*
+std::shared_ptr<Material> 
 Material::clone() { // check clone Program Values
 
    Material *mat;
@@ -72,7 +72,7 @@ Material::clone() { // check clone Program Values
 
  	mat->m_State = m_State;
 
-   return mat;
+   return std::shared_ptr<Material>(mat);
 }
 
 			
@@ -187,37 +187,42 @@ Material::getTextureUnits(std::vector<unsigned int> *vi) {
 void 
 Material::setUniformValues() {
 
-	PROFILE_GL("Set Uniforms");
-	std::map<std::string,ProgramValue>::iterator progValIter;
+	{ // explicit block for profiler
+		PROFILE_GL("Set Uniforms");
+		std::map<std::string, ProgramValue>::iterator progValIter;
 
-	progValIter = m_ProgramValues.begin();
+		progValIter = m_ProgramValues.begin();
 
-	for (; progValIter != m_ProgramValues.end(); ++progValIter) {
-			
-		void *v = progValIter->second.getValues();
-		m_Shader->setValueOfUniform(progValIter->first, v);
+		for (; progValIter != m_ProgramValues.end(); ++progValIter) {
+
+			void *v = progValIter->second.getValues();
+			m_Shader->setValueOfUniform(progValIter->first, v);
+		}
 	}
+	int x = 3;
 }
 
 
 void 
 Material::setUniformBlockValues() {
 
-	PROFILE_GL("Set Blocks");
+	{ // explicit block for profiler
+		PROFILE_GL("Set Blocks");
 
-	std::set<std::string> blocks;
-	for (auto pbv:m_ProgramBlockValues) {
-			
-		void *v = pbv.second.getValues();
- 		std::string block = pbv.first.first;
-		std::string uniform = pbv.first.second;
-		IUniformBlock *b = UNIFORMBLOCKMANAGER->getBlock(block);
-		if (b) {
-			b->setUniform(uniform, v);
-			blocks.insert(block);
+		std::set<std::string> blocks;
+		for (auto pbv : m_ProgramBlockValues) {
+
+			void *v = pbv.second.getValues();
+			const std::string &block = pbv.first.first;
+			std::string uniform = pbv.first.second;
+			IUniformBlock *b = UNIFORMBLOCKMANAGER->getBlock(block);
+			if (b) {
+				b->setUniform(uniform, v);
+				blocks.insert(block);
+			}
 		}
+		m_Shader->prepareBlocks();
 	}
-	m_Shader->prepareBlocks();
 }
 
 #include <algorithm>
@@ -338,7 +343,7 @@ Material::prepare () {
 
 	{
 		PROFILE("Buffers");
-		for (auto b : m_Buffers) {
+		for (auto &b : m_Buffers) {
 			b.second->bind();
 		}
 	}
@@ -350,8 +355,9 @@ Material::prepare () {
 		PROFILE("Color");
 		m_Color.prepare();
 	}
-	{	PROFILE("Texture");
-		for (auto t : m_Textures) {
+	{	
+		PROFILE("Texture");
+		for (auto &t : m_Textures) {
 			t.second->bind();
 		}
 	}
@@ -359,7 +365,7 @@ Material::prepare () {
 	{
 		PROFILE("Image Textures");
 		if (APISupport->apiSupport(IAPISupport::IMAGE_TEXTURE)) {
-			for (auto it : m_ImageTextures)
+			for (auto &it : m_ImageTextures)
 				it.second->prepare();
 		}
 	}
@@ -382,11 +388,11 @@ Material::prepare () {
 void 
 Material::restore() {
 
-	m_Color.restore();
+	//m_Color.restore();
 	
-	if (NULL != m_Shader && m_useShader) {
-		m_Shader->restore();
-	}
+	//if (NULL != m_Shader && m_useShader) {
+	//	m_Shader->restore();
+	//}
 	
 	RENDERER->resetTextures(m_Textures);
 	//for (auto t : m_Textures)
@@ -396,7 +402,7 @@ Material::restore() {
 		b.second->unbind();
 	
 	if (APISupport->apiSupport(IAPISupport::IMAGE_TEXTURE)) {
-		for (auto b : m_ImageTextures)
+		for (auto &b : m_ImageTextures)
 			b.second->restore();
 	}
 }
@@ -466,10 +472,20 @@ Material::attachBuffer(IMaterialBuffer *b) {
 
 
 IMaterialBuffer *
-Material::getBuffer(int id) {
+Material::getMaterialBuffer(int id) {
 
 	if (m_Buffers.count(id))
 		return m_Buffers[id];
+	else
+		return NULL;
+}
+
+
+IBuffer *
+Material::getBuffer(int id) {
+
+	if (m_Buffers.count(id))
+		return m_Buffers[id]->getBuffer();
 	else
 		return NULL;
 }
@@ -581,7 +597,7 @@ Material::attachProgram (std::string shaderName)
 
 
 void
-Material::cloneProgramFromMaterial(Material *mat) {
+Material::cloneProgramFromMaterial(std::shared_ptr<Material> &mat) {
 
 	m_Shader = mat->getProgram();
 
@@ -677,8 +693,7 @@ IState*
 Material::getState (void) {
 
 	if (m_State == NULL) {
-		std::string name = "__" + m_Name;
-		m_State = RESOURCEMANAGER->createState(name);
+		m_State = RESOURCEMANAGER->createState(m_Name);
 	}
    return m_State;
 }

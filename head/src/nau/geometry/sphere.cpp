@@ -11,34 +11,29 @@ using namespace nau::render;
 using namespace nau::material;
 
 
-const std::string Sphere::FloatParamNames[] = {"slices", "stacks"};
-
-
-
 bool
-Sphere::InitSphere() {
+Sphere::Init() {
 
 	//UINT
 	Attribs.add(Attribute(STACKS, "STACKS", Enums::UINT, false, new NauUInt(10), new NauUInt(2), NULL));
 	Attribs.add(Attribute(SLICES, "SLICES", Enums::UINT, false, new NauUInt(10), new NauUInt(3), NULL));
 
+	NAU->registerAttributes("SPHERE", &Attribs);
 	return true;
 }
 
 
 AttribSet Sphere::Attribs;
-bool Sphere::InitedSphere = InitSphere();
+bool Sphere::Inited = Init();
 
 
-Sphere::Sphere(): Primitive()/*,
-	m_Floats(COUNT_FLOATPARAMS)*/ {
+Sphere::Sphere(): Primitive(), m_Built(false) {
 
-		registerAndInitArrays(Attribs);
+	registerAndInitArrays(Attribs);
 }
 
 
-Sphere::~Sphere(void)
-{
+Sphere::~Sphere(void) {
 
 }
 
@@ -49,10 +44,14 @@ Sphere::build() {
 	int slices = m_UIntProps[SLICES] + 1;// (int)m_Floats[SLICES] + 1;
 	int stacks = m_UIntProps[STACKS] + 1;//(int)m_Floats[STACKS] + 1;
 	int total = (slices) * (stacks);
-	std::vector<VertexData::Attr> *vertices = new std::vector<VertexData::Attr>(total);
-	std::vector<VertexData::Attr> *tangents = new std::vector<VertexData::Attr>(total);
-	std::vector<VertexData::Attr> *textureCoords = new std::vector<VertexData::Attr>(total);
-	std::vector<VertexData::Attr> *normals = new std::vector<VertexData::Attr>(total);
+	std::shared_ptr<std::vector<VertexData::Attr>> vertices = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(total));
+	std::shared_ptr<std::vector<VertexData::Attr>> tangents = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(total));
+	std::shared_ptr<std::vector<VertexData::Attr>> textureCoords = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(total));
+	std::shared_ptr<std::vector<VertexData::Attr>> normals = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(total));
 
 	float stepSlice = 2.0f * (float)M_PI / (slices-1);
 	float stepStack = (float)M_PI / (stacks-1);
@@ -69,17 +68,18 @@ Sphere::build() {
 			textureCoords->at(i * (slices) + j).set(j*1.0f/(stacks-1),i*1.0f/(slices-1), 0.0f);
 		}
 	}
-	VertexData &vertexData = getVertexData();
+	std::shared_ptr<VertexData> &vertexData = getVertexData();
 
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("position")), vertices);
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("tangent")), tangents);
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("texCoord0")), textureCoords);
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("normal")), normals);
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("position")), vertices);
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("tangent")), tangents);
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("texCoord0")), textureCoords);
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("normal")), normals);
 
 
-	MaterialGroup *aMaterialGroup = MaterialGroup::Create(this, "__Light Grey");
+	std::shared_ptr<MaterialGroup> aMaterialGroup = MaterialGroup::Create(this, "__Light Grey");
 	
-	std::vector<unsigned int> *indices = new std::vector<unsigned int>((slices)*(stacks)*2*3);
+	std::shared_ptr<std::vector<unsigned int>> indices = 
+		std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>((slices)*(stacks)*2*3));
 
 	int k =  0;
 	for (int i = 0; i < stacks-1; ++i) {
@@ -95,54 +95,79 @@ Sphere::build() {
 	
 	}
 	aMaterialGroup->setIndexList (indices);
-	//aMaterialGroup->setParent (this);
-	//aMaterialGroup->setMaterialName("Light Grey");
-
 	addMaterialGroup (aMaterialGroup);
 
-	delete aMaterialGroup;
+	m_Built = true;
+}
+
+void 
+Sphere::setPropui(UIntProperty prop, int unsigned value) {
+
+	m_UIntProps[prop] = value;
+	if (m_Built)
+		rebuild();
 }
 
 
-const std::string &
-Sphere::getParamfName(unsigned int i) 
-{
-	if (i < Sphere::COUNT_FLOATPARAMS)
-		return Sphere::FloatParamNames[i];
-	else
-		return Primitive::NoParam;
-}
+void 
+Sphere::rebuild() {
 
+	int slices = m_UIntProps[SLICES] + 1;// (int)m_Floats[SLICES] + 1;
+	int stacks = m_UIntProps[STACKS] + 1;//(int)m_Floats[STACKS] + 1;
+	int total = (slices)* (stacks);
+	std::shared_ptr<std::vector<VertexData::Attr>> &vertices = getVertexData()->getDataOf(0);
+	vertices->resize(total);
+	std::shared_ptr<std::vector<VertexData::Attr>> &tangents = getVertexData()->getDataOf(7);
+	tangents->resize(total);
+	std::shared_ptr<std::vector<VertexData::Attr>> textureCoords = getVertexData()->getDataOf(3);
+	textureCoords->resize(total);
+	std::shared_ptr<std::vector<VertexData::Attr>> &normals = getVertexData()->getDataOf(1);
+	normals->resize(total);
 
-float 
-Sphere::getParamf(unsigned int param)
-{
-	assert(param < Sphere::COUNT_FLOATPARAMS);
+	float stepSlice = 2.0f * (float)M_PI / (slices - 1);
+	float stepStack = (float)M_PI / (stacks - 1);
 
-	if (param < Sphere::COUNT_FLOATPARAMS)
-		return(m_Floats[param]);
-	else
-		return (0.0f);
-}
-
-
-void
-Sphere::setParam(unsigned int param, float value)
-{
-	assert(param < Sphere::COUNT_FLOATPARAMS);
-
-	if (param < Sphere::COUNT_FLOATPARAMS)
-		m_Floats[param] = value;
-}
-
-
-unsigned int
-Sphere::translate(const std::string &name) 
-{
-	for (int i = 0; i < Sphere::COUNT_FLOATPARAMS; ++i) {
-		if (FloatParamNames[i] == name)
-			return i;
+	for (int i = 0; i < stacks; ++i) {
+		for (int j = 0; j < slices; ++j) {
+			float cosAlpha = cos(j * stepSlice);
+			float sinAlpha = sin(j * stepSlice);
+			float sinBeta = sin(i * stepStack - (float)M_PI * 0.5f);
+			float cosBeta = cos(i * stepStack - (float)M_PI * 0.5f);
+			vertices->at(i * (slices)+j).set(cosAlpha*cosBeta, sinBeta, sinAlpha*cosBeta);
+			tangents->at(i * (slices)+j).set(cosAlpha*sinBeta, cosBeta, sinAlpha*sinBeta);
+			normals->at(i * (slices)+j).set(cosAlpha*cosBeta, sinBeta, sinAlpha*cosBeta);
+			textureCoords->at(i * (slices)+j).set(j*1.0f / (stacks - 1), i*1.0f / (slices - 1), 0.0f);
+		}
 	}
-	assert("name is not a primitive param");
-	return (0);
+	//std::shared_ptr<VertexData> &vertexData = getVertexData();
+
+	//vertexData->setDataFor(VertexData::GetAttribIndex(std::string("position")), vertices);
+	//vertexData->setDataFor(VertexData::GetAttribIndex(std::string("tangent")), tangents);
+	//vertexData->setDataFor(VertexData::GetAttribIndex(std::string("texCoord0")), textureCoords);
+	//vertexData->setDataFor(VertexData::GetAttribIndex(std::string("normal")), normals);
+
+
+	std::shared_ptr<MaterialGroup> aMaterialGroup = getMaterialGroups()[0];
+//		MaterialGroup::Create(this, "__Light Grey");
+
+	std::shared_ptr<std::vector<unsigned int>> &indices = aMaterialGroup->getIndexData()->getIndexData();
+	indices->resize((slices-1)*(stacks-1)* 2 * 3);
+//		std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>((slices)*(stacks)* 2 * 3));
+
+	int k = 0;
+	for (int i = 0; i < stacks - 1; ++i) {
+		for (int j = 0; j < slices - 1; ++j) {
+			indices->at(k++) = i * slices + j;
+			indices->at(k++) = (i + 1) * slices + j;
+			indices->at(k++) = i * slices + j + 1;
+
+			indices->at(k++) = i * slices + j + 1;
+			indices->at(k++) = (i + 1) * slices + j;
+			indices->at(k++) = (i + 1) * slices + j + 1;
+		}
+
+	}
+	aMaterialGroup->resetCompilationFlag();
+	aMaterialGroup->compile();
 }
+

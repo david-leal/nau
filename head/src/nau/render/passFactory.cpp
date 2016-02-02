@@ -10,6 +10,12 @@
 
 #include "nau/system/file.h"
 
+#include <iostream>
+#include <vector>
+#include <memory>
+#include <stdexcept>
+#include <exception>
+#include <windows.h>
 
 
 using namespace nau::render;
@@ -40,12 +46,6 @@ PassFactory::DeleteInstance() {
 
 
 
-#include <iostream>
-#include <vector>
-#include <memory>
-#include <stdexcept>
-#include <exception>
-#include <windows.h>
 
 unsigned int 
 PassFactory::loadPlugins() {
@@ -70,10 +70,6 @@ PassFactory::loadPlugins() {
 			break;
 		}
 
-		// Get the function and the class exported by the DLL.
-		// If you aren't using the MinGW compiler, you may need to adjust
-		// this to cope with name mangling (I haven't gone into this here,
-		// look it up if you want).
 		initProc initFunc = (initProc)GetProcAddress(mod, "init");
 		createPassProc createPassFunc = (createPassProc)GetProcAddress(mod, "createPass");
 		getClassNameProc getClassNameFunc = (getClassNameProc)GetProcAddress(mod, "getClassName");
@@ -99,14 +95,13 @@ PassFactory::loadPlugins() {
 }
 
 
-
 PassFactory::PassFactory() {
 
 }
 
 
 void 
-PassFactory::registerClass(const std::string &type, Pass *(*cb)(const std::string &)) {
+PassFactory::registerClass(const std::string &type, std::shared_ptr<Pass> (*cb)(const std::string &)) {
 
 	m_Creator[type] = cb;
 }
@@ -119,7 +114,7 @@ PassFactory::registerClassFromPlugIn(char *type, void * (*callback)(const char *
 }
 
 
-Pass*
+std::shared_ptr<Pass>
 PassFactory::create (const std::string &type, const std::string &name) {
 
 	IAPISupport *sup = IAPISupport::GetInstance();
@@ -127,39 +122,21 @@ PassFactory::create (const std::string &type, const std::string &name) {
 		NAU_THROW("Compute Shader is not supported");
 
 	if (m_Creator.count(type))
-		return (*(Pass *(*)(const std::string &))(m_Creator[type]))(name);
+		return (*(std::shared_ptr<Pass>(*)(const std::string &))(m_Creator[type]))(name);
+		//return (*(Pass *(*)(const std::string &))(m_Creator[type]))(name);
 	else if (m_PluginCreator.count(type)) {
-		return (*(Pass *(*)(const char *))(m_PluginCreator[type]))(name.c_str());
+		std::shared_ptr<Pass> *p = (std::shared_ptr<Pass> *)(*(Pass *(*)(const char *))(m_PluginCreator[type]))(name.c_str());
+		return *p;
 	}
 
-//	if ("default" == type) {
-//		return new Pass (name);
-//	}
-	if ("depthmap2" == type) {
-		return new PassDepthMap (name);
+	if ("depthmap" == type) {
+		return std::shared_ptr<Pass>(new PassDepthMap (name));
 	}
-//	if ("quad" ==  type) {
-//		return new PassQuad (name);
-//	}
+
 	if ("profiler" == type) {
-		return new PassProfiler(name);
+		return std::shared_ptr<Pass>(new PassProfiler(name));
 	}
 	return NULL;
-//	if ("compute" == type) {
-//		return new PassCompute(name);
-//	}
-//#ifdef NAU_OPTIX
-//	if ("optix" == type)
-//		return new PassOptix(name);
-//#endif
-//#ifdef NAU_OPTIX
-//#if NAU_OPENGL_VERSION >= 420
-//	if ("optixPrime" == type)
-//		return new PassOptixPrime(name);
-//#endif
-//#endif
-
-	//return 0;
 }
 
 bool

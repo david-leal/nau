@@ -14,7 +14,6 @@ using namespace nau::material;
 
 
 OctreeScene::OctreeScene(void) : IScenePartitioned(),
-	m_vReturnVector(),
 	m_SceneObjects(),
 	m_pGeometry (0),
 	m_BoundingBox()
@@ -26,20 +25,21 @@ OctreeScene::OctreeScene(void) : IScenePartitioned(),
 }
 
 
-OctreeScene::~OctreeScene(void)
-{
-	delete m_pGeometry;
+OctreeScene::~OctreeScene(void) {
 
-	while (!m_SceneObjects.empty()) {
-		delete(*m_SceneObjects.begin());
-		m_SceneObjects.erase(m_SceneObjects.begin());
-	}
+	//delete m_pGeometry;
+
+	//while (!m_SceneObjects.empty()) {
+	//	delete(*m_SceneObjects.begin());
+	//	m_SceneObjects.erase(m_SceneObjects.begin());
+	//}
 }
 
 
 void
-OctreeScene::eventReceived(const std::string &sender, const std::string &eventType, nau::event_::IEventData *evt)
-{	
+OctreeScene::eventReceived(const std::string &sender, const std::string &eventType, 
+	const std::shared_ptr<IEventData> &evt) {
+
 	vec4 *p = (vec4 *)evt->getData();
 //	SLOG("Scene %s %s %s %f %f %f", m_Name.c_str(), sender.c_str(), eventType.c_str(), p->x, p->y, p->z);
 
@@ -59,37 +59,34 @@ OctreeScene::eventReceived(const std::string &sender, const std::string &eventTy
 
 
 mat4 &
-OctreeScene::getTransform() 
-{
+OctreeScene::getTransform() {
+
 	return m_Transform;
 }
 
 
 
 void
-OctreeScene::setTransform(nau::math::mat4 &t)
-{
+OctreeScene::setTransform(nau::math::mat4 &t) {
+
 	m_Transform = t;
 	updateSceneObjectTransforms();
 }
 
 
 void
-OctreeScene::transform(nau::math::mat4 &t)
-{
+OctreeScene::transform(nau::math::mat4 &t) {
+
 	m_Transform *= t;
 	updateSceneObjectTransforms();
 }
 
 
 void 
-OctreeScene::updateSceneObjectTransforms()
-{
-	std::vector<SceneObject*>::iterator iter; 
-	iter = m_SceneObjects.begin();
-    for( ; iter != m_SceneObjects.end(); ++iter)
-    {
-		(*iter)->updateGlobalTransform(m_Transform);
+OctreeScene::updateSceneObjectTransforms() {
+
+	for (auto &so : m_SceneObjects) {
+		so->updateGlobalTransform(m_Transform);
     }
 
 	if (m_pGeometry)
@@ -98,16 +95,16 @@ OctreeScene::updateSceneObjectTransforms()
 
 
 void 
-OctreeScene::build (void)
-{
+OctreeScene::build (void) {
+
 	if (true == m_Built) {
 		return ;
 	}
 
 	m_Built = true;
 	// First create a list with objects that are static
-	std::vector<SceneObject*>::iterator objIter;
-	std::vector<SceneObject*> staticObjects;
+	std::vector<std::shared_ptr<SceneObject>>::iterator objIter;
+	std::vector<std::shared_ptr<SceneObject>> staticObjects;
 
 	objIter = m_SceneObjects.begin();
 	for ( ; objIter != m_SceneObjects.end(); ++objIter) {
@@ -128,8 +125,6 @@ OctreeScene::build (void)
 	objIter = m_SceneObjects.begin();
 	for ( ; objIter != m_SceneObjects.end(); ) {
 			
-		if ((*objIter)->isStatic())
-			delete (*objIter);
 		objIter = m_SceneObjects.erase (objIter);
 	}
 
@@ -137,15 +132,15 @@ OctreeScene::build (void)
 
 
 IBoundingVolume& 
-OctreeScene::getBoundingVolume (void)
-{
+OctreeScene::getBoundingVolume (void) {
+
 	return m_BoundingBox;
 }
 
 
 void
-OctreeScene::compile (void)
-{
+OctreeScene::compile (void) {
+
 	if (true == m_Compiled) {
 		return;
 	}
@@ -156,24 +151,21 @@ OctreeScene::compile (void)
 		m_pGeometry->_compile();
 	} 
 
-	std::vector<SceneObject*>::iterator objIter;
-	objIter = m_SceneObjects.begin();
-	for ( ; objIter != m_SceneObjects.end(); ++objIter) {
-		(*objIter)->getRenderable().getVertexData().compile();
-		std::vector<MaterialGroup*> &matGroups = (*objIter)->getRenderable().getMaterialGroups();
+	for (auto &so : m_SceneObjects) {
+		so->getRenderable()->getVertexData()->compile();
+		std::vector<std::shared_ptr<MaterialGroup>> &matGroups = so->getRenderable()->getMaterialGroups();
 
-		std::vector<MaterialGroup*>::iterator matGroupsIter = matGroups.begin();
+		std::vector<std::shared_ptr<MaterialGroup>>::iterator matGroupsIter = matGroups.begin();
 		for ( ; matGroupsIter != matGroups.end(); ++matGroupsIter){
 			(*matGroupsIter)->compile();
 		}
-
 	}
 }
 
 
 void 
-OctreeScene::add (SceneObject *aSceneObject)
-{
+OctreeScene::add (std::shared_ptr<SceneObject> &aSceneObject) {
+
 	if (0 == aSceneObject->getType().compare ("OctreeNode")) {
 		m_Built = true;
 		if (0 == m_pGeometry) {
@@ -188,57 +180,45 @@ OctreeScene::add (SceneObject *aSceneObject)
 }
 
 
-std::vector <SceneObject*>& 
-OctreeScene::findVisibleSceneObjects (Frustum &aFrustum, Camera &aCamera, bool conservative)
-{
-	m_vReturnVector.clear();
+void
+OctreeScene::findVisibleSceneObjects (std::vector<std::shared_ptr<SceneObject>> *v, Frustum &aFrustum, Camera &aCamera, bool conservative) {
 
 	if (0 != m_pGeometry) {
-		m_pGeometry->_findVisibleSceneObjects (m_vReturnVector, aFrustum, aCamera, conservative);
+		m_pGeometry->_findVisibleSceneObjects (v, aFrustum, aCamera, conservative);
 	}
 
 	/* The objects NOT on the octree */
-	std::vector<SceneObject*>::iterator objIter;
-	objIter = m_SceneObjects.begin();
-	for ( ; objIter != m_SceneObjects.end(); ++objIter) {
-		/***MARK***/ /* View Frustum Culling Test */
+	for (auto &so : m_SceneObjects) {
 		
-		int side = aFrustum.isVolumeInside ((*objIter)->getBoundingVolume(), conservative);
+		int side = aFrustum.isVolumeInside (so->getBoundingVolume(), conservative);
 
 		if (Frustum::OUTSIDE != side) {
-			m_vReturnVector.push_back (*(objIter));
+			v->push_back (so);
 		}
 	}
-
-	return m_vReturnVector;
 }
 
 
-std::vector<SceneObject*>& 
-OctreeScene::getAllObjects ()
-{
-	m_vReturnVector.clear();
+void
+OctreeScene::getAllObjects (std::vector<std::shared_ptr<SceneObject>> *v) {
 
-	std::vector<SceneObject*>::iterator objIter;
-	objIter = m_SceneObjects.begin();
-	for ( ; objIter != m_SceneObjects.end(); ++objIter) {
-		m_vReturnVector.push_back(*(objIter));
+	for (auto &so : m_SceneObjects) {
+		v->push_back(so);
 	}
 
 	if (0 != m_pGeometry) {
-		m_pGeometry->_getAllObjects (m_vReturnVector);
+		m_pGeometry->_getAllObjects (v);
 	}
-	return m_vReturnVector;
 }
 
 
 const std::set<std::string> &
-OctreeScene::getMaterialNames()
-{
+OctreeScene::getMaterialNames() {
+
 	m_MaterialNames.clear();
 
 	for (auto objIter : m_SceneObjects) {
-		objIter->getRenderable().getMaterialNames(&m_MaterialNames);
+		objIter->getRenderable()->getMaterialNames(&m_MaterialNames);
 	}
 
 	if (0 != m_pGeometry) {
@@ -248,25 +228,23 @@ OctreeScene::getMaterialNames()
 }
 
 
-SceneObject* 
+std::shared_ptr<SceneObject> &
 OctreeScene::getSceneObject (std::string name)
 {
-	std::vector<SceneObject*>::iterator objIter;
-	objIter = m_SceneObjects.begin();
-	for ( ; objIter != m_SceneObjects.end(); ++objIter) {
-		if (0 == (*objIter)->getName().compare (name)) {
-			return (*objIter);
+	for (auto &so : m_SceneObjects) {
+		if (0 == so->getName().compare (name)) {
+			return so;
 		}
 	}
-	return 0;
+	return m_EmptySOptr;
 }
 
 
-SceneObject*
+std::shared_ptr<SceneObject> &
 OctreeScene::getSceneObject( int index) 
 {
 	if (index < 0 || (unsigned int)index >= m_SceneObjects.size())
-		return NULL;
+		return m_EmptySOptr;
 
 	return m_SceneObjects.at(index);
 }

@@ -63,11 +63,13 @@ AssimpLoader::loadScene(nau::scene::IScene *aScene, std::string &aFilename, std:
 		if (mesh->mPrimitiveTypes != 4)
 			continue;
 
-		Mesh *renderable =  (Mesh *)RESOURCEMANAGER->createRenderable("Mesh", mesh->mName.data, aFilename);
+		std::shared_ptr<nau::render::IRenderable> & renderable =  
+			RESOURCEMANAGER->createRenderable("Mesh", mesh->mName.data, aFilename);
 		meshNameMap[n] = renderable->getName();
 		renderable->setDrawingPrimitive(primitive);
 
-		std::vector<unsigned int> *indices = new std::vector<unsigned int>;
+		std::shared_ptr<std::vector<unsigned int>> indices = 
+			std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>);
 
 		for (unsigned int t = 0; t < mesh->mNumFaces; ++t) {
 			const  aiFace* face = &mesh->mFaces[t];
@@ -82,28 +84,31 @@ AssimpLoader::loadScene(nau::scene::IScene *aScene, std::string &aFilename, std:
 		std::string matName = name.data;
 		if (matName == "")
 			matName = "Default";
-		MaterialGroup *aMaterialGroup = MaterialGroup::Create(renderable, matName);
+		std::shared_ptr<MaterialGroup> aMaterialGroup = MaterialGroup::Create(renderable.get(), matName);
 		aMaterialGroup->setIndexList(indices);
 		if (primitive == IRenderable::TRIANGLES_ADJACENCY)
-			aMaterialGroup->getIndexData().useAdjacency(true);
+			aMaterialGroup->getIndexData()->useAdjacency(true);
 
 		renderable->addMaterialGroup(aMaterialGroup);
 		
-		VertexData &vertexData = renderable->getVertexData();
+		std::shared_ptr<VertexData> &vertexData = renderable->getVertexData();
 
 		if (mesh->HasPositions()) {
-			std::vector<VertexData::Attr>* vertex = readGL3FArray((float *)mesh->mVertices,mesh->mNumVertices, order, 1.0f);
-			vertexData.setDataFor(VertexData::GetAttribIndex(std::string("position")), vertex);
+			std::shared_ptr<std::vector<VertexData::Attr>> vertex = 
+				std::shared_ptr<std::vector<VertexData::Attr>>(readGL3FArray((float *)mesh->mVertices,mesh->mNumVertices, order, 1.0f));
+			vertexData->setDataFor(VertexData::GetAttribIndex(std::string("position")), vertex);
 		}
 
 		if (mesh->HasNormals()) {
-			std::vector<VertexData::Attr>* normal = readGL3FArray((float *)mesh->mNormals,mesh->mNumVertices, order, 0.0f);
-			vertexData.setDataFor(VertexData::GetAttribIndex(std::string("normal")), normal);
+			std::shared_ptr<std::vector<VertexData::Attr>> normal = 
+				std::shared_ptr<std::vector<VertexData::Attr>>(readGL3FArray((float *)mesh->mNormals,mesh->mNumVertices, order, 0.0f));
+			vertexData->setDataFor(VertexData::GetAttribIndex(std::string("normal")), normal);
 		}
 
 		// buffer for vertex texture coordinates
 		if (mesh->HasTextureCoords(0)) {
-			std::vector<VertexData::Attr>* texCoord = new std::vector<VertexData::Attr>(mesh->mNumVertices);
+			std::shared_ptr<std::vector<VertexData::Attr>> texCoord = 
+				std::shared_ptr<std::vector<VertexData::Attr>> (new std::vector<VertexData::Attr>(mesh->mNumVertices));
 			for (unsigned int k = 0; k < mesh->mNumVertices; ++k) {
 
 				texCoord->at(k).x   = mesh->mTextureCoords[0][k].x;
@@ -112,12 +117,12 @@ AssimpLoader::loadScene(nau::scene::IScene *aScene, std::string &aFilename, std:
 				//texCoord->at(k).z = 0.0;
 				texCoord->at(k).w = 1.0;
 			}
-			vertexData.setDataFor(VertexData::GetAttribIndex(std::string("texCoord0")), texCoord);
+			vertexData->setDataFor(VertexData::GetAttribIndex(std::string("texCoord0")), texCoord);
 		}
 
 		if (!MATERIALLIBMANAGER->hasMaterial (DEFAULTMATERIALLIBNAME, matName)) {
 
-			Material *m = MATERIALLIBMANAGER->createMaterial(matName);
+			std::shared_ptr<Material> &m = MATERIALLIBMANAGER->createMaterial(matName);
 			aiString texPath;	
 			if(AI_SUCCESS == mtl->GetTexture(aiTextureType_DIFFUSE, 0, &texPath)){
 				m->createTexture(0,File::GetFullPath(path,texPath.data));
@@ -185,7 +190,8 @@ AssimpLoader::recursiveWalk (nau::scene::IScene *aScene, std::string &aFilename,
 	
 		if (sc->mMeshes[nd->mMeshes[n]]->mPrimitiveTypes == 4) {
 		//sc->mMeshes[nd->mMeshes[n]]->mName.data;
-		SceneObject *so = SceneObjectFactory::create("SimpleObject");
+		std::shared_ptr<SceneObject> so = SceneObjectFactory::Create("SimpleObject");
+		//SceneObject *so = SceneObjectFactory::Create("SimpleObject");
 		so->setRenderable(RESOURCEMANAGER->getRenderable(meshNameMap[nd->mMeshes[n]],""));
 		so->setTransform(m);
 		aScene->add(so);

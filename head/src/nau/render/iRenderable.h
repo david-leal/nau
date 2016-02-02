@@ -4,7 +4,7 @@
 #include "nau/attribute.h"
 #include "nau/attributeValues.h"
 #include "nau/config.h"
-#include "nau/event/ilistener.h"
+#include "nau/event/iListener.h"
 #include "nau/math/vec3.h"
 #include "nau/geometry/indexData.h"
 #include "nau/geometry/vertexData.h"
@@ -53,15 +53,15 @@ namespace nau
 			virtual void unitize(vec3 &vCenter, vec3 &vMin, vec3 &vMax) = 0;
 
 			virtual void getMaterialNames(std::set<std::string> *nameList) = 0;
-			virtual void addMaterialGroup (nau::material::MaterialGroup*, int offset=0) = 0;
-			virtual void addMaterialGroup (nau::material::MaterialGroup* materialGroup, 
-				nau::render::IRenderable *aRenderable) = 0; 
-			virtual std::vector<nau::material::MaterialGroup*>& getMaterialGroups(void) = 0;
+			virtual void addMaterialGroup(std::shared_ptr<nau::material::MaterialGroup> &, int offset=0) = 0;
+			virtual void addMaterialGroup(std::shared_ptr<nau::material::MaterialGroup> &,
+				std::shared_ptr<nau::render::IRenderable> &aRenderable) = 0;
+			virtual std::vector<std::shared_ptr<nau::material::MaterialGroup>>& getMaterialGroups(void) = 0;
 
-			virtual nau::geometry::VertexData& getVertexData (void) = 0;
-			virtual nau::geometry::IndexData& getIndexData(void) = 0;
+			virtual std::shared_ptr<nau::geometry::VertexData>& getVertexData (void) = 0;
+			virtual std::shared_ptr<nau::geometry::IndexData>& getIndexData(void) = 0;
 
-			virtual void merge(nau::render::IRenderable *aRenderable) = 0;
+			virtual void merge(std::shared_ptr<nau::render::IRenderable> &aRenderable) = 0;
 			virtual unsigned int getNumberOfVertices(void) = 0;
 			virtual void setNumberOfVerticesPerPatch(int i) = 0;
 			virtual int getnumberOfVerticesPerPatch(void) = 0;

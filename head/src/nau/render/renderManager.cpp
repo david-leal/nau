@@ -16,62 +16,35 @@ using namespace nau::math;
 
 
 RenderManager::RenderManager(void) : 
-	m_pRenderer (0), 
+	//m_pRenderer (0), 
 	m_Pipelines(),
 	m_Cameras(),
 	m_Lights(),
 //	m_ActivePipeline (0),
 	m_RunMode(RUN_DEFAULT) {
 
-	m_pRenderer = RenderFactory::create();
-	m_pRenderQueue = RenderQueueFactory::create ("MaterialSort");
+	m_pRenderer = std::unique_ptr<IRenderer>(RenderFactory::create());
+	m_pRenderQueue = std::unique_ptr<IRenderQueue>(RenderQueueFactory::create ("MaterialSort"));
 }
 
 
 RenderManager::~RenderManager(void) {
 
-	clear();
-	delete m_pRenderer;
-	delete m_pRenderQueue;
 }
 
 
 void 
 RenderManager::clear() {
 
-	while (!m_Cameras.empty()){
-		delete ((*m_Cameras.begin()).second);
-		m_Cameras.erase(m_Cameras.begin());
-	}
-
-	//while (!m_Lights.empty()){
-	//	delete ((*m_Lights.begin()).second);
-	//	m_Lights.erase(m_Lights.begin());
-	//}
-
-	while (!m_Scenes.empty()){
-		delete ((*m_Scenes.begin()).second);
-		m_Scenes.erase(m_Scenes.begin());
-	}
-
-	while (!m_Pipelines.empty()){
-		delete ((*m_Pipelines.begin()));
-		m_Pipelines.erase(m_Pipelines.begin());
-	}
-	while (!m_Viewports.empty()){
-		delete ((*m_Viewports.begin()).second);
-		m_Viewports.erase(m_Viewports.begin());
-	}
-
+	m_Cameras.clear();
+	m_Lights.clear();
+	m_Scenes.clear();
+	m_Pipelines.clear();
+	m_Viewports.clear();
 
 	m_ActivePipelineIndex = 0;
 
 	m_pRenderQueue->clearQueue();
-
-	//while (!m_SceneObjects.empty()){
-	//	delete (*m_SceneObjects.begin());
-	//	m_SceneObjects.erase(m_SceneObjects.begin());
-	//}
 }
 
 
@@ -85,12 +58,12 @@ RenderManager::init() {
 // =========  VIEWPORTS  =========================
 
 
-Viewport*
+std::shared_ptr<Viewport> 
 RenderManager::createViewport(const std::string &name, nau::math::vec4 &bgColor) {
 
 	if (m_Viewports.count(name) == 0) {
 
-		Viewport* v = new Viewport;
+		std::shared_ptr<Viewport> v = std::shared_ptr<Viewport>(new Viewport());
 
 		v->setName(name);
 		v->setPropf2(Viewport::ORIGIN, vec2(0.0f, 0.0f));
@@ -100,11 +73,8 @@ RenderManager::createViewport(const std::string &name, nau::math::vec4 &bgColor)
 		v->setPropb(Viewport::FULL, true);
 
 		m_Viewports[name] = v;
-		return v;
-	}
-	else
-		return m_Viewports[name];
-
+	}	
+	return m_Viewports[name];
 }
 
 
@@ -115,11 +85,11 @@ RenderManager::hasViewport(const std::string &name) {
 }
 
 
-Viewport*
+std::shared_ptr<Viewport> 
 RenderManager::createViewport(const std::string &name) {
 
 	if (m_Viewports.count(name) == 0) {
-		Viewport* v = new Viewport;
+		std::shared_ptr<Viewport> v = std::shared_ptr<Viewport>(new Viewport());
 
 		v->setName(name);
 		v->setPropf2(Viewport::ORIGIN, vec2(0.0f, 0.0f));
@@ -127,15 +97,12 @@ RenderManager::createViewport(const std::string &name) {
 		v->setPropb(Viewport::FULL, true);
 
 		m_Viewports[name] = v;
-
-		return v;
 	}
-	else
-		return m_Viewports[name];
+	return m_Viewports[name];
 }
 
 
-Viewport*
+std::shared_ptr<Viewport> 
 RenderManager::getViewport(const std::string &name) {
 
 	if (m_Viewports.count(name))
@@ -145,19 +112,26 @@ RenderManager::getViewport(const std::string &name) {
 }
 
 
-std::vector<std::string> *
-RenderManager::getViewportNames() {
+void
+RenderManager::getViewportNames(std::vector<std::string> *names) {
 
-	std::vector<std::string> *names = new std::vector<std::string>;
-
-	for (std::map<std::string, nau::render::Viewport*>::iterator iter = m_Viewports.begin(); iter != m_Viewports.end(); ++iter) {
-		names->push_back(iter->first);
+	for (auto &vp:m_Viewports) {
+		names->push_back(vp.first);
 	}
-	return names;
 }
 
 
 // =========  PIPELINES  =========================
+
+std::shared_ptr<Pipeline> &
+RenderManager::createPipeline(const std::string &pipelineName) {
+
+	Pipeline *pip = new Pipeline(pipelineName);
+	m_Pipelines.push_back(std::shared_ptr<Pipeline>(pip));
+
+	return m_Pipelines[m_Pipelines.size()-1];
+}
+
 
 bool 
 RenderManager::hasPipeline (const std::string &pipelineName) {
@@ -170,26 +144,15 @@ RenderManager::hasPipeline (const std::string &pipelineName) {
 }
 
 
-Pipeline*
+std::shared_ptr<Pipeline> &
 RenderManager::getPipeline(const std::string &pipelineName) {
 
-	Pipeline *pip = NULL;
-	bool found = false;
-
-	for (auto p : m_Pipelines) {
-		if (p->getName() == pipelineName) {
-			pip = p;
-			found = true;
-			break;
-		}
+	for (auto &p : m_Pipelines) {
+		if (p->getName() == pipelineName) 
+			return p;
 	}
 
-	if (!found) {
-		pip = new Pipeline(pipelineName);
-		m_Pipelines.push_back(pip);
-	}
-
-	return pip;
+	return m_Pipelines[0];
 }
 
 
@@ -215,13 +178,13 @@ RenderManager::getPipelineIndex(const std::string &pipelineName) {
 }
 
 
-Pipeline*
+std::shared_ptr<Pipeline> &
 RenderManager::getActivePipeline() {
 
 	if (m_Pipelines.size() > m_ActivePipelineIndex)
 		return m_Pipelines[m_ActivePipelineIndex];
 	else
-		return NULL;
+		return m_Pipelines[0];
 }
  
 
@@ -244,6 +207,13 @@ RenderManager::setActivePipeline (const std::string &pipelineName) {
 
 
 void
+RenderManager::setActivePipeline(int index) {
+
+	m_ActivePipelineIndex = index;
+}
+
+
+void
 RenderManager::setActivePipeline (unsigned int index) {
 
 	if (index < m_Pipelines.size()) {
@@ -259,15 +229,11 @@ RenderManager::getNumPipelines() {
 }
 
 
-std::vector<std::string> * 
-RenderManager::getPipelineNames() {
-
-	std::vector<std::string> *names = new std::vector<std::string>; 
+void 
+RenderManager::getPipelineNames(std::vector<std::string> *names) {
 
 	for (auto p : m_Pipelines)
 		names->push_back(p->getName());
-
-	return names;
 }
 
 
@@ -290,10 +256,8 @@ RenderManager::setRunMode(std::string mode) {
 bool
 RenderManager::hasPass(const std::string &pipeline, const std::string &pass) {
 
-	Pipeline *pip;
-
 	if (hasPipeline(pipeline)) {
-		pip = getPipeline(pipeline);
+		std::shared_ptr<Pipeline> &pip = getPipeline(pipeline);
 		return pip->hasPass(pass);
 	}
 	else 
@@ -306,7 +270,7 @@ Pass *RenderManager::getPass(const std::string &pipeline, const std::string &pas
 	// Pipeline and pass must exist
 	assert(hasPass(pipeline,pass));
 
-	Pipeline *pip = getPipeline(pipeline);
+	std::shared_ptr<Pipeline> &pip = getPipeline(pipeline);
 	return pip->getPass(pass);
 }
 
@@ -317,7 +281,7 @@ Pass *RenderManager::getPass(const std::string &pass) {
 		m_Pipelines[m_ActivePipelineIndex]->hasPass(pass));
 
 	// Pipeline and pass must exist
-	Pipeline *active = m_Pipelines[m_ActivePipelineIndex];
+	std::shared_ptr<Pipeline> &active = m_Pipelines[m_ActivePipelineIndex];
 	return active->getPass(pass);
 }
 
@@ -330,90 +294,53 @@ RenderManager::getCurrentPass() {
 }
 
 
-Camera*
-RenderManager::getCurrentCamera() {
-
-	assert(m_ActivePipelineIndex < m_Pipelines.size());
-
-	std::string cn = m_Pipelines[m_ActivePipelineIndex]->getCurrentCamera();
-	return (m_Cameras[cn]);
-}
-
-
 void
 RenderManager::prepareTriangleIDs(bool ids) {
 
-	std::map<std::string, nau::scene::IScene*>::iterator sceneIter;
+	for (auto &s:m_Scenes) {
 
-	sceneIter = m_Scenes.begin();
-	for ( ; sceneIter != m_Scenes.end(); ++sceneIter) {
+		std::vector <std::shared_ptr<SceneObject>> sceneObjs;
+		s.second->getAllObjects(&sceneObjs);
 
-		std::vector <SceneObject*> sceneObjs = (*sceneIter).second->getAllObjects();
+		for (auto &so: sceneObjs ) {
 
-		std::vector <SceneObject*>::iterator sceneObjIter;
-
-		sceneObjIter = sceneObjs.begin();
-		for ( ; sceneObjIter != sceneObjs.end(); ++sceneObjIter ) {
-
-			(*sceneObjIter)->prepareTriangleIDs(ids);
+			so->prepareTriangleIDs(ids);
 		}
 
 	}
-
-	//if (ids) {
-	//	int total = SceneObject::Counter;
-	//	m_SceneObjects.resize(total);
-	//	sceneIter = m_Scenes.begin();
-	//	int count = 0;
-	//	for ( ; sceneIter != m_Scenes.end(); sceneIter++) {
-
-	//		std::vector <SceneObject*> sceneObjs = (*sceneIter).second->getAllObjects();
-
-	//		std::vector <SceneObject*>::iterator sceneObjIter;
-
-	//		sceneObjIter = sceneObjs.begin();
-	//		for ( ; sceneObjIter != sceneObjs.end(); sceneObjIter ++) {
-	//			if ((*sceneObjIter)->getId() != 0) {
-	//				count++;
-	//				m_SceneObjects[(*sceneObjIter)->getId()-1] = (*sceneObjIter);
-	//			}
-	//		}
-	//	}
-	//	m_SceneObjects.resize(count);
-	//}
-
-}
-
-SceneObject *
-RenderManager::getSceneObject(int id) {
-
-	std::vector<nau::scene::SceneObject*>::iterator iter;
-	for (iter = m_SceneObjects.begin(); iter != m_SceneObjects.end() && (*iter)->getId() != id; ++iter);
-
-	if (iter != m_SceneObjects.end())
-		return *iter;
-	else
-		return NULL;
 }
 
 
-void 
-RenderManager::addSceneObject(SceneObject *s) {
-
-	m_SceneObjects.push_back(s);
-}
-
-
-void 
-RenderManager::deleteSceneObject(int id) {
-
-	std::vector<nau::scene::SceneObject*>::iterator iter;
-
-	for (iter = m_SceneObjects.begin(); iter != m_SceneObjects.end() && (*iter)->getId() != id; ++iter);
-
-	if (iter != m_SceneObjects.end())
-		m_SceneObjects.erase(iter);
-}
+//SceneObject *
+//RenderManager::getSceneObject(int id) {
+//
+//	std::vector<nau::scene::SceneObject*>::iterator iter;
+//	for (iter = m_SceneObjects.begin(); iter != m_SceneObjects.end() && (*iter)->getId() != id; ++iter);
+//
+//	if (iter != m_SceneObjects.end())
+//		return *iter;
+//	else
+//		return NULL;
+//}
+//
+//
+//void 
+//RenderManager::addSceneObject(SceneObject *s) {
+//
+//	m_SceneObjects.push_back(s);
+//}
+//
+//
+//void 
+//RenderManager::deleteSceneObject(int id) {
+//
+//	std::vector<nau::scene::SceneObject*>::iterator iter;
+//
+//	for (iter = m_SceneObjects.begin(); iter != m_SceneObjects.end() && (*iter)->getId() != id; ++iter);
+//
+//	if (iter != m_SceneObjects.end())
+//		m_SceneObjects.erase(iter);
+//}
 
 
 void
@@ -434,25 +361,20 @@ RenderManager::renderActivePipelineNextPass() {
 unsigned char
 RenderManager::renderActivePipeline () 
 {
-	Pipeline *pip;
-
 	if (!(m_ActivePipelineIndex < m_Pipelines.size()))
 		return 0;
 
-	pip = m_Pipelines[m_ActivePipelineIndex];
-
 	int n = RENDERER->getPropui(IRenderer::FRAME_COUNT);
-	int k = pip->getFrameCount();
+	int k = m_Pipelines[m_ActivePipelineIndex]->getFrameCount();
 	if (m_RunMode == RUN_ALL && k > 0 && k == n) {
 		m_ActivePipelineIndex++;
 		m_ActivePipelineIndex = m_ActivePipelineIndex % m_Pipelines.size();
-		NAU->resetFrameCount();
+		RENDERER->setPropui(IRenderer::FRAME_COUNT, 0);
 		if (m_ActivePipelineIndex == 0)
 			exit(0);
 	}
 
-	pip = m_Pipelines[m_ActivePipelineIndex];
-	pip->execute ();
+	m_Pipelines[m_ActivePipelineIndex]->execute ();
 
 	return 0;
 }
@@ -492,17 +414,17 @@ RenderManager::getPassAttribute(std::string passName, std::string name, Enums::D
 
 
 int
-RenderManager::pick (int x, int y, std::vector<nau::scene::SceneObject*> &objects, nau::scene::Camera &aCamera) {
+RenderManager::pick (int x, int y, std::vector<std::shared_ptr<SceneObject>> &objects, nau::scene::Camera &aCamera) {
 
 	return -1;
 }
 
 
-void 
-RenderManager::setViewport(nau::render::Viewport* vp) {
-
-	m_pRenderer->setViewport(vp);
-}
+//void 
+//RenderManager::setViewport(nau::render::Viewport* vp) {
+//
+//	m_pRenderer->setViewport(vp);
+//}
 
 
 void
@@ -515,7 +437,7 @@ RenderManager::setRenderMode (nau::render::IRenderer::TRenderMode mode) {
 IRenderer*
 RenderManager::getRenderer (void) {
 
-	return m_pRenderer;
+	return m_pRenderer.get();
 }
 
 
@@ -527,7 +449,7 @@ RenderManager::clearQueue (void) {
 
 
 void 
-RenderManager::addToQueue (SceneObject *aObject, 
+RenderManager::addToQueue (std::shared_ptr<SceneObject> &aObject,
 				std::map<std::string, MaterialID> &materialMap) {
 
 	m_pRenderQueue->addToQueue (aObject, materialMap);
@@ -543,6 +465,7 @@ RenderManager::processQueue (void) {
 // -----------------------------------------------------------
 //		CAMERAS
 // -----------------------------------------------------------
+
 
 bool
 RenderManager::hasCamera (const std::string &cameraName) {
@@ -561,15 +484,12 @@ RenderManager::getNumCameras() {
 }
 
 
-std::vector<std::string> * 
-RenderManager::getCameraNames() {
+void
+RenderManager::getCameraNames(std::vector<std::string> *names ) {
 
-	std::vector<std::string> *names = new std::vector<std::string>; 
-
-	for( std::map<std::string, nau::scene::Camera*>::iterator iter = m_Cameras.begin(); iter != m_Cameras.end(); ++iter ) {
-      names->push_back((*iter).first); 
+	for(auto &c:m_Cameras) {
+      names->push_back(c.first); 
     }
-	return names;
 }
 
 
@@ -583,11 +503,21 @@ RenderManager::getDefaultCameraName() {
 }
 
 
-Camera* 
+std::shared_ptr<Camera> &
+RenderManager::getCurrentCamera() {
+
+	assert(m_ActivePipelineIndex < m_Pipelines.size());
+
+	std::string cn = m_Pipelines[m_ActivePipelineIndex]->getCurrentCamera();
+	return (m_Cameras[cn]);
+}
+
+
+std::shared_ptr<Camera> &
 RenderManager::getCamera (const std::string &cameraName) {
 
 	if (false == hasCamera (cameraName)) {
-		m_Cameras[cameraName] = new Camera (cameraName);
+		m_Cameras[cameraName] = Camera::Create(cameraName);
 	}
 	return m_Cameras[cameraName];
 }
@@ -604,15 +534,12 @@ RenderManager::getNumLights() {
 }
 
 
-std::vector<std::string> * 
-RenderManager::getLightNames() {
-
-	std::vector<std::string> *names = new std::vector<std::string>; 
+ void
+RenderManager::getLightNames(std::vector<std::string> *names) {
 
 	for( auto &light: m_Lights) {
       names->push_back(light.first); 
     }
-	return names;
 }
 
 
@@ -660,39 +587,33 @@ RenderManager::hasScene (const std::string &sceneName) {
 }
 
 
-std::vector<std::string> * 
-RenderManager::getSceneNames() {
+void
+RenderManager::getSceneNames(std::vector<std::string> *names) {
 
-	std::vector<std::string> *names = new std::vector<std::string>; 
-
-	std::map<std::string, nau::scene::IScene*>::iterator iter = m_Scenes.begin();
+	std::map<std::string, std::shared_ptr<IScene>>::iterator iter = m_Scenes.begin();
 
 	for( ; iter != m_Scenes.end(); ++iter ) {
 		if ((*iter).second->getType() != "SceneAux")
       names->push_back((*iter).first); 
     }
-	return names;
 }
 
 
-std::vector<std::string> * 
-RenderManager::getAllSceneNames() {
+void 
+RenderManager::getAllSceneNames(std::vector<std::string> *names) {
 
-	std::vector<std::string> *names = new std::vector<std::string>; 
-
-	std::map<std::string, nau::scene::IScene*>::iterator iter = m_Scenes.begin();
+	std::map<std::string, std::shared_ptr<IScene>>::iterator iter = m_Scenes.begin();
 
 	for( ; iter != m_Scenes.end(); ++iter ) {
       names->push_back((*iter).first); 
     }
-	return names;
 }
 
 
 void 
 RenderManager::buildOctrees() {
 
-	std::map<std::string, nau::scene::IScene*>::iterator iter;
+	std::map<std::string, std::shared_ptr<IScene>>::iterator iter;
 	for( iter = m_Scenes.begin(); iter != m_Scenes.end(); ++iter ) {
       ((*iter).second)->build(); 
     }
@@ -702,30 +623,30 @@ RenderManager::buildOctrees() {
 void 
 RenderManager::compile() {
 
-	std::map<std::string, nau::scene::IScene*>::iterator iter;
+	std::map<std::string, std::shared_ptr<IScene>>::iterator iter;
 	for( iter = m_Scenes.begin(); iter != m_Scenes.end(); ++iter ) {
       ((*iter).second)->compile(); 
     }
 }
 
 
-nau::scene::IScene* 
+std::shared_ptr<IScene> &
 RenderManager::createScene (const std::string &sceneName, const std::string &sceneType) {
 
 	if (false == hasScene (sceneName)) {
-		IScene *s = SceneFactory::create (sceneType);
+		std::shared_ptr<IScene> s = SceneFactory::Create(sceneType);
 		if (s) {
 			m_Scenes[sceneName] = s;
 			s->setName(sceneName);
 		}
-		return s;
+		return m_Scenes[sceneName];
 	} 
 	else
 		return m_Scenes[sceneName]; //Or should it return NULL if it exists a scene with that name already
 }
 
 
-nau::scene::IScene* 
+std::shared_ptr<IScene> &
 RenderManager::getScene (const std::string &sceneName) {
 
 	if (false == hasScene (sceneName)) {

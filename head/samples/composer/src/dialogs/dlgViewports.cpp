@@ -57,7 +57,8 @@ DlgViewports::DlgViewports()
 
 
 void
-DlgViewports::eventReceived(const std::string &sender, const std::string &eventType, nau::event_::IEventData *evt) {
+DlgViewports::eventReceived(const std::string &sender, const std::string &eventType, 
+	const std::shared_ptr<nau::event_::IEventData> &evt) {
 
 	if (eventType == "NEW_VIEWPORT") 
 		updateList();
@@ -77,7 +78,7 @@ void
 DlgViewports::notifyUpdate(Notification aNot, std::string vpName, std::string value) {
 
 	// sends events on behalf of the viewport
-	nau::event_::IEventData *e= nau::event_::EventFactory::create("String");
+	std::shared_ptr<nau::event_::IEventData> e= nau::event_::EventFactory::Create("String");
 	if (aNot == NEW_VIEWPORT) {
 		e->setData(&value);
 		EVENTMANAGER->notifyEvent("NEW_VIEWPORT", vpName,"", e);
@@ -86,7 +87,6 @@ DlgViewports::notifyUpdate(Notification aNot, std::string vpName, std::string va
 		e->setData(&value);
 		EVENTMANAGER->notifyEvent("VIEWPORT_CHANGED", vpName, "", e);
 	}
-	delete e;
 }
 
 
@@ -159,25 +159,25 @@ DlgViewports::setupGrid() {
 void 
 DlgViewports::updateList() {
 
-	std::vector<std::string> *names = RENDERMANAGER->getViewportNames();
-	int num = names->size();
+	std::vector<std::string> names;
+	RENDERMANAGER->getViewportNames(&names);
+	int num = names.size();
 
 	m_List->Clear();
 
 	for(int i = 0; i < num; i++)  {
 		wxString s;
 		s << i;
-		m_List->Append(wxString(names->at(i).c_str()));
+		m_List->Append(wxString(names[i].c_str()));
 	}
-	m_Active = names->at(0);
-	delete names;
+	m_Active = names[0];
 }
 
 
 void DlgViewports::update() {
 
 	nau::render::Viewport *elem;		
-	elem = RENDERMANAGER->getViewport(m_Active);
+	elem = RENDERMANAGER->getViewport(m_Active).get();
 
 	m_PG->ClearModifiedStatus();
 
@@ -188,7 +188,7 @@ void DlgViewports::update() {
 
 void DlgViewports::OnPropsChange(wxPropertyGridEvent& e) {
 
-	nau::render::Viewport *elem = RENDERMANAGER->getViewport(m_Active);
+	nau::render::Viewport *elem = RENDERMANAGER->getViewport(m_Active).get();
 	const wxString& name = e.GetPropertyName();
 	unsigned int dotLocation = name.find_first_of(wxT("."),0);
 	std::string topProp = std::string(name.substr(0,dotLocation).mb_str());

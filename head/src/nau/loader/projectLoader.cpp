@@ -11,6 +11,8 @@
 #include "nau/event/sensorfactory.h"
 
 #include "nau/geometry/primitive.h"
+#include "nau/geometry/terrain.h"
+#include "nau/interface/interface.h"
 #include "nau/material/iBuffer.h"
 #include "nau/material/programValue.h"
 #include "nau/material/uniformBlockManager.h"
@@ -31,6 +33,7 @@
 #include "nau/scene/geometricObject.h"
 #include "nau/scene/sceneObjectFactory.h"
 
+
 #include "nau/system/TextUtil.h"
 
 
@@ -44,9 +47,9 @@
 
 #include <memory>
 
-#ifdef GLINTERCEPTDEBUG
-#include "nau/loader/projectLoaderDebugLinker.h"
-#endif
+//#ifdef GLINTERCEPTDEBUG
+//#include "nau/loader/projectLoaderDebugLinker.h"
+//#endif
 
 
 using namespace nau::loader;
@@ -96,7 +99,10 @@ ProjectLoader::readFile(TiXmlElement *p, std::string tag, std::string item) {
 }
 
 
-std::string 
+
+
+
+std::string
 ProjectLoader::toLower(std::string strToConvert) {
 
 	s_Dummy = strToConvert;
@@ -454,51 +460,57 @@ ProjectLoader::readAttributes(std::string parent, AttributeValues *anObj, nau::A
 }
 
 
-//void 
-//ProjectLoader::readAttributeList(std::string parent, AttributeValues *anObj, std::map<std::string, std::unique_ptr<nau::Attribute> > &attributes, nau::AttribSet &attribs, std::vector<std::string> &excluded, TiXmlElement *pElem) {
-//
-//	TiXmlElement *p = pElem->FirstChildElement();
-//	Data *value;
-//
-//	TiXmlAttribute* attrib = pElem->FirstAttribute();
-//
-//	while (attrib) {
-//		// skip previously excluded attributes
-//		if (!isExcluded(attrib->Name(), excluded)) {
-//			// trying to define an attribute that does not exist?		
-//			if (attributes.count(attrib->Name()) == 0) {
-//				std::vector<std::string> attribVec;
-//				getKeystoVector(attributes, &attribVec);
-//				attribVec.insert(attribVec.end(), excluded.begin(), excluded.end());
-//				std::string result;
-//				TextUtil::Join(attribVec, ", ", &result);
-//				NAU_THROW("File %s: Element %s: \"%s\" is not a valid attribute\nValid tags are: %s", 
-//					ProjectLoader::s_File.c_str(), parent.c_str(), attrib->Name(), result.c_str());
-//			}
-//			std::unique_ptr<Attribute> &a = attributes[attrib->Name()];
-//			// trying to set the value of a read only attribute?
-//			if (a->getReadOnlyFlag())
-//				NAU_THROW("File %s\nElement %s: \"%s\" is a read-only attribute", ProjectLoader::s_File.c_str(), parent.c_str(), attrib->Name());
-//
-//			int id = a->getId();
-//			value = readAttribute(attrib->Name(), a, pElem);
-//			if (value == NULL || !anObj->isValid(id, a->getType(), value)) {
-//				std::string s = getValidValuesString(a);
-//				if (s != "") {
-//					NAU_THROW("File %s\nElement %s: \"%s\" has an invalid value\nValid values are\n%s", ProjectLoader::s_File.c_str(), parent.c_str(), attrib->Name(), s.c_str());
-//				}
-//				else {
-//					NAU_THROW("File %s\nElement %s: \"%s\" is not supported", ProjectLoader::s_File.c_str(), parent.c_str(), attrib->Name());
-//				}
-//			}
-//			anObj->setProp(id, a->getType(), value);
-//		}
-//		attrib = attrib->Next();
-//	}
-//}
+void
+ProjectLoader::validateObjectAttribute(std::string type, std::string context, std::string component, std::string *message) {
+
+	if (!NAU->validateObjectType(type)) {
+		std::vector<std::string> validTypes;
+		NAU->getValidObjectTypes(&validTypes);
+		std::string messageAux;
+		TextUtil::Join(validTypes, ", ", &messageAux);
+		*message = "Invalid type value\nValid values are: " + messageAux;
+		return;
+	}
+	if (context != "CURRENT" && !NAU->validateObjectContext(type, context)) {
+		*message = "Invalid context value\nValid values are name of objects (or CURRENT if aplicable)";
+		return;
+	}
+	if (!NAU->validateObjectComponent(type, component)) {
+		std::vector<std::string> validComponents;
+		NAU->getValidObjectComponents(type, &validComponents);
+		std::string messageAux;
+		TextUtil::Join(validComponents, ", ", &messageAux);
+		*message = "Invalid component value\nValid values are: " + messageAux;
+		return;
+	}
+	*message = "";
+}
 
 
-void 
+void
+ProjectLoader::validateObjectTypeAndComponent(std::string type, std::string component, std::string *message) {
+
+	if (!NAU->validateObjectType(type)) {
+		std::vector<std::string> validTypes;
+		NAU->getValidObjectTypes(&validTypes);
+		std::string messageAux;
+		TextUtil::Join(validTypes, ", ", &messageAux);
+		*message = "Invalid type value\nValid values are: " + messageAux;
+		return;
+	}
+	if (!NAU->validateObjectComponent(type, component)) {
+		std::vector<std::string> validComponents;
+		NAU->getValidObjectComponents(type, &validComponents);
+		std::string messageAux;
+		TextUtil::Join(validComponents, ", ", &messageAux);
+		*message = "Invalid component value\nValid values are: " + messageAux;
+		return;
+	}
+	*message = "";
+}
+
+
+void
 ProjectLoader::readChildTags(std::string parent, AttributeValues *anObj, nau::AttribSet &attribs, std::vector<std::string> &excluded, TiXmlElement *pElem, bool showOnlyExcluded) {
 
 	TiXmlElement *p = pElem->FirstChildElement();
@@ -613,6 +625,10 @@ Project Specification
 		...
 	</pipelines>
 
+	<interface>
+		...
+	</interface>
+
 </project>
 
 -------------------------------------------------------------------*/
@@ -666,18 +682,18 @@ ProjectLoader::load (std::string file, int *width, int *height)
 		std::vector<std::string> ok = {"name", "width", "height"};
 		checkForNonValidAttributes("project", ok, pElem);
 		
-#ifdef GLINTERCEPTDEBUG
-		loadDebug(hRoot);
-#endif
+//#ifdef GLINTERCEPTDEBUG
+//		loadDebug(hRoot);
+//#endif
 		loadAssets (hRoot, matLibs);
 		loadPipelines (hRoot);
+		loadInterface(hRoot);
 
 	}
 	catch(std::string &s) {
 		throw(s);
 	}
-	std::vector<std::string> v;
-	v.push_back("assets"); v.push_back("pipelines");
+	std::vector<std::string> v = { "assets" , "pipelines" , "interface"};
 	checkForNonValidChildTags("project", v, pElem);
 
 #if NAU_DEBUG == 1
@@ -723,16 +739,18 @@ ProjectLoader::loadUserAttrs(TiXmlHandle handle)
 		//ok.push_back("context"); ok.push_back("name"); ok.push_back("type");
 		//checkForNonValidAttributes("attribute", ok, pElem);
 
-		const char *pContext = pElem->Attribute("context");
+		const char *pContext = pElem->Attribute("type");
 		const char *pName = pElem->Attribute("name");
-		const char *pType = pElem->Attribute("type");
+		const char *pType = pElem->Attribute("data");
 
 		if (0 == pContext) {
-			NAU_THROW("File %s\nAttribute without a context", ProjectLoader::s_File.c_str());
+			NAU_THROW("File %s\nAttribute without an object", ProjectLoader::s_File.c_str());
 		}
-		if (!NAU->validateUserAttribContext(pContext)) {
-			nau::system::TextUtil::Join(NAU->getContextList(), delim.c_str(), &s);
-			NAU_THROW("File %s\nAttribute with an invalid context %s\nValid Values are: \n%s", ProjectLoader::s_File.c_str(), pContext, s.c_str());
+		if (!NAU->validateUserAttribType(pContext)) {
+			std::vector<std::string> objTypes;
+			NAU->getObjTypeList(&objTypes);
+			nau::system::TextUtil::Join(objTypes, delim.c_str(), &s);
+			NAU_THROW("File %s\nAttribute with an invalid type %s\nValid Values are: \n%s", ProjectLoader::s_File.c_str(), pContext, s.c_str());
 		}
 		if (0 == pName) {
 			NAU_THROW("File %s\nAttribute without a name", ProjectLoader::s_File.c_str());
@@ -741,11 +759,11 @@ ProjectLoader::loadUserAttrs(TiXmlHandle handle)
 			NAU_THROW("File %s\nAttribute name %s is already in use in context %s", ProjectLoader::s_File.c_str(), pName, pContext);
 		}
 		if (0 == pType) {
-			NAU_THROW("File %s\nAttribute %s without a type", ProjectLoader::s_File.c_str(), pName);
+			NAU_THROW("File %s\nAttribute %s without a data type", ProjectLoader::s_File.c_str(), pName);
 		}
 		if (!Attribute::isValidUserAttrType(pType)) {
 			nau::system::TextUtil::Join(Attribute::getValidUserAttrTypes(), delim.c_str(), &s);
-			NAU_THROW("File %s\nAttribute %s with an invalid type: %s\nValid types are: \n%s", ProjectLoader::s_File.c_str(), pName, pType, s.c_str());
+			NAU_THROW("File %s\nAttribute %s with an invalid data type: %s\nValid types are: \n%s", ProjectLoader::s_File.c_str(), pName, pType, s.c_str());
 		}
 
 		AttribSet *attribs = NAU->getAttribs(pContext);
@@ -754,7 +772,7 @@ ProjectLoader::loadUserAttrs(TiXmlHandle handle)
 		//Attribute *a = new Attribute(attribs->getNextFreeID(), pName, dt, false, v);
 		attribs->add(Attribute(attribs->getNextFreeID(), pName, dt, false, v));
 		std::string s;
-		SLOG("User Attribute : %s::%s", pContext, pName);
+		SLOG("User Attribute : %s::%s (%s)", pContext, pName, pType);
 				
 	}
 }
@@ -861,12 +879,12 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 		else
 			s = pParam;
 
-		IScene *is;
+		std::shared_ptr<IScene> is;
 		if (0 == pType)
 			is = RENDERMANAGER->createScene(pName);
 		else {
 			is = RENDERMANAGER->createScene(pName, pType);
-			if (is == NULL)
+			if (!is)
 				NAU_THROW("File %s\nScene %s\nInvalid type for scene", ProjectLoader::s_File.c_str(), pName);
 		}
 
@@ -898,20 +916,21 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 				if (pPrimType == NULL)
 					NAU_THROW("File %s\nScene %s, Object:%s\ntype is not defined", ProjectLoader::s_File.c_str(), pName, pNameSO);
 
-				GeometricObject *go = (GeometricObject *)nau::scene::SceneObjectFactory::create("Geometry");
+				std::shared_ptr<GeometricObject> go = 
+					dynamic_pointer_cast<GeometricObject>(nau::scene::SceneObjectFactory::Create("Geometry"));
 				if (go == NULL)
 					NAU_THROW("File %s\nScene %s\nInvalid scene type", ProjectLoader::s_File.c_str(), pName);
 				
 				go->setName(pNameSO);
 
 				bool alreadyThere = false;
-				Primitive *p;
+				std::shared_ptr<Primitive> p;
 				if (RESOURCEMANAGER->hasRenderable(pNameSO, "")) {
 					alreadyThere = true;
-					p = (Primitive *)RESOURCEMANAGER->getRenderable(pNameSO, "");
+					p = dynamic_pointer_cast<Primitive>(RESOURCEMANAGER->getRenderable(pNameSO, ""));
 				}
 				else {
-					p = (Primitive *)RESOURCEMANAGER->createRenderable(pPrimType, pNameSO);
+					p = dynamic_pointer_cast<Primitive>(RESOURCEMANAGER->createRenderable(pPrimType, pNameSO));
 				}
 				if (!p)
 					NAU_THROW("File %s\nScene %s\nPrimitive %s has an invalid primitive type - %s", ProjectLoader::s_File.c_str(), pName, pNameSO, pPrimType);
@@ -921,25 +940,77 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 					if (as != NULL) {
 						std::vector <std::string> excluded;
 						excluded.push_back("name"); excluded.push_back("type"); excluded.push_back("material");
-						readAttributes(pName, (AttributeValues *)p, *as, excluded, pElementAux);
+						readAttributes(pName, (AttributeValues *)p.get(), *as, excluded, pElementAux);
 					}
 					p->build();
 				}
-				go->setRenderable(p);
+				go->setRenderable(dynamic_pointer_cast<IRenderable>(p));
 
 				if (!alreadyThere) {
 					if (pMaterial) {
 						if (!MATERIALLIBMANAGER->hasMaterial(DEFAULTMATERIALLIBNAME, pMaterial)) {
-							Material *mat = MATERIALLIBMANAGER->createMaterial(pMaterial);
+							MATERIALLIBMANAGER->createMaterial(pMaterial);
 						}
 						go->setMaterial(pMaterial);
 					}
 				}
 
 				std::vector<std::string> excluded;
-				readChildTags(pNameSO, (AttributeValues *)go, SceneObject::Attribs, excluded, pElementAux);
+				readChildTags(pNameSO, (AttributeValues *)go.get(), SceneObject::Attribs, excluded, pElementAux);
 
-				is->add(go);
+				is->add(dynamic_pointer_cast<SceneObject>(go));
+			}
+			pElementAux = handle.FirstChild("terrain").Element();
+			for (; 0 != pElementAux; pElementAux = pElementAux->NextSiblingElement("terrain")) {
+				const char *pNameSO = pElementAux->Attribute("name");
+				const char *pMaterial = pElementAux->Attribute("material");
+				const char *pHeightMap = pElementAux->Attribute("heightMap");
+
+				if (pNameSO == NULL)
+					NAU_THROW("File %s\nScene %s\nTerrain object without a name", ProjectLoader::s_File.c_str(), pName);
+
+				std::shared_ptr<GeometricObject> go =
+					dynamic_pointer_cast<GeometricObject>(nau::scene::SceneObjectFactory::Create("Geometry"));
+
+				go->setName(pNameSO);
+
+				bool alreadyThere = false;
+				std::shared_ptr<nau::geometry::Terrain> p;
+				if (RESOURCEMANAGER->hasRenderable(pNameSO, "")) {
+					alreadyThere = true;
+					p = dynamic_pointer_cast<Terrain>(RESOURCEMANAGER->getRenderable(pNameSO, ""));
+				}
+				else {
+					p = dynamic_pointer_cast<Terrain>(RESOURCEMANAGER->createRenderable("Terrain", pNameSO));
+				}
+
+				if (!alreadyThere) {
+					AttribSet *as = NAU->getAttribs("TERRAIN");
+					if (as != NULL) {
+						std::vector <std::string> excluded;
+						excluded.push_back("name"); excluded.push_back("heightMap"); excluded.push_back("material");
+						readAttributes(pName, (AttributeValues *)p.get(), *as, excluded, pElementAux);
+					}
+					if (!File::Exists(File::GetFullPath(ProjectLoader::s_Path, pHeightMap)))
+						NAU_THROW("File %s\nScene %s\nTerrain heightmap does not exist", ProjectLoader::s_File.c_str(), pName);
+					p->setHeightMap(File::GetFullPath(ProjectLoader::s_Path, pHeightMap));
+					p->build();
+				}
+				go->setRenderable(dynamic_pointer_cast<IRenderable>(p));
+
+				if (!alreadyThere) {
+					if (pMaterial) {
+						if (!MATERIALLIBMANAGER->hasMaterial(DEFAULTMATERIALLIBNAME, pMaterial)) {
+							MATERIALLIBMANAGER->createMaterial(pMaterial);
+						}
+						go->setMaterial(pMaterial);
+					}
+				}
+
+				std::vector<std::string> excluded;
+				readChildTags(pNameSO, (AttributeValues *)go.get(), SceneObject::Attribs, excluded, pElementAux);
+
+				is->add(dynamic_pointer_cast<SceneObject>(go));
 			}
 
 			pElementAux = handle.FirstChild("buffers").Element();
@@ -958,17 +1029,17 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 					NAU_THROW("File %s\nScene: %s\nInvalid primitive type %s in buffers definition", ProjectLoader::s_File.c_str(), pName, primString.c_str());
 				}
 				IRenderable::DrawPrimitive dp = IRenderer::PrimitiveTypes[primString];
-				SceneObject *so = SceneObjectFactory::create("SimpleObject");
+				std::shared_ptr<SceneObject> &so = SceneObjectFactory::Create("SimpleObject");
 				so->setName(pNameSO);
-				IRenderable *i = RESOURCEMANAGER->createRenderable("Mesh", pNameSO);
+				std::shared_ptr<IRenderable> &i = RESOURCEMANAGER->createRenderable("Mesh", pNameSO);
 				i->setDrawingPrimitive(dp);
-				MaterialGroup *mg;
+				std::shared_ptr<MaterialGroup> mg;
 				if (pMaterial)
-					mg = MaterialGroup::Create(i, pMaterial);
+					mg = MaterialGroup::Create(i.get(), pMaterial);
 				else
-					mg = MaterialGroup::Create(i, "dirLightDifAmbPix");
+					mg = MaterialGroup::Create(i.get(), "dirLightDifAmbPix");
 
-				VertexData &v = i->getVertexData();
+				std::shared_ptr<VertexData> &v = i->getVertexData();
 				std::string bufferName;
 				TiXmlElement *p = pElementAux->FirstChildElement();
 				while (p) {
@@ -982,11 +1053,11 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 					int attribIndex = VertexData::GetAttribIndex(std::string(p->Value()));
 
 					if (attribIndex != VertexData::MaxAttribs) {
-						v.setBuffer(attribIndex, b->getPropi(IBuffer::ID));
+						v->setBuffer(attribIndex, b->getPropi(IBuffer::ID));
 					}
 					else if (p->Value() == "index"){
 
-						mg->getIndexData().setBuffer(b->getPropi(IBuffer::ID));
+						mg->getIndexData()->setBuffer(b->getPropi(IBuffer::ID));
 					}
 					else {
 						NAU_THROW("File %s\nScene: %s\nVertex Attribute %s is not valid", ProjectLoader::s_File.c_str(), pName, p->Value());
@@ -1052,10 +1123,10 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 					closedir(dir);
 				}
 			}
-			std::vector<std::string> excluded;
-			excluded.push_back("file"); excluded.push_back("folder");
-			excluded.push_back("geometry"); excluded.push_back("buffers");
-			readChildTags(pName, (AttributeValues *)is, IScene::Attribs, excluded, pElem);
+			std::vector<std::string> excluded = {"file", "folder", "geometry", "terrain", "buffers"};
+//			excluded.push_back("file"); excluded.push_back("folder");
+//			excluded.push_back("geometry"); excluded.push_back("buffers");
+			readChildTags(pName, (AttributeValues *)is.get(), IScene::Attribs, excluded, pElem);
 		}
 		if (pParam) {
 			std::string params = std::string(pParam);
@@ -1148,7 +1219,7 @@ void
 ProjectLoader::loadViewports(TiXmlHandle handle) 
 {
 	TiXmlElement *pElem;
-	Viewport *v;
+	std::shared_ptr<Viewport> v;
 
 	pElem = handle.FirstChild ("viewports").FirstChild ("viewport").Element();
 	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
@@ -1166,7 +1237,7 @@ ProjectLoader::loadViewports(TiXmlHandle handle)
 
 		// Reading remaining viewport attributes
 		std::vector<std::string> excluded;
-		readChildTags(pName, (AttributeValues *)v, Viewport::Attribs, excluded, pElem);
+		readChildTags(pName, (AttributeValues *)v.get(), Viewport::Attribs, excluded, pElem);
 
 	} //End of Viewports
 }
@@ -1219,14 +1290,14 @@ ProjectLoader::loadCameras(TiXmlHandle handle)
 		if (RENDERMANAGER->hasCamera(pName))
 			NAU_THROW("File %s\nCamera %s is already defined", ProjectLoader::s_File.c_str(), pName);
 
-		Camera *aNewCam = RENDERMANAGER->getCamera (pName);
+		std::shared_ptr<Camera> &aNewCam = RENDERMANAGER->getCamera (pName);
 
 		TiXmlElement *pElemAux = 0;
 		std::string s;
 
 		// Read Viewport
 		pElemAux = pElem->FirstChildElement ("viewport");
-		Viewport *v = 0;
+		std::shared_ptr<Viewport> v;
 		if (0 == pElemAux) {
 			v = NAU->getDefaultViewport ();
 		} else {
@@ -1245,52 +1316,14 @@ ProjectLoader::loadCameras(TiXmlHandle handle)
 
 		if (pElemAux != NULL)
 		{
-			//NAU_THROW("File %s: Element %s: projection definition missing", ProjectLoader::s_File.c_str(), pName);
-
-			//if (TIXML_SUCCESS != pElemAux->QueryStringAttribute("TYPE", &s))
-			//	NAU_THROW("File %s\nElement %s\nprojection type is not defined", ProjectLoader::s_File.c_str(), pName);
-			//
-			//if (s == "PERSPECTIVE") {
-			//	std::vector<std::string> excluded = { "TYPE" };
-			//	std::map<std::string, Attribute> attrList;
-			//	std::map<std::string, Attribute> fullList = Camera::Attribs.getAttributes();
-			//	attrList["FOV"] = fullList["FOV"];
-			//	attrList["NEAR"] = fullList["NEAR"];
-			//	attrList["FAR"] = fullList["FAR"];
-			//	readAttributeList(std::string(pName), (AttributeValues *)aNewCam, attrList, Camera::Attribs, excluded, pElemAux);
-			//	//float fov, nearPlane, farPlane;
-			//	//if (TIXML_SUCCESS != pElemAux->QueryFloatAttribute("FOV", &fov) ||
-			//	//	TIXML_SUCCESS != pElemAux->QueryFloatAttribute("NEAR", &nearPlane) ||
-			//	//	TIXML_SUCCESS != pElemAux->QueryFloatAttribute("FAR", &farPlane)) {
-
-			//	//	NAU_THROW("File %s\nElement %s\nperspective definition error (FOV, NEAR and FAR are required)", ProjectLoader::s_File.c_str(), pName);
-			//	//}
-			//	//aNewCam->setPerspective(fov, nearPlane, farPlane);
-			//}
-			//else if (s == "ORTHO") {
-				std::vector<std::string> excluded;// = { "TYPE" };
-				readAttributes(std::string(pName), (AttributeValues *)aNewCam, Camera::Attribs, excluded, pElemAux);
-				//float left, right, bottom, top, nearPlane, farPlane;
-
-				//if (TIXML_SUCCESS != pElemAux->QueryFloatAttribute("LEFT", &left) ||
-				//	TIXML_SUCCESS != pElemAux->QueryFloatAttribute("RIGHT", &right) ||
-				//	TIXML_SUCCESS != pElemAux->QueryFloatAttribute("BOTTOM", &bottom) ||
-				//	TIXML_SUCCESS != pElemAux->QueryFloatAttribute("TOP", &top) ||
-				//	TIXML_SUCCESS != pElemAux->QueryFloatAttribute("NEAR", &nearPlane) ||
-				//	TIXML_SUCCESS != pElemAux->QueryFloatAttribute("FAR", &farPlane)) {
-
-				//	NAU_THROW("File %s\nElement %s\northo definition error (LEFT, RIGHT, BOTTOM, TOP, NEAR and FAR are required)", ProjectLoader::s_File.c_str(), pName);
-				//}
-				//aNewCam->setOrtho(left, right, bottom, top, nearPlane, farPlane);
-			//}
-			//else
-			//	NAU_THROW("File %s\nElement %s\nprojection type is not valid", ProjectLoader::s_File.c_str(), pName);
+			std::vector<std::string> excluded;
+			readAttributes(std::string(pName), (AttributeValues *)aNewCam.get(), Camera::Attribs, excluded, pElemAux);
 		}
 		// Reading remaining camera attributes
 
 		std::vector<std::string> excluded;
 		excluded.push_back("projection"); excluded.push_back("viewport");
-		readChildTags(pName, (AttributeValues *)aNewCam, Camera::Attribs, excluded, pElem);
+		readChildTags(pName, (AttributeValues *)aNewCam.get(), Camera::Attribs, excluded, pElem);
 	} //End of Cameras
 }
 
@@ -1744,8 +1777,8 @@ ProjectLoader::loadPassViewport(TiXmlHandle hPass, Pass *aPass)
 	if (0 != pElem) {
 		const char *pViewport = pElem->Attribute("name");
 		if (pViewport) {
-			Viewport *vp = RENDERMANAGER->getViewport(pViewport);
-			if (vp == NULL) {
+			std::shared_ptr<Viewport> vp = RENDERMANAGER->getViewport(pViewport);
+			if (!vp) {
 				NAU_THROW("File %s\nPass %s\nViewport %s is not defined", ProjectLoader::s_File.c_str(), aPass->getName().c_str(), pViewport);
 			}
 			else
@@ -1789,9 +1822,8 @@ ProjectLoader::loadPassTexture(TiXmlHandle hPass, Pass *aPass)
 		if (!RESOURCEMANAGER->hasTexture(fullName))
 			NAU_THROW("File %s\nPass %s\nTexture %s is not defined", ProjectLoader::s_File.c_str(), aPass->getName().c_str(), fullName.c_str());
 
-		Material *srcMat, *dstMat;
-		srcMat = MATERIALLIBMANAGER->getDefaultMaterial("__Quad");
-		dstMat = srcMat->clone();
+		std::shared_ptr<Material> &srcMat = MATERIALLIBMANAGER->getMaterialFromDefaultLib("__Quad");
+		std::shared_ptr<Material> &dstMat = MATERIALLIBMANAGER->cloneMaterial(srcMat);
 		dstMat->attachTexture(0,fullName);
 		MATERIALLIBMANAGER->addMaterial(aPass->getName(),dstMat);
 		aPass->remapMaterial ("__Quad", aPass->getName(), "__Quad");
@@ -1847,10 +1879,10 @@ ProjectLoader::loadPassParams(TiXmlHandle hPass, Pass *aPass)
 {
 	std::vector<std::string> excluded = {"testScript", "preProcess", "postProcess", "mode", "scene", "scenes", 
 		"camera", "lights", "viewport", "renderTarget",
-		"materialMaps", "injectionMaps", "texture", "material", "rays", "hits",
+		"materialMaps", "injectionMaps", "texture", "material", "rays", "hits", "rayCount",
 		"optixEntryPoint", "optixDefaultMaterial", "optixMaterialMap", "optixInput", "optixVertexAttributes",
 		"optixGeometryProgram", "optixOutput", "optixMaterialAttributes", "optixGlobalAttributes", "preScript", "postScript"};
-	readChildTags(aPass->getName(), (AttributeValues *)aPass, Pass::Attribs, excluded, hPass.Element(),true);
+	readChildTags(aPass->getName(), (AttributeValues *)aPass, Pass::Attribs, excluded, hPass.Element(),false);
 }
 
 
@@ -1952,7 +1984,7 @@ ProjectLoader::loadPassRenderTargets(TiXmlHandle hPass, Pass *aPass,std::map<std
 	<optixMaterialAttributes>
 		<valueof optixVar="diffuse" type="CURRENT" context="COLOR" component="DIFFUSE" />
 		<valueof optixVar="ambient" type="CURRENT" context="COLOR" component="AMBIENT" />
-		<valueof uniform="texCount"	type="CURRENT" context="TEXTURE" component="COUNT" />
+		<valueof uniform="texCount"	type="CURRENT" context="RENDERER" component="TEXTURE_COUNT" />
 	</optixMaterialAttributes>
 
 	// For globl attributes, i.e. attributes that remain constant per frame
@@ -2143,9 +2175,14 @@ ProjectLoader::loadPassOptixSettings(TiXmlHandle hPass, Pass *aPass) {
 			NAU_THROW("File: %s\nPass: %s\nNo component found for optix variable %s", 
 				ProjectLoader::s_File.c_str(), aPass->getName().c_str(), pUniformName);
 		}
-		if (!NAU->validateShaderAttribute(pType, pContext, pComponent))
-			NAU_THROW("File: %s\nPass: %s\nOptix variable %s is not valid", 
-				ProjectLoader::s_File.c_str(), aPass->getName().c_str(), pUniformName);
+		std::string message;
+		validateObjectTypeAndComponent(pType, pComponent, &message);
+		if (message != "")
+			NAU_THROW("File: %s\nPass: %s\nOptix variable %s is not valid\n%s",
+				ProjectLoader::s_File.c_str(), aPass->getName().c_str(), pUniformName, message.c_str());
+		//if (!NAU->validateShaderAttribute(pType, pContext, pComponent))
+		//	NAU_THROW("File: %s\nPass: %s\nOptix variable %s is not valid", 
+		//		ProjectLoader::s_File.c_str(), aPass->getName().c_str(), pUniformName);
 
 		int id = 0;
 		if (((strcmp(pContext,"LIGHT") == 0) || (0 == strcmp(pContext,"TEXTURE"))) &&  (0 != strcmp(pComponent,"COUNT"))) {
@@ -2421,6 +2458,33 @@ ProjectLoader::loadPassOptixPrimeSettings(TiXmlHandle hPass, Pass *aPass) {
 			ProjectLoader::s_File.c_str(), aPass->getName().c_str());
 	}
 
+	pElem = hPass.FirstChildElement("rayCount").Element();
+	if (pElem != NULL) {
+
+		if (readIntAttribute(pElem, "value", &s_Dummy_int))
+			p->setPropi(PassOptixPrime::RAY_COUNT, s_Dummy_int);
+		else { // read value from buffer
+			std::string buff;
+			int offset = 0;
+			if (TIXML_SUCCESS != pElem->QueryStringAttribute("buffer", &buff)) {
+				NAU_THROW("File %s\nPass %s\nrayCount attribute requires 'value' or 'buffer' tags",
+					ProjectLoader::s_File.c_str(), aPass->getName().c_str());
+			}
+			if (!RESOURCEMANAGER->hasBuffer(buff)) {
+				NAU_THROW("File %s\nPass %s\nrayCount buffer %s has not been defined",
+					ProjectLoader::s_File.c_str(), aPass->getName().c_str(), buff.c_str());
+
+			}
+			pElem->QueryIntAttribute("offset", &offset);
+			IBuffer *b = RESOURCEMANAGER->getBuffer(buff);
+			if ((unsigned int)offset > b->getPropui(IBuffer::SIZE)- 4) {
+				NAU_THROW("File %s\nPass %s\noffset %d is greater than buffer size - sizeof(float)",
+					ProjectLoader::s_File.c_str(), aPass->getName().c_str(), offset);
+			}
+			p->setBufferForRayCount(b, offset);
+
+		}
+	}
 
 }
 
@@ -2855,26 +2919,25 @@ ProjectLoader::loadEvents(TiXmlHandle handle)
 	// End of Interpolators
 
 
-	SceneObject *o;
-	pElem = handle.FirstChild ("moveableobjects").FirstChild ("moveableobject").Element();
-	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
-		const char *pName = pElem->Attribute ("name");
-		const char *pObject = pElem->Attribute("object");
+	//pElem = handle.FirstChild ("moveableobjects").FirstChild ("moveableobject").Element();
+	//for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
+	//	const char *pName = pElem->Attribute ("name");
+	//	const char *pObject = pElem->Attribute("object");
 
-		if (0 == pName) 
-			NAU_THROW("MoveableObject has no name in file %s ", ProjectLoader::s_File.c_str());
+	//	if (0 == pName) 
+	//		NAU_THROW("MoveableObject has no name in file %s ", ProjectLoader::s_File.c_str());
 
-		if (0 == pObject) {
-			o=0;
-		}
+	//	if (0 == pObject) {
+	//		o=0;
+	//	}
 
-		o = RENDERMANAGER->getScene("MainScene")->getSceneObject(pObject); // substituir o MainScene, pode ter mais do q uma Cena?
+	//	std::shared_ptr<SceneObject> &o = RENDERMANAGER->getScene("MainScene")->getSceneObject(pObject); // substituir o MainScene, pode ter mais do q uma Cena?
 
-		nau::event_::ObjectAnimation *oa= new nau::event_::ObjectAnimation(pName, o);
+	//	nau::event_::ObjectAnimation *oa= new nau::event_::ObjectAnimation(pName, o);
 
 		//in->init((char *) pName, o, (char *)pKey, (char *)pKeyValue); 
 		
-	}
+	//}
 	// End of MoveableObjects
 
 	////Begin of routes //Marta
@@ -3046,12 +3109,10 @@ ProjectLoader::loadPassInjectionMaps(TiXmlHandle hPass, Pass *aPass)
 		if (names.size() == 0)
 			NAU_THROW("File %s\nPass %s\nInjection map error: No materials match %s", ProjectLoader::s_File.c_str(), aPass->getName().c_str(), pMat);
 
-		Material *dstMat, *srcMat;
-
 		for(auto& name:names) {
 
-			Material *srcMat = defLib->getMaterial(name);
-			dstMat = srcMat->clone();
+			std::shared_ptr<Material> &srcMat = defLib->getMaterial(name);
+			std::shared_ptr<Material> &dstMat = MATERIALLIBMANAGER->cloneMaterial(srcMat);
 			MATERIALLIBMANAGER->addMaterial(aPass->getName(), dstMat);
 
 			aPass->remapMaterial (name, aPass->getName(), name);
@@ -3075,7 +3136,7 @@ ProjectLoader::loadPassInjectionMaps(TiXmlHandle hPass, Pass *aPass)
 		
 			for(auto& name: names) {
 
-				dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
+				std::shared_ptr<Material> &dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
 				dstMat->setState(RESOURCEMANAGER->getState(fullName));
 			}
 		}
@@ -3097,7 +3158,7 @@ ProjectLoader::loadPassInjectionMaps(TiXmlHandle hPass, Pass *aPass)
 
 			for(auto& name:names) {
 
-				dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
+				std::shared_ptr<Material> &dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
 				dstMat->cloneProgramFromMaterial(MATERIALLIBMANAGER->getMaterial(pLib,pMat));
 			}
 		}
@@ -3125,7 +3186,7 @@ ProjectLoader::loadPassInjectionMaps(TiXmlHandle hPass, Pass *aPass)
 
 				for(auto &name:names) {
 
-					dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
+					std::shared_ptr<Material> &dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
 					dstMat->attachTexture(unit, RESOURCEMANAGER->getTexture(s_pFullName));
 					std::map<std::string, std::unique_ptr<Attribute>> &attribs = ITextureSampler::Attribs.getAttributes();
 
@@ -3164,7 +3225,7 @@ ProjectLoader::loadPassInjectionMaps(TiXmlHandle hPass, Pass *aPass)
 
 				for (auto& name:names) {
 
-					dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
+					std::shared_ptr<Material> &dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
 					ITexture *t = RESOURCEMANAGER->getTexture(s_pFullName);
 					dstMat->attachImageTexture(t->getLabel(), unit, t->getPropi(ITexture::ID));
 
@@ -3197,7 +3258,7 @@ ProjectLoader::loadPassInjectionMaps(TiXmlHandle hPass, Pass *aPass)
 
 				for (auto &name:names) {
 
-					dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
+					std::shared_ptr<Material> &dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
 					IBuffer *buffer = RESOURCEMANAGER->getBuffer(s_pFullName);
 					IMaterialBuffer *imb = IMaterialBuffer::Create(buffer);
 					//IBuffer *b = buffer->clone();
@@ -3232,10 +3293,10 @@ ProjectLoader::loadPassInjectionMaps(TiXmlHandle hPass, Pass *aPass)
 				NAU_THROW("File %s\nPass%s\nInjection map error: Material %s is not defined in lib %s", 
 					ProjectLoader::s_File.c_str(), aPass->getName().c_str(), pMat, pLib);
 
-			srcMat = MATERIALLIBMANAGER->getMaterial(pLib,pMat);
+			std::shared_ptr<Material> &srcMat = MATERIALLIBMANAGER->getMaterial(pLib,pMat);
 			for (auto &name : names) {
 
-				dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
+				std::shared_ptr<Material> &dstMat = MATERIALLIBMANAGER->getMaterial(aPass->getName(), name);
 				if (!pAmbient && !pDiffuse && !pSpecular && !pEmission && !pShininess)
 					dstMat->getColor().clone(srcMat->getColor());
 				if (pAmbient && !strcmp("true",pAmbient))
@@ -3284,7 +3345,7 @@ ProjectLoader::loadPipelines (TiXmlHandle &hRoot) {
 
 
 	pElem = hRoot.FirstChild ("pipelines").FirstChild ("pipeline").Element();
-	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
+	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement("pipeline")) {
 		const char *pNamePip = pElem->Attribute ("name");
 		const char *pDefaultCamera = pElem->Attribute("defaultCamera");
 
@@ -3297,7 +3358,7 @@ ProjectLoader::loadPipelines (TiXmlHandle &hRoot) {
 		if (RENDERMANAGER->hasPipeline(pNamePip))
 			NAU_THROW("File %s\nPipeline %s redefinition", ProjectLoader::s_File.c_str(), pNamePip);
 
-		Pipeline *aPipeline = RENDERMANAGER->getPipeline (pNamePip);
+		std::shared_ptr<Pipeline> &aPipeline = RENDERMANAGER->createPipeline (pNamePip);
 		
 		unsigned int k = 0;
 		pElem->QueryUnsignedAttribute("frameCount", &k);
@@ -3425,6 +3486,105 @@ ProjectLoader::loadPipelines (TiXmlHandle &hRoot) {
 	}
 	else {
 		RENDERMANAGER->setActivePipeline(0);
+	}
+
+}
+
+
+/* -----------------------------------------------------------------------------
+INTERFACE
+
+<interface>
+	<window name="bla"  label="My Bar">
+		<var label="direction" type="LIGHT" context="Sun" component="DIRECTION" option="DIRECTION"/>
+		<var label="darkColor" type="RENDERER" context="CURRENT" component="dark" option="COLOR" />
+		<pipelines />
+	<window>
+
+	<window ... >
+	</window>
+</interface>
+
+ ----------------------------------------------------------------------------- */
+
+
+void 
+ProjectLoader::loadInterface(TiXmlHandle & hRoot) {
+
+	TiXmlElement *pElem;
+	TiXmlHandle handle(0);
+
+	char activePipeline[256];
+
+	memset(activePipeline, 0, 256);
+
+
+	handle = hRoot.FirstChild("interface");
+	loadAtomicSemantics(handle);
+
+	pElem = hRoot.FirstChild("interface").FirstChild("window").Element();
+	for (; 0 != pElem; pElem = pElem->NextSiblingElement("window")) {
+		const char *pWindowName = pElem->Attribute("label");
+		//const char *pWindowLabel = pElem->Attribute("label");
+
+		if (0 == pWindowName /*|| 0 == pWindowLabel*/) {
+			NAU_THROW("File %s\nInterface window needs a name", s_File.c_str());
+		}
+
+		INTERFACE->createWindow(pWindowName);// , pWindowLabel);
+
+		TiXmlElement *pElemAux = pElem->FirstChildElement();
+		for (; 0 != pElemAux; pElemAux = pElemAux->NextSiblingElement()) {
+
+			const char *tag = pElemAux->Value();
+			if (strcmp(tag, "pipelineList") == 0) {
+				const char *pLabel = pElemAux->Attribute("label");
+				if (0 == pLabel) {
+					NAU_THROW("File %s\nWindow %s, Pipeline list needs a label", s_File.c_str(), pWindowName);
+				}
+				INTERFACE->addPipelineList(pWindowName, pLabel);
+			}
+			if (strcmp(tag, "var") == 0) {
+				const char *pLabel = pElemAux->Attribute("label");
+				const char *pType = pElemAux->Attribute("type");
+				const char *pContext = pElemAux->Attribute("context");
+				const char *pComponent = pElemAux->Attribute("component");
+				const char *pControl = pElemAux->Attribute("mode");
+				int id = 0;
+				pElemAux->QueryIntAttribute("id", &id);
+
+				// check if fields are filled)
+				if (0 == pLabel) {
+					NAU_THROW("File %s\nWindow %s, Variable needs a label", s_File.c_str(), pWindowName);
+				}
+
+				if (0 == pType || 0 == pContext || 0 == pComponent) {
+					NAU_THROW("File %s\nWindow %s, Variable %s\nVariable needs a type, a context and a component",
+						s_File.c_str(), pWindowName, pLabel);
+				}
+
+				// check if var is well defined
+				std::string message;
+				validateObjectAttribute(pType, pContext, pComponent, &message);
+				if (message != "") {
+					NAU_THROW("File %s\nWindow %s, Variable %s\n%s", s_File.c_str(), pWindowName, pLabel, message.c_str());
+				}
+
+				//if (!NAU->validateShaderAttribute(pType, pContext, pComponent))
+				//	NAU_THROW("File %s\nWindow %s, Variable %s\nVariable not valid", 
+				//		s_File.c_str(), pWindowName, pLabel);
+				if (pControl) {
+					if (strcmp(pControl, "DIRECTION") == 0)
+						INTERFACE->addDir(pWindowName, pLabel, pType, pContext, pComponent, id);
+					else if (strcmp(pControl, "COLOR") == 0)
+						INTERFACE->addColor(pWindowName, pLabel, pType, pContext, pComponent, id);
+				}
+				else
+				INTERFACE->addVar(pWindowName, pLabel, pType, pContext, pComponent, id);
+			}
+
+		}
+
 	}
 
 }
@@ -3629,7 +3789,7 @@ ProjectLoader::loadMatLibTextures(TiXmlHandle hRoot, MaterialLib *aLib, std::str
 	TiXmlElement *pElem;
 	int layers = 0;
 	pElem = hRoot.FirstChild ("textures").FirstChild ("texture").Element();
-	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
+	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement("texture")) {
 		const char* pTextureName = pElem->Attribute ("name");
 		const char* pFilename = pElem->Attribute ("filename");
 
@@ -3663,7 +3823,7 @@ ProjectLoader::loadMatLibTextures(TiXmlHandle hRoot, MaterialLib *aLib, std::str
 	}
 
 	pElem = hRoot.FirstChild ("textures").FirstChild ("cubeMap").Element();
-	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
+	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement("cubeMap")) {
 		const char* pTextureName = pElem->Attribute ("name");
 		const char* pFilePosX = pElem->Attribute ("filePosX");
 		const char* pFileNegX = pElem->Attribute ("fileNegX");
@@ -3818,8 +3978,9 @@ ProjectLoader::loadMatLibShaders(TiXmlHandle hRoot, MaterialLib *aLib, std::stri
 		const char *pTEFile = pElem->Attribute("te");
 		const char *pCSFile = pElem->Attribute("cs");
 
-		if ((0 == pCSFile) && (0 == pVSFile || (0 == pPSFile && 0 == pGSFile))) {
-			NAU_THROW("Mat Lib %s\nShader %s missing files", aLib->getName().c_str(), pProgramName);
+		//if ((0 == pCSFile) && (0 == pVSFile || (0 == pPSFile && 0 == pGSFile))) {
+		if (0 == pCSFile && 0 == pVSFile) {
+				NAU_THROW("Mat Lib %s\nShader %s missing files", aLib->getName().c_str(), pProgramName);
 		}
 
 		if (0 != pCSFile && (0 != pVSFile || 0 != pPSFile || 0 != pGSFile || 0 != pTEFile || 0 != pTCFile)) 
@@ -3930,7 +4091,7 @@ MATERIALCOLOR
 	
 -----------------------------------------------------------------------------*/
 void 
-ProjectLoader::loadMaterialColor(TiXmlHandle handle, MaterialLib *aLib, Material *aMat)
+ProjectLoader::loadMaterialColor(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat)
 {
 	TiXmlElement *pElemAux;
 	pElemAux = handle.FirstChild ("color").Element();
@@ -3962,7 +4123,7 @@ The name can refer to a texture in another lib, in which case the syntax is lib_
 -----------------------------------------------------------------------------*/
 
 void 
-ProjectLoader::loadMaterialImageTextures(TiXmlHandle handle, MaterialLib *aLib, Material *aMat)
+ProjectLoader::loadMaterialImageTextures(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat)
 {
 	TiXmlElement *pElemAux;
 	pElemAux = handle.FirstChild ("imageTextures").FirstChild ("imageTexture").Element();
@@ -4017,7 +4178,7 @@ The name can refer to a buffer in another lib, in which case the syntax is lib_n
 -----------------------------------------------------------------------------*/
 
 void
-ProjectLoader::loadMaterialBuffers(TiXmlHandle handle, MaterialLib *aLib, Material *aMat)
+ProjectLoader::loadMaterialBuffers(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat)
 {
 	TiXmlElement *pElemAux;
 	pElemAux = handle.FirstChild("buffers").FirstChild("buffer").Element();
@@ -4065,7 +4226,7 @@ The name can refer to a texture in another lib, in which case the syntax is lib_
 -----------------------------------------------------------------------------*/
 
 void 
-ProjectLoader::loadMaterialTextures(TiXmlHandle handle, MaterialLib *aLib, Material *aMat)
+ProjectLoader::loadMaterialTextures(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat)
 {
 	TiXmlElement *pElemAux;
 	pElemAux = handle.FirstChild ("textures").FirstChild ("texture").Element();
@@ -4110,7 +4271,7 @@ MATERIALSHADER
 	
 -----------------------------------------------------------------------------*/
 void 
-ProjectLoader::loadMaterialShader(TiXmlHandle handle, MaterialLib *aLib, Material *aMat)
+ProjectLoader::loadMaterialShader(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat)
 {
 	TiXmlElement *pElemAux, *pElemAux2;
 
@@ -4159,13 +4320,19 @@ ProjectLoader::loadMaterialShader(TiXmlHandle handle, MaterialLib *aLib, Materia
 				NAU_THROW("MatLib %s\nMaterial %s\nNo component found for uniform %s", 
 					aLib->getName().c_str(), aMat->getName().c_str(), pUniformName);
 			}
-			if (!NAU->validateShaderAttribute(pType, pContext, pComponent))
-				NAU_THROW("MatLib %s\nMaterial %s\nUniform %s is not valid", 
-					aLib->getName().c_str(), aMat->getName().c_str(), pUniformName);
+			std::string message;
+			validateObjectTypeAndComponent(pType, pComponent, &message);
+			if ( message != "")
+				NAU_THROW("MatLib %s\nMaterial %s\nUniform %s is not valid\n%s",
+					aLib->getName().c_str(), aMat->getName().c_str(), pUniformName, message.c_str());
+
+			//if (!NAU->validateShaderAttribute(pType, pContext, pComponent))
+			//	NAU_THROW("MatLib %s\nMaterial %s\nUniform %s is not valid", 
+			//		aLib->getName().c_str(), aMat->getName().c_str(), pUniformName);
 
 			int id = 0;
 			if ((strcmp(pContext,"CURRENT") == 0) && 
-						((strcmp(pType,"LIGHT") == 0) || (0 == strcmp(pType,"MATERIAL_TEXTURE")) || (0 == strcmp(pType,"IMAGE_TEXTURE"))) 
+						((strcmp(pType,"LIGHT") == 0) || (0 == strcmp(pType,"TEXTURE_BINDING")) || (0 == strcmp(pType,"IMAGE_TEXTURE"))) 
 						&&  (0 != strcmp(pComponent,"COUNT"))) {
 				if (TIXML_SUCCESS != pElemAux2->QueryIntAttribute ("id", &id))
 					NAU_THROW("MatLib %s\nMaterial %s\nUniform %s - id is required for type %s ", 
@@ -4173,7 +4340,8 @@ ProjectLoader::loadMaterialShader(TiXmlHandle handle, MaterialLib *aLib, Materia
 				if (id < 0)
 					NAU_THROW("MatLib %s\nMaterial %s\nUniform %s - id must be non negative", 
 						aLib->getName().c_str(), aMat->getName().c_str(), pUniformName);
-				if (0 == strcmp(pType, "MATERIAL_TEXTURE") && !aMat->getTexture(id)) {
+
+				if (0 == strcmp(pType, "TEXTURE_BINDING") && !aMat->getTexture(id)) {
 					SLOG("MatLib %s\nMaterial %s\nUniform %s - id should refer to an assigned texture unit", 
 						aLib->getName().c_str(), aMat->getName().c_str(), pUniformName);
 				}
@@ -4183,20 +4351,6 @@ ProjectLoader::loadMaterialShader(TiXmlHandle handle, MaterialLib *aLib, Materia
 				}
 			}
 			std::string s(pType);
-
-			//if (pBlock) {
-			//	std::string sBlock = pBlock;
-			//	std::string uniName = pUniformName;
-			//	IUniformBlock *aBlock = UNIFORMBLOCKMANAGER->getBlock(sBlock);
-			//	if (aBlock == NULL) {
-			//		NAU_THROW("Uniform Block %s is not defined", sBlock.c_str());
-			//	}
-			//	if (!aBlock->hasUniform(uniName))
-			//		NAU_THROW("Uniform Block %s does not hava a uniform named %s", sBlock.c_str(), uniName.c_str());
-
-			//	if (!aBlock->getUniformType(uniName) != Enums::getType(pType))
-			//		NAU_THROW("Uniform Block %s, uniform %s - type does not match", sBlock.c_str(), uniName.c_str());
-			//}
 
 			if (s == "TEXTURE" && strcmp(pContext, "CURRENT")) {
 				sprintf(s_pFullName, "%s::%s", aLib->getName().c_str(),pContext);
@@ -4245,9 +4399,6 @@ ProjectLoader::loadMaterialShader(TiXmlHandle handle, MaterialLib *aLib, Materia
 					aMat->addProgramValue(pUniformName, 
 						ProgramValue(pUniformName, pType, pContext, pComponent, id));
 			}
-				//sprintf(s_pFullName, "%s(%s,%s)",pType,pContext,pComponent );
-
-			
 		}
 	}
 	aMat->checkProgramValuesAndUniforms();
@@ -4265,7 +4416,7 @@ where bla is previously defined in the mat lib.
 -----------------------------------------------------------------------------*/
 
 void 
-ProjectLoader::loadMaterialState(TiXmlHandle handle, MaterialLib *aLib, Material *aMat)
+ProjectLoader::loadMaterialState(TiXmlHandle handle, MaterialLib *aLib, std::shared_ptr<Material> &aMat)
 {
 	TiXmlElement *pElemAux;
 
@@ -4274,19 +4425,19 @@ ProjectLoader::loadMaterialState(TiXmlHandle handle, MaterialLib *aLib, Material
 		const char *pStateName = pElemAux->Attribute ("name");
 		//definition by ref
 		if (0 == pStateName) {
-			NAU_THROW("MatLib %s\nMaterial %s\nState requires a name", aLib->getName().c_str(), aMat->getName().c_str());
+			NAU_THROW("MatLib %s\nMaterial %s\nState requires a name and must be previously defined", aLib->getName().c_str(), aMat->getName().c_str());
 		}
 		else {
-			//sprintf(s_pFullName, "%s::%s", aLib->getName().c_str(), pStateName);
 			std::string fullName = aLib->getName() + "::" + pStateName;
 			if (!RESOURCEMANAGER->hasState(fullName))
 				NAU_THROW("MatLib %s\nMaterial %s\nState %s is not defined", aLib->getName().c_str(), aMat->getName().c_str(), pStateName);
 
 			aMat->setState(RESOURCEMANAGER->getState(fullName));
 		}
-		//else { // definition inline
-		//	loadState(pElemAux,aLib,aMat,aMat->getState());
-		//}
+	}
+	else {
+		std::string fullName = aLib->getName() + "::" + aMat->getName();
+		aMat->setState(RESOURCEMANAGER->createState(fullName));
 	}
 }
 
@@ -4386,7 +4537,7 @@ ProjectLoader::loadMatLib (std::string file)
 
 		//Material *mat = new Material;
 		//mat->setName (pMaterialName);
-		Material *mat = MATERIALLIBMANAGER->createMaterial(pName,pMaterialName);
+		std::shared_ptr<Material> &mat = MATERIALLIBMANAGER->createMaterial(pName,pMaterialName);
 
 		loadMaterialColor(handle,aLib,mat);
 		loadMaterialTextures(handle,aLib,mat);
@@ -4449,43 +4600,43 @@ errors.
 		</plugins>
 	</assets>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebug (TiXmlHandle &hRoot)
-{
-#ifdef GLINTERCEPTDEBUG
-	
-	TiXmlElement *pElem;
-	TiXmlHandle handle (hRoot.FirstChild ("debug").Element());
-	bool startGliLog = true;
-
-	if (handle.Element()){
-		pElem = handle.Element();
-
-		initGLInterceptFunctions();
-	
-		if (pElem->Attribute("glilog")){
-			pElem->QueryBoolAttribute("glilog",&startGliLog);
-		}
-		if (startGliLog){
-			startGlilog();
-		}
-
-		activateGLI();
-
-		//TiXmlElement *pElem;
-		loadDebugFunctionlog(handle);
-		loadDebugLogperframe(handle);
-		loadDebugErrorchecking(handle);
-		loadDebugImagelog(handle);
-		loadDebugShaderlog(handle);
-//		loadDebugDisplaylistlog(handle);
-		loadDebugFramelog(handle);
-		loadDebugTimerlog(handle);
-		loadDebugPlugins(handle);
-		startGLIConfiguration();
-	}
-#endif
-}
+//void
+//ProjectLoader::loadDebug (TiXmlHandle &hRoot)
+//{
+//#ifdef GLINTERCEPTDEBUG
+//	
+//	TiXmlElement *pElem;
+//	TiXmlHandle handle (hRoot.FirstChild ("debug").Element());
+//	bool startGliLog = true;
+//
+//	if (handle.Element()){
+//		pElem = handle.Element();
+//
+//		initGLInterceptFunctions();
+//	
+//		if (pElem->Attribute("glilog")){
+//			pElem->QueryBoolAttribute("glilog",&startGliLog);
+//		}
+//		if (startGliLog){
+//			startGlilog();
+//		}
+//
+//		activateGLI();
+//
+//		//TiXmlElement *pElem;
+//		loadDebugFunctionlog(handle);
+//		loadDebugLogperframe(handle);
+//		loadDebugErrorchecking(handle);
+//		loadDebugImagelog(handle);
+//		loadDebugShaderlog(handle);
+////		loadDebugDisplaylistlog(handle);
+//		loadDebugFramelog(handle);
+//		loadDebugTimerlog(handle);
+//		loadDebugPlugins(handle);
+//		startGLIConfiguration();
+//	}
+//#endif
+//}
 
 /* ----------------------------------------------------------------
 Specification of the functionlog:
@@ -4503,22 +4654,22 @@ Specification of the functionlog:
 			</xmlformat>
 		</functionlog>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugFunctionlog (TiXmlHandle &hRoot){
-	TiXmlHandle handle (hRoot.FirstChild ("functionlog").Element());
-
-#ifdef GLINTERCEPTDEBUG
-	if (handle.Element()){
-		bool defaultValue = true;
-		void *functionSetPointer = getGLIFunction("enabled", "functionlog");
-		useGLIFunction(functionSetPointer, &defaultValue);
-	}
-#endif
-
-	loadDebugConfigData(handle,"functionlog");
-
-	//loadDebugFunctionlogXmlFormat(hRoot);
-}
+//void
+//ProjectLoader::loadDebugFunctionlog (TiXmlHandle &hRoot){
+//	TiXmlHandle handle (hRoot.FirstChild ("functionlog").Element());
+//
+//#ifdef GLINTERCEPTDEBUG
+//	if (handle.Element()){
+//		bool defaultValue = true;
+//		void *functionSetPointer = getGLIFunction("enabled", "functionlog");
+//		useGLIFunction(functionSetPointer, &defaultValue);
+//	}
+//#endif
+//
+//	loadDebugConfigData(handle,"functionlog");
+//
+//	//loadDebugFunctionlogXmlFormat(hRoot);
+//}
 
 
 
@@ -4538,12 +4689,12 @@ with GL intercept 1.2 installed the default locations should be
 				<logxslbasedir value="xslfilesource"/>
 			</xmlformat>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugFunctionlogXmlFormat (TiXmlHandle &hRoot){
-	TiXmlHandle handle (hRoot.FirstChild ("xmlformat").Element());
-
-	loadDebugConfigData(handle,"functionlogxmlformat");
-}
+//void
+//ProjectLoader::loadDebugFunctionlogXmlFormat (TiXmlHandle &hRoot){
+//	TiXmlHandle handle (hRoot.FirstChild ("xmlformat").Element());
+//
+//	loadDebugConfigData(handle,"functionlogxmlformat");
+//}
 
 /* ----------------------------------------------------------------
 Specification of the logperframe:
@@ -4563,12 +4714,12 @@ will enable log the frame using ctrl+F
 			</logframekeys>
 		</logperframe>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugLogperframe (TiXmlHandle &hRoot){
-	TiXmlHandle handle (hRoot.FirstChild ("logperframe").Element());
-
-	loadDebugConfigData(handle,"logperframe");
-}
+//void
+//ProjectLoader::loadDebugLogperframe (TiXmlHandle &hRoot){
+//	TiXmlHandle handle (hRoot.FirstChild ("logperframe").Element());
+//
+//	loadDebugConfigData(handle,"logperframe");
+//}
 
 /* ----------------------------------------------------------------
 Specification of the errorchecking:
@@ -4582,13 +4733,13 @@ Specification of the errorchecking:
 			<errordebuggererrorlog value="bool"/>
 		</errorchecking>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugErrorchecking (TiXmlHandle &hRoot){
-	TiXmlHandle handle (hRoot.FirstChild ("errorchecking").Element());
-
-	loadDebugConfigData(handle,"errorchecking");
-
-}
+//void
+//ProjectLoader::loadDebugErrorchecking (TiXmlHandle &hRoot){
+//	TiXmlHandle handle (hRoot.FirstChild ("errorchecking").Element());
+//
+//	loadDebugConfigData(handle,"errorchecking");
+//
+//}
 
 /* ----------------------------------------------------------------
 Specification of the imagelog:
@@ -4612,15 +4763,15 @@ imagesavepng, imagesavetga and imagesavejpg can be used simultaneosly
 			</imageicon>
 		</imagelog>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugImagelog (TiXmlHandle &hRoot){
-	TiXmlHandle handle (hRoot.FirstChild ("imagelog").Element());
-
-	loadDebugConfigData(handle,"imagelog");
-
-
-	loadDebugImagelogimageicon(handle);
-}
+//void
+//ProjectLoader::loadDebugImagelog (TiXmlHandle &hRoot){
+//	TiXmlHandle handle (hRoot.FirstChild ("imagelog").Element());
+//
+//	loadDebugConfigData(handle,"imagelog");
+//
+//
+//	loadDebugImagelogimageicon(handle);
+//}
 
 /* ----------------------------------------------------------------
 Specification of the imageicon:
@@ -4634,12 +4785,12 @@ only one format at a time
 				<imageiconformat value="png"/>
 			</imageicon>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugImagelogimageicon (TiXmlHandle &hRoot){
-	TiXmlHandle handle (hRoot.FirstChild ("imageicon").Element());
-
-	loadDebugConfigData(handle,"imagelogimageicon");
-}
+//void
+//ProjectLoader::loadDebugImagelogimageicon (TiXmlHandle &hRoot){
+//	TiXmlHandle handle (hRoot.FirstChild ("imageicon").Element());
+//
+//	loadDebugConfigData(handle,"imagelogimageicon");
+//}
 
 /* ----------------------------------------------------------------
 Specification of the shaderlog:
@@ -4652,20 +4803,20 @@ Specification of the shaderlog:
 			<shaderloguniformsprerender value="bool"/>
 		</shaderlog>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugShaderlog (TiXmlHandle &hRoot){
-	TiXmlHandle handle(hRoot.FirstChild("shaderlog").Element());
-
-#ifdef GLINTERCEPTDEBUG
-	if (handle.Element()){
-		bool defaultValue = true;
-		void *functionSetPointer = getGLIFunction("enabled", "shaderlog");
-		useGLIFunction(functionSetPointer, &defaultValue);
-	}
-#endif
-
-	loadDebugConfigData(handle,"shaderlog");
-}
+//void
+//ProjectLoader::loadDebugShaderlog (TiXmlHandle &hRoot){
+//	TiXmlHandle handle(hRoot.FirstChild("shaderlog").Element());
+//
+//#ifdef GLINTERCEPTDEBUG
+//	if (handle.Element()){
+//		bool defaultValue = true;
+//		void *functionSetPointer = getGLIFunction("enabled", "shaderlog");
+//		useGLIFunction(functionSetPointer, &defaultValue);
+//	}
+//#endif
+//
+//	loadDebugConfigData(handle,"shaderlog");
+//}
 
 
 
@@ -4720,24 +4871,24 @@ AABBGGRR. If an index is missing, it will take the value of the index as the col
 		</framelog>
 
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugFramelog (TiXmlHandle &hRoot){
-	TiXmlHandle handle (hRoot.FirstChild ("framelog").Element());
-
-#ifdef GLINTERCEPTDEBUG
-	if (handle.Element()){
-		bool defaultValue = true;
-		void *functionSetPointer = getGLIFunction("enabled", "framelog");
-		useGLIFunction(functionSetPointer, &defaultValue);
-	}
-#endif
-
-	loadDebugConfigData(handle,"framelog");
-
-	
-	loadDebugFramelogFrameicon(handle);
-	loadDebugFramelogFramemovie(handle);
-}
+//void
+//ProjectLoader::loadDebugFramelog (TiXmlHandle &hRoot){
+//	TiXmlHandle handle (hRoot.FirstChild ("framelog").Element());
+//
+//#ifdef GLINTERCEPTDEBUG
+//	if (handle.Element()){
+//		bool defaultValue = true;
+//		void *functionSetPointer = getGLIFunction("enabled", "framelog");
+//		useGLIFunction(functionSetPointer, &defaultValue);
+//	}
+//#endif
+//
+//	loadDebugConfigData(handle,"framelog");
+//
+//	
+//	loadDebugFramelogFrameicon(handle);
+//	loadDebugFramelogFramemovie(handle);
+//}
 
 /* ----------------------------------------------------------------
 Specification of the frameicon:
@@ -4751,14 +4902,14 @@ only one format at a time
 				<frameiconimageformat value="png"/>
 			</frameicon>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugFramelogFrameicon (TiXmlHandle &hRoot){
-	TiXmlHandle handle (hRoot.FirstChild ("frameicon").Element());
-
-	loadDebugConfigData(handle,"framelogframeicon");
-
-}
-
+//void
+//ProjectLoader::loadDebugFramelogFrameicon (TiXmlHandle &hRoot){
+//	TiXmlHandle handle (hRoot.FirstChild ("frameicon").Element());
+//
+//	loadDebugConfigData(handle,"framelogframeicon");
+//
+//}
+//
 
 /* ----------------------------------------------------------------
 Specification of the framemovie:
@@ -4775,21 +4926,21 @@ Specification of the framemovie:
 				</frameMovieCodecs>
 			</framemovie>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugFramelogFramemovie (TiXmlHandle &hRoot){
-	TiXmlHandle handle (hRoot.FirstChild ("framemovie").Element());
-
-#ifdef GLINTERCEPTDEBUG
-	if (handle.Element()){
-		bool defaultValue = true;
-		void *functionSetPointer = getGLIFunction("framemovieenabled", "framelogframemovie");
-		useGLIFunction(functionSetPointer, &defaultValue);
-	}
-#endif
-
-	loadDebugConfigData(handle,"framelogframemovie");
-
-}
+//void
+//ProjectLoader::loadDebugFramelogFramemovie (TiXmlHandle &hRoot){
+//	TiXmlHandle handle (hRoot.FirstChild ("framemovie").Element());
+//
+//#ifdef GLINTERCEPTDEBUG
+//	if (handle.Element()){
+//		bool defaultValue = true;
+//		void *functionSetPointer = getGLIFunction("framemovieenabled", "framelogframemovie");
+//		useGLIFunction(functionSetPointer, &defaultValue);
+//	}
+//#endif
+//
+//	loadDebugConfigData(handle,"framelogframemovie");
+//
+//}
 
 /* ----------------------------------------------------------------
 Specification of the timerlog:
@@ -4799,21 +4950,21 @@ Specification of the timerlog:
 			<timerlogcutoff value="uint"/>
 		</timerlog>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugTimerlog (TiXmlHandle &hRoot){
-	TiXmlHandle handle (hRoot.FirstChild ("timerlog").Element());
-
-#ifdef GLINTERCEPTDEBUG
-	if (handle.Element()){
-		bool defaultValue = true;
-		void *functionSetPointer = getGLIFunction("enabled", "timerlog");
-		useGLIFunction(functionSetPointer, &defaultValue);
-	}
-#endif
-
-	loadDebugConfigData(handle,"timerlog");
-
-}
+//void
+//ProjectLoader::loadDebugTimerlog (TiXmlHandle &hRoot){
+//	TiXmlHandle handle (hRoot.FirstChild ("timerlog").Element());
+//
+//#ifdef GLINTERCEPTDEBUG
+//	if (handle.Element()){
+//		bool defaultValue = true;
+//		void *functionSetPointer = getGLIFunction("enabled", "timerlog");
+//		useGLIFunction(functionSetPointer, &defaultValue);
+//	}
+//#endif
+//
+//	loadDebugConfigData(handle,"timerlog");
+//
+//}
 
 /* ----------------------------------------------------------------
 Specification of the plugins:
@@ -4843,29 +4994,29 @@ if you give the plugin a different name it may not work at all.
 				...
 			</plugins>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugPlugins (TiXmlHandle &hRoot)
-{
-#ifdef GLINTERCEPTDEBUG
-	TiXmlElement *pElem;
-	TiXmlHandle handle (hRoot.FirstChild("plugins").Element());
-	
-	string name;
-	string dllpath;
-	string data="";
-
-	pElem = handle.FirstChild().Element();
-	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
-			pElem->QueryStringAttribute("name",&name);
-			pElem->QueryStringAttribute("dll",&dllpath);
-			if(pElem->GetText()){
-				data=pElem->GetText();
-			}
-			addPlugin(name.c_str(), dllpath.c_str(), data.c_str());
-		
-	}
-#endif
-}
+//void
+//ProjectLoader::loadDebugPlugins (TiXmlHandle &hRoot)
+//{
+//#ifdef GLINTERCEPTDEBUG
+//	TiXmlElement *pElem;
+//	TiXmlHandle handle (hRoot.FirstChild("plugins").Element());
+//	
+//	string name;
+//	string dllpath;
+//	string data="";
+//
+//	pElem = handle.FirstChild().Element();
+//	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
+//			pElem->QueryStringAttribute("name",&name);
+//			pElem->QueryStringAttribute("dll",&dllpath);
+//			if(pElem->GetText()){
+//				data=pElem->GetText();
+//			}
+//			addPlugin(name.c_str(), dllpath.c_str(), data.c_str());
+//		
+//	}
+//#endif
+//}
 
 /* ----------------------------------------------------------------
 Helper function, reads sub attributes.
@@ -4874,54 +5025,54 @@ Helper function, reads sub attributes.
 					...
 				</configcategory>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugConfigData (TiXmlHandle &handle, const char *configMapName)
-{
-#ifdef GLINTERCEPTDEBUG
-
-	TiXmlElement *pElem;
-	void *functionSetPointer;
-	pElem = handle.FirstChild().Element();
-	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
-		const char *functionName = pElem->Value();
-		functionSetPointer = getGLIFunction(functionName,configMapName);
-		switch (getGLIFunctionType(functionSetPointer))
-		{
-		case GLIEnums::FunctionType::BOOL:{
-				bool functionValue; 
-				pElem->QueryBoolAttribute("value",&functionValue);
-				useGLIFunction(functionSetPointer,&functionValue);
-				break;
-			}
-		case GLIEnums::FunctionType::INT:{
-				int functionValue; 
-				pElem->QueryIntAttribute("value",&functionValue);
-				useGLIFunction(functionSetPointer,&functionValue);
-				break;
-			}
-		case GLIEnums::FunctionType::UINT:{
-				unsigned int functionValue; 
-				pElem->QueryUnsignedAttribute("value",&functionValue);
-				useGLIFunction(functionSetPointer,&functionValue);
-				break;
-			}
-		case GLIEnums::FunctionType::STRING:{
-				string functionValue; 
-				pElem->QueryStringAttribute("value",&functionValue);
-				useGLIFunction(functionSetPointer,(void*)functionValue.c_str());
-				break;
-			}
-		case GLIEnums::FunctionType::UINTARRAY:
-		case GLIEnums::FunctionType::STRINGARRAY:
-			useGLIClearFunction(functionSetPointer);
-			loadDebugArrayData(handle,functionName,functionSetPointer);
-			break;
-		default:
-			break;
-		}
-	}
-#endif
-}
+//void
+//ProjectLoader::loadDebugConfigData (TiXmlHandle &handle, const char *configMapName)
+//{
+//#ifdef GLINTERCEPTDEBUG
+//
+//	TiXmlElement *pElem;
+//	void *functionSetPointer;
+//	pElem = handle.FirstChild().Element();
+//	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
+//		const char *functionName = pElem->Value();
+//		functionSetPointer = getGLIFunction(functionName,configMapName);
+//		switch (getGLIFunctionType(functionSetPointer))
+//		{
+//		case GLIEnums::FunctionType::BOOL:{
+//				bool functionValue; 
+//				pElem->QueryBoolAttribute("value",&functionValue);
+//				useGLIFunction(functionSetPointer,&functionValue);
+//				break;
+//			}
+//		case GLIEnums::FunctionType::INT:{
+//				int functionValue; 
+//				pElem->QueryIntAttribute("value",&functionValue);
+//				useGLIFunction(functionSetPointer,&functionValue);
+//				break;
+//			}
+//		case GLIEnums::FunctionType::UINT:{
+//				unsigned int functionValue; 
+//				pElem->QueryUnsignedAttribute("value",&functionValue);
+//				useGLIFunction(functionSetPointer,&functionValue);
+//				break;
+//			}
+//		case GLIEnums::FunctionType::STRING:{
+//				string functionValue; 
+//				pElem->QueryStringAttribute("value",&functionValue);
+//				useGLIFunction(functionSetPointer,(void*)functionValue.c_str());
+//				break;
+//			}
+//		case GLIEnums::FunctionType::UINTARRAY:
+//		case GLIEnums::FunctionType::STRINGARRAY:
+//			useGLIClearFunction(functionSetPointer);
+//			loadDebugArrayData(handle,functionName,functionSetPointer);
+//			break;
+//		default:
+//			break;
+//		}
+//	}
+//#endif
+//}
 
 /* ----------------------------------------------------------------
 Specification of the configdata:
@@ -4930,36 +5081,36 @@ Specification of the configdata:
 					...
 				</arrayconfigname>
 ----------------------------------------------------------------- */
-void
-ProjectLoader::loadDebugArrayData (TiXmlHandle &hRoot, const char *functionName, void *functionSetPointer)
-{
-#ifdef GLINTERCEPTDEBUG
-	TiXmlElement *pElem;
-	TiXmlHandle handle (hRoot.FirstChild(functionName).Element());
-	unsigned int functionType = getGLIFunctionType(functionSetPointer);
-
-	pElem = handle.FirstChild().Element();
-	switch (functionType)
-	{
-	case GLIEnums::FunctionType::UINTARRAY:{
-		for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
-				unsigned int functionValue; 
-				pElem->QueryUnsignedAttribute("value",&functionValue);
-				useGLIFunction(functionSetPointer,&functionValue);
-				break;
-			}
-		}
-	case GLIEnums::FunctionType::STRINGARRAY:{
-		for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
-				string functionValue; 
-				pElem->QueryStringAttribute("value",&functionValue);
-				useGLIFunction(functionSetPointer,(void*)functionValue.c_str());
-				break;
-			}
-		}
-	default:
-		break;
-	}
-#endif
-}
-
+//void
+//ProjectLoader::loadDebugArrayData (TiXmlHandle &hRoot, const char *functionName, void *functionSetPointer)
+//{
+//#ifdef GLINTERCEPTDEBUG
+//	TiXmlElement *pElem;
+//	TiXmlHandle handle (hRoot.FirstChild(functionName).Element());
+//	unsigned int functionType = getGLIFunctionType(functionSetPointer);
+//
+//	pElem = handle.FirstChild().Element();
+//	switch (functionType)
+//	{
+//	case GLIEnums::FunctionType::UINTARRAY:{
+//		for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
+//				unsigned int functionValue; 
+//				pElem->QueryUnsignedAttribute("value",&functionValue);
+//				useGLIFunction(functionSetPointer,&functionValue);
+//				break;
+//			}
+//		}
+//	case GLIEnums::FunctionType::STRINGARRAY:{
+//		for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
+//				string functionValue; 
+//				pElem->QueryStringAttribute("value",&functionValue);
+//				useGLIFunction(functionSetPointer,(void*)functionValue.c_str());
+//				break;
+//			}
+//		}
+//	default:
+//		break;
+//	}
+//#endif
+//}
+//

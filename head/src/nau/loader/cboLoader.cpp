@@ -30,16 +30,16 @@ using namespace nau::system;
 std::string CBOLoader::m_FileName;
 
 void
-CBOLoader::_writeVertexData (VertexData& aVertexData, std::fstream &f) 
-{
+CBOLoader::_writeVertexData (std::shared_ptr<VertexData>& aVertexData, std::fstream &f) {
+
 	unsigned int siz;
 	unsigned int sizeVec;
 	unsigned int countFilledArrays = 0;
 
 	for (int i = 0; i < VertexData::MaxAttribs; i++) {
 	
-		std::vector<VertexData::Attr> &aVec = aVertexData.getDataOf (i);
-		if (aVec.size())
+		std::shared_ptr<std::vector<VertexData::Attr>> &aVec = aVertexData->getDataOf (i);
+		if (aVec->size())
 			countFilledArrays++;
 	}
 
@@ -49,15 +49,15 @@ CBOLoader::_writeVertexData (VertexData& aVertexData, std::fstream &f)
 
 	for (int i = 0; i < VertexData::MaxAttribs; i++) {
 
-		std::vector<VertexData::Attr> &aVec = aVertexData.getDataOf (i);
-		sizeVec = (unsigned int)aVec.size();
+		std::shared_ptr<std::vector<VertexData::Attr>> &aVec = aVertexData->getDataOf (i);
+		sizeVec = (unsigned int)aVec->size();
 		if (sizeVec > 0) {
 
 			_writeString(VertexData::Syntax[i],f);
 			// write size of array
 			f.write (reinterpret_cast<char *> (&sizeVec), sizeof (sizeVec));
 			// write attribute data
-			f.write (reinterpret_cast<char *> (&(aVec[0])), 
+			f.write (reinterpret_cast<char *> (&(aVec.get()[0])), 
 					 sizeVec * sizeof(VertexData::Attr));
 		}
 	}
@@ -75,8 +75,8 @@ CBOLoader::_writeVertexData (VertexData& aVertexData, std::fstream &f)
 
 
 void
-CBOLoader::_writeIndexData (IndexData& aVertexData, std::fstream &f) 
-{
+CBOLoader::_writeIndexData (std::shared_ptr<nau::geometry::IndexData>& aVertexData, std::fstream &f) {
+
 	unsigned int siz;
 
 	unsigned int countFilledArrays = 0;
@@ -85,19 +85,19 @@ CBOLoader::_writeIndexData (IndexData& aVertexData, std::fstream &f)
 	f.write (reinterpret_cast<char *> (&countFilledArrays), sizeof (countFilledArrays));
 
 
-	std::vector<unsigned int> &aVec = aVertexData.getIndexData();
-	siz = (unsigned int)aVec.size();
+	std::shared_ptr<std::vector<unsigned int>> &aVec = aVertexData->getIndexData();
+	siz = (unsigned int)aVec->size();
 	f.write (reinterpret_cast<char *> (&siz), sizeof (siz));
 
-	if (aVec.size() > 0) {
-		f.write (reinterpret_cast<char *> (&(aVec[0])), 
-				  siz * sizeof(unsigned int));
+	if (aVec->size() > 0) {
+		f.write (reinterpret_cast<char *> (&(aVec->at(0))), siz * sizeof(unsigned int));
 	}
 }
 
+
 void
-CBOLoader::_readVertexData (VertexData& aVertexData, std::fstream &f)
-{
+CBOLoader::_readVertexData (std::shared_ptr<VertexData>& aVertexData, std::fstream &f) {
+
 	unsigned int siz;
 	unsigned int countFilledArrays;
 	char buffer[1024];
@@ -112,13 +112,14 @@ CBOLoader::_readVertexData (VertexData& aVertexData, std::fstream &f)
 		// read size of array
 		f.read (reinterpret_cast<char *> (&siz), sizeof (siz));
 
-		std::vector<VertexData::Attr> *aVector = new std::vector<VertexData::Attr>(siz);
+		std::shared_ptr<std::vector<VertexData::Attr>> aVector = 
+			std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(siz));
 
 		// read attrib data
 		f.read (reinterpret_cast<char *> (&(*aVector)[0]), siz * sizeof (VertexData::Attr));
 
 		unsigned int index = VertexData::GetAttribIndex(std::string(buffer));
-		aVertexData.setDataFor (index, aVector);
+		aVertexData->setDataFor (index, aVector);
 	}
 	
 	f.read (reinterpret_cast<char *> (&siz), sizeof (siz));
@@ -126,8 +127,8 @@ CBOLoader::_readVertexData (VertexData& aVertexData, std::fstream &f)
 
 
 void
-CBOLoader::_readIndexData (IndexData& aVertexData, std::fstream &f)
-{
+CBOLoader::_readIndexData (std::shared_ptr<nau::geometry::IndexData>& anIndexData, std::fstream &f) {
+
 	unsigned int siz;
 	unsigned int countFilledArrays;
 
@@ -135,11 +136,12 @@ CBOLoader::_readIndexData (IndexData& aVertexData, std::fstream &f)
 
 	f.read (reinterpret_cast<char *> (&siz), sizeof (siz));
 	if (siz > 0) {
-		std::vector<unsigned int> *aNewVector = new std::vector<unsigned int>(siz);
+		std::shared_ptr<std::vector<unsigned int>> &aNewVector = 
+			std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>(siz));
 
 		f.read (reinterpret_cast<char *> (&(*aNewVector)[0]), siz * sizeof (unsigned int));
 
-		aVertexData.setIndexData (aNewVector);
+		anIndexData->setIndexData (aNewVector);
 	}
 }
 
@@ -164,8 +166,8 @@ CBOLoader::_readIndexData (IndexData& aVertexData, std::fstream &f)
 //}
 
 void
-CBOLoader::_writeString (const std::string& aString, std::fstream &f)
-{
+CBOLoader::_writeString (const std::string& aString, std::fstream &f) {
+
 	unsigned int siz = (unsigned int)aString.size();
 
 	f.write (reinterpret_cast<char *> (&siz), sizeof (siz));
@@ -174,8 +176,8 @@ CBOLoader::_writeString (const std::string& aString, std::fstream &f)
 
 
 void
-CBOLoader::_readString ( char *buffer, std::fstream &f)
-{
+CBOLoader::_readString ( char *buffer, std::fstream &f) {
+
 	unsigned int siz;
 
 	memset (buffer, 0, 1024);
@@ -183,17 +185,19 @@ CBOLoader::_readString ( char *buffer, std::fstream &f)
 	f.read (buffer, siz + 1);
 }
 
+
 void
-CBOLoader::_ignoreString (std::fstream &f)
-{
+CBOLoader::_ignoreString (std::fstream &f) {
+
 	unsigned int siz;
 	f.read (reinterpret_cast<char *> (&siz), sizeof (siz));
 	f.ignore (siz + 1);
 }
 
+
 void 
-CBOLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::string &params)
-{
+CBOLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::string &params) {
+
 	//CLogger::getInstance().addLog(LEVEL_INFO, "debug.txt");
 
 	m_FileName = aFilename;
@@ -201,7 +205,7 @@ CBOLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 
 	std::fstream f (aFilename.c_str(), std::fstream::in | std::fstream::binary);
 
-	std::map<std::string, IRenderable*> renderables; /***MARK***/ //PROTO Renderables Manager
+	std::map<std::string, std::shared_ptr<IRenderable>> renderables; 
 	//std::map<std::pair<std::string, std::string>, int> materialTrack;
 
 	if (!f.is_open()) {
@@ -214,13 +218,13 @@ CBOLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 	unsigned int nMatGroups, nMats;
 
 	// MATERIALS
-	LOG_INFO ("[Reading] Materials start");
+	//LOG_INFO ("[Reading] Materials start");
 	f.read (reinterpret_cast<char *> (&nMats), sizeof(nMats));
 	for (unsigned int i = 0 ; i < nMats; i++) {
 		
 		_readMaterial(path,f);
 	}
-	LOG_INFO ("[Reading] Materials done");
+	//LOG_INFO ("[Reading] Materials done");
 	//GEOMETRY
 	_readString (buffer, f);
 
@@ -237,8 +241,8 @@ CBOLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 	for (unsigned int i = 0; i < nObjects; i++) {
 
 		_readString (buffer, f);
-		LOG_INFO ("[Reading] Type of object: [%s]", buffer);
-		SceneObject *aObject = SceneObjectFactory::create (buffer);
+		//LOG_INFO ("[Reading] Type of object: [%s]", buffer);
+		std::shared_ptr<SceneObject> &aObject = SceneObjectFactory::Create(buffer);
 
 		_readString (buffer, f);
 		aObject->setName (buffer);
@@ -278,7 +282,7 @@ CBOLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 			continue;
 		}
 
-		IRenderable *aRenderable = 0;
+		std::shared_ptr<IRenderable> aRenderable;
 
 		if (0 == renderables.count (renderableName)) {
 			/*Create the new renderable */
@@ -296,7 +300,7 @@ CBOLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 			aRenderable->setDrawingPrimitive(primitive);
 			renderables[renderableName] = aRenderable;
 			
-			VertexData &vertexData = aRenderable->getVertexData();
+			std::shared_ptr<VertexData> &vertexData = aRenderable->getVertexData();
 			_readVertexData (vertexData, f);
 
 			//LOG_INFO ("[Reading] Renderable type: [%s]", buffer);
@@ -307,14 +311,14 @@ CBOLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 				_readString (buffer, f);
 				//LOG_INFO ("[Reading] Material Groups name: [%s]", buffer);
 
-				MaterialGroup *aMatGroup = MaterialGroup::Create(aRenderable, buffer);
+				std::shared_ptr<MaterialGroup> aMatGroup = MaterialGroup::Create(aRenderable.get(), buffer);
 				if (primitive == IRenderable::TRIANGLES_ADJACENCY)
-					aMatGroup->getIndexData().useAdjacency(true);
+					aMatGroup->getIndexData()->useAdjacency(true);
 				//aMatGroup->setMaterialName (buffer);				
 				//aMatGroup->setParent (aRenderable);
 
 
-				IndexData &indexData = aMatGroup->getIndexData();
+				std::shared_ptr<IndexData> &indexData = aMatGroup->getIndexData();
 				_readIndexData (indexData, f);
 				
 				//_readString (buffer, f);
@@ -336,7 +340,7 @@ CBOLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 
 
 void
-CBOLoader::_readOctreeByMatSceneObject(SceneObject *so, std::fstream &f) {
+CBOLoader::_readOctreeByMatSceneObject(std::shared_ptr<SceneObject> &so, std::fstream &f) {
 
 	char buffer[1024];
 
@@ -360,12 +364,10 @@ CBOLoader::_readOctreeByMatSceneObject(SceneObject *so, std::fstream &f) {
 	//aTransform->setMat44 (mat);
 	so->setTransform (mat);
 
-	IRenderable *aRenderable = 0;
-
 	_readString(buffer,f);
-	aRenderable = RESOURCEMANAGER->createRenderable("Mesh", buffer, m_FileName);
+	std::shared_ptr<IRenderable> &aRenderable = RESOURCEMANAGER->createRenderable("Mesh", buffer, m_FileName);
 			
-	VertexData &vertexData = aRenderable->getVertexData();
+	std::shared_ptr<VertexData> &vertexData = aRenderable->getVertexData();
 	_readVertexData (vertexData, f);
 
 	//LOG_INFO ("[Reading] Renderable type: [%s]", buffer);
@@ -373,12 +375,12 @@ CBOLoader::_readOctreeByMatSceneObject(SceneObject *so, std::fstream &f) {
 		//LOG_INFO ("[Reading] Material Groups name: [%s]", buffer);
 
 
-	MaterialGroup *aMatGroup = MaterialGroup::Create(aRenderable, buffer);
+	std::shared_ptr<MaterialGroup> aMatGroup = MaterialGroup::Create(aRenderable.get(), buffer);
 	//aMatGroup->setParent (aRenderable);
 	//aMatGroup->setMaterialName (buffer);				
 
 
-	IndexData &indexData = aMatGroup->getIndexData();
+	std::shared_ptr<nau::geometry::IndexData> &indexData = aMatGroup->getIndexData();
 	_readIndexData (indexData, f);
 				
 		//_readString (buffer, f);
@@ -391,7 +393,7 @@ CBOLoader::_readOctreeByMatSceneObject(SceneObject *so, std::fstream &f) {
 
 
 void 
-CBOLoader::_writeOctreeByMatSceneObject(SceneObject *so, std::fstream &f) {
+CBOLoader::_writeOctreeByMatSceneObject(std::shared_ptr<SceneObject> &so, std::fstream &f) {
 
 	_writeString (so->getName(), f); 
 	
@@ -414,29 +416,27 @@ CBOLoader::_writeOctreeByMatSceneObject(SceneObject *so, std::fstream &f) {
 	 f.write(reinterpret_cast<char*> ((float *)aTransform.getMatrix()), sizeof(float) * 16);
 
 
-	IRenderable *aRenderablePtr = so->_getRenderablePtr();
+	 std::shared_ptr<IRenderable> &aRenderablePtr = so->getRenderable();
 	_writeString(aRenderablePtr->getName(),f);
 	/* Vertices data */
-	VertexData &aVertexData = aRenderablePtr->getVertexData();
+	std::shared_ptr<VertexData> &aVertexData = aRenderablePtr->getVertexData();
 
 	_writeVertexData (aVertexData, f);
 
 	/* Material groups */
-	std::vector<nau::material::MaterialGroup*>& materialGroups = aRenderablePtr->getMaterialGroups();
+	std::vector<std::shared_ptr<MaterialGroup>>& materialGroups = aRenderablePtr->getMaterialGroups();
 
-	MaterialGroup *aMaterialGroup = materialGroups[0];
-				
-	_writeString (aMaterialGroup->getMaterialName(), f);
+	_writeString (materialGroups[0]->getMaterialName(), f);
 
 	/* Indices Data */
-	IndexData &mgIndexData = aMaterialGroup->getIndexData();
+	std::shared_ptr<nau::geometry::IndexData> &mgIndexData = materialGroups[0]->getIndexData();
 
 	_writeIndexData (mgIndexData, f);
 }
 
 
 void
-CBOLoader::_readOctreeByMatNode(OctreeByMatNode *n, std::fstream &f) {
+CBOLoader::_readOctreeByMatNode(std::shared_ptr<OctreeByMatNode> &n, std::fstream &f) {
 
 	char buffer[1024];
 
@@ -451,7 +451,7 @@ CBOLoader::_readOctreeByMatNode(OctreeByMatNode *n, std::fstream &f) {
 
 	for (unsigned int i = 0; i < siz; ++i) {
 		_readString(buffer, f);
-		SceneObject *so = SceneObjectFactory::create ("SimpleObject");
+		std::shared_ptr<SceneObject> &so = SceneObjectFactory::Create ("SimpleObject");
 		so->setName(buffer);
 		_readOctreeByMatSceneObject(so, f);
 		n->m_pLocalMeshes[buffer] = so;
@@ -465,15 +465,16 @@ CBOLoader::_readOctreeByMatNode(OctreeByMatNode *n, std::fstream &f) {
 		n->m_Divided = true;
 
 	for (int i = 0; i < n->m_ChildCount; ++i) {
-		OctreeByMatNode *o = new OctreeByMatNode();
+		std::shared_ptr<OctreeByMatNode> &o = std::shared_ptr<OctreeByMatNode>(new OctreeByMatNode());
 		_readOctreeByMatNode(o,f);
 		o->m_pParent = n;
 		n->m_pChilds[o->m_NodeId] = o;
 	}
 }
 
+
 void
-CBOLoader::_writeOctreeByMatNode(OctreeByMatNode *n, std::fstream &f) {
+CBOLoader::_writeOctreeByMatNode(std::shared_ptr<OctreeByMatNode> &n, std::fstream &f) {
 
 	unsigned int siz;
 
@@ -502,12 +503,9 @@ CBOLoader::_writeOctreeByMatNode(OctreeByMatNode *n, std::fstream &f) {
 	siz = (unsigned int)n->m_pLocalMeshes.size();
 	f.write (reinterpret_cast<char *> (&siz), sizeof(siz));
 
-	std::map<std::string, nau::scene::SceneObject *>::iterator iter;
-
-	iter = n->m_pLocalMeshes.begin();
-	for (; iter != n->m_pLocalMeshes.end(); ++iter) {
-		_writeString(iter->first, f);
-		_writeOctreeByMatSceneObject(iter->second, f);
+	for (auto so: n->m_pLocalMeshes) {
+		_writeString(so.first, f);
+		_writeOctreeByMatSceneObject(so.second, f);
 	}
 
 	f.write (reinterpret_cast<char *> (&n->m_ChildCount), sizeof(n->m_ChildCount));
@@ -518,8 +516,6 @@ CBOLoader::_writeOctreeByMatNode(OctreeByMatNode *n, std::fstream &f) {
 		if (n->m_pChilds[i] != NULL)
 			_writeOctreeByMatNode(n->m_pChilds[i],f);
 }
-
-
 
 
 void
@@ -538,11 +534,10 @@ CBOLoader::_readOctreeByMat(OctreeByMatScene *aScene, std::fstream &f) {
 	//aScene->setName(buffer);
 	o->setName(buffer);
 
-	OctreeByMatNode *n = new OctreeByMatNode();
+	std::shared_ptr<OctreeByMatNode> n = std::shared_ptr<OctreeByMatNode>(new OctreeByMatNode());
 	_readOctreeByMatNode(n,f);
 	o->m_pOctreeRootNode = n;
 }
-
 
 
 void
@@ -563,20 +558,20 @@ CBOLoader::_writeOctreeByMat(OctreeByMatScene *aScene, std::fstream &f) {
 	OctreeByMat *o = aScene->m_pGeometry;
 	_writeString(o->getName(),f);
 
-	OctreeByMatNode *n = o->m_pOctreeRootNode;
+	std::shared_ptr<OctreeByMatNode> &n = o->m_pOctreeRootNode;
 
 	_writeOctreeByMatNode(n,f);
 }
 
 
 void 
-CBOLoader::writeScene (nau::scene::IScene *aScene, std::string &aFilename)
-{
+CBOLoader::writeScene (nau::scene::IScene *aScene, std::string &aFilename) {
+
 //	CLogger::getInstance().addLog(LEVEL_INFO, "debug.txt");
 
 	std::string path = File::GetPath(aFilename);
 
-	std::map<std::string, IRenderable*> renderables;
+	std::map<std::string, std::shared_ptr<IRenderable>> renderables;
 	std::set<std::string> materials;
 
 	//std::fstream f (aFilename.c_str(), std::fstream::out);
@@ -590,8 +585,9 @@ CBOLoader::writeScene (nau::scene::IScene *aScene, std::string &aFilename)
 
 	unsigned int siz; 
 
-	std::vector<SceneObject*> &sceneObjects = aScene->getAllObjects();
-	std::vector<SceneObject*>::iterator objIter;
+	std::vector<std::shared_ptr<SceneObject>> sceneObjects;
+	aScene->getAllObjects(&sceneObjects);
+	std::vector<std::shared_ptr<SceneObject>>::iterator objIter;
 
 
 	// MATERIALS - collect materials
@@ -600,38 +596,28 @@ CBOLoader::writeScene (nau::scene::IScene *aScene, std::string &aFilename)
 	// For each object in the scene 
 	for ( ; objIter != sceneObjects.end(); objIter++) {
 
-		IRenderable *aRenderablePtr = (*objIter)->_getRenderablePtr();
+		std::shared_ptr<IRenderable> &aRenderablePtr = (*objIter)->getRenderable();
 
-		if (0 == aRenderablePtr) {
+		if (NULL == aRenderablePtr) {
 			continue;
 		}
 
-		IRenderable &aRenderable = (*objIter)->getRenderable();
+		std::shared_ptr<IRenderable> &aRenderable = (*objIter)->getRenderable();
 		
 		// Material groups 
-		std::vector<nau::material::MaterialGroup*>& materialGroups = aRenderable.getMaterialGroups();
-		std::vector<nau::material::MaterialGroup*>::iterator mgIter;
+		std::vector<std::shared_ptr<MaterialGroup>>& materialGroups = aRenderable->getMaterialGroups();
 
 		// collect material names in a set
-		mgIter = materialGroups.begin();
+		for (auto &aMaterialGroup: materialGroups) {
 
-		for ( ; mgIter != materialGroups.end(); mgIter++) {
-			MaterialGroup *aMaterialGroup = (*mgIter);
-			
 			std::string matName = aMaterialGroup->getMaterialName();
-
 			materials.insert(matName);
 		}
-
 	}
 	// write number of materials
 	siz = (unsigned int)materials.size();
 	size_t k = sizeof(siz);
 	f.write (reinterpret_cast<char *> (&siz), k);
-	//siz++;
-	//f.write(reinterpret_cast<char *> (&siz), k);
-	//f.close();
-
 
 	// write materials
 	std::set<std::string>::iterator matIter;
@@ -704,7 +690,7 @@ CBOLoader::writeScene (nau::scene::IScene *aScene, std::string &aFilename)
 		/* The transform's matrix */
 		f.write(reinterpret_cast<char*> (const_cast<float *>(aTransform.getMatrix())), sizeof(float)*16);
 
-		IRenderable *aRenderablePtr = (*objIter)->_getRenderablePtr();
+		std::shared_ptr<IRenderable> &aRenderablePtr = (*objIter)->getRenderable();
 
 		if (0 == aRenderablePtr) {
 			_writeString ("NULLOBJECT", f);
@@ -712,11 +698,11 @@ CBOLoader::writeScene (nau::scene::IScene *aScene, std::string &aFilename)
 		}
 
 		/* Write the object's renderable */
-		IRenderable &aRenderable = (*objIter)->getRenderable();
+		std::shared_ptr<IRenderable> &aRenderable = (*objIter)->getRenderable();
 
 
 		/* The renderable name, for later lookup */
-		std::string name = aRenderable.getName();
+		std::string name = aRenderable->getName();
 		unsigned int pos = (unsigned int)name.rfind("#");
 		std::string name2;
 		if (pos != string::npos)
@@ -727,42 +713,36 @@ CBOLoader::writeScene (nau::scene::IScene *aScene, std::string &aFilename)
 			name2 = name;
 		_writeString (name2, f);
 
-		LOG_INFO ("[Writing] Renderable's name: [%s]", aRenderable.getName().c_str()); 
+		LOG_INFO ("[Writing] Renderable's name: [%s]", aRenderable->getName().c_str()); 
 
-		if (0 == renderables.count (aRenderable.getName())) {
+		if (0 == renderables.count (aRenderable->getName())) {
 
-			renderables[aRenderable.getName()] = &aRenderable;
+			renderables[aRenderable->getName()] = aRenderable;
 
-			_writeString (aRenderable.getType(), f);
+			_writeString (aRenderable->getType(), f);
 
-			LOG_INFO ("[Writing] Renderable's type: [%s]", aRenderable.getType().c_str()); 
+			LOG_INFO ("[Writing] Renderable's type: [%s]", aRenderable->getType().c_str()); 
 
 			/* Vertices data */
-			VertexData &aVertexData = aRenderable.getVertexData();
+			std::shared_ptr<VertexData> &aVertexData = aRenderable->getVertexData();
 
 			_writeVertexData (aVertexData, f);
 
 			/* Material groups */
-			std::vector<nau::material::MaterialGroup*>& materialGroups = aRenderable.getMaterialGroups();
-			std::vector<nau::material::MaterialGroup*>::iterator mgIter;
-
+			std::vector<std::shared_ptr<MaterialGroup>>& materialGroups = aRenderable->getMaterialGroups();
 			siz = (unsigned int)materialGroups.size();
 
 			f.write (reinterpret_cast<char*> (&siz), sizeof (siz));
 
-			mgIter = materialGroups.begin();
-
-			for ( ; mgIter != materialGroups.end(); mgIter++) {
-				MaterialGroup *aMaterialGroup = (*mgIter);
+			for (auto &aMaterialGroup : materialGroups) {
 				
 				/*Write material's name */
-
 				_writeString (aMaterialGroup->getMaterialName(), f);
 
 				LOG_INFO ("[Writing] MaterialGroup's name: %s", aMaterialGroup->getMaterialName().c_str()); 
 							
 				/* Indices Data */
-				IndexData &mgIndexData = aMaterialGroup->getIndexData();
+				std::shared_ptr<nau::geometry::IndexData> &mgIndexData = aMaterialGroup->getIndexData();
 
 				_writeIndexData (mgIndexData, f);
 			}
@@ -773,13 +753,10 @@ CBOLoader::writeScene (nau::scene::IScene *aScene, std::string &aFilename)
 }
 
 
-
-
 void 
-CBOLoader::_writeMaterial(std::string matName, std::string path, std::fstream &f) 
-{
+CBOLoader::_writeMaterial(std::string matName, std::string path, std::fstream &f) {
 
-	Material *aMaterial = MATERIALLIBMANAGER->getDefaultMaterial (matName); 
+	std::shared_ptr<Material> &aMaterial = MATERIALLIBMANAGER->getMaterialFromDefaultLib (matName);
 
 	_writeString (matName, f);
 
@@ -813,15 +790,14 @@ CBOLoader::_writeMaterial(std::string matName, std::string path, std::fstream &f
 
 
 void
-CBOLoader::_readMaterial(std::string path, std::fstream &f)
-{
-	Material* aMaterial;// = new Material;
+CBOLoader::_readMaterial(std::string path, std::fstream &f) {
+
 
 	// read materials name
 	char buffer[1024];
 	_readString(buffer, f);
-	//aMaterial->setName (buffer);
-	aMaterial = MATERIALLIBMANAGER->createMaterial(buffer);
+
+	std::shared_ptr<Material> &aMaterial = MATERIALLIBMANAGER->createMaterial(buffer);
 
 	float values[4];
 	float value;
@@ -849,5 +825,4 @@ CBOLoader::_readMaterial(std::string path, std::fstream &f)
 			aMaterial->createTexture (i, File::GetFullPath(path,buffer));
 		}
 	}
-
 }

@@ -29,22 +29,22 @@ namespace nau
 
 			static void _writeMaterial(std::string matName, std::string path, std::fstream &f);
 			static void _readMaterial(std::string path, std::fstream &f);
-			static void _writeVertexData (VertexData& aVertexData, std::fstream &f) ;
-			static void _readVertexData (VertexData& aVertexData, std::fstream &f);
-			static void _writeIndexData (IndexData& aVertexData, std::fstream &f) ;
-			static void _readIndexData (IndexData& aVertexData, std::fstream &f);
+			static void _writeVertexData (std::shared_ptr<VertexData>& aVertexData, std::fstream &f) ;
+			static void _readVertexData (std::shared_ptr<VertexData>& aVertexData, std::fstream &f);
+			static void _writeIndexData (std::shared_ptr<IndexData>& aVertexData, std::fstream &f) ;
+			static void _readIndexData (std::shared_ptr<IndexData>& anIndexData, std::fstream &f);
 			//static void _ignoreVertexData (std::fstream &f);
 			static void _writeString (const std::string& aString, std::fstream &f);
 			static void _readString ( char *buffer, std::fstream &f);
 			static void _ignoreString (std::fstream &f);
 
 			static void _writeOctreeByMat(OctreeByMatScene *aScene, std::fstream &f);
-			static void _writeOctreeByMatNode(OctreeByMatNode *n, std::fstream &f)	;	
-			static void _writeOctreeByMatSceneObject(SceneObject *so, std::fstream &f)	;
+			static void _writeOctreeByMatNode(std::shared_ptr<OctreeByMatNode> &n, std::fstream &f)	;
+			static void _writeOctreeByMatSceneObject(std::shared_ptr<SceneObject> &so, std::fstream &f)	;
 
 			static void _readOctreeByMat(OctreeByMatScene *aScene, std::fstream &f);
-			static void _readOctreeByMatNode(OctreeByMatNode *n, std::fstream &f)	;	
-			static void _readOctreeByMatSceneObject(SceneObject *so, std::fstream &f)	;
+			static void _readOctreeByMatNode(std::shared_ptr<OctreeByMatNode> &n, std::fstream &f)	;
+			static void _readOctreeByMatSceneObject(std::shared_ptr<SceneObject> &so, std::fstream &f)	;
 		};
 	};
 };

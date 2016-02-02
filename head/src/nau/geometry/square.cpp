@@ -10,17 +10,18 @@ using namespace nau::material;
 using namespace nau::math;
 
 
-const std::string Square::FloatParamNames[] = {""};
+Square::Square(void) : Primitive() {
 
-Square::Square(void) : Primitive(),
-	m_Floats(COUNT_FLOATPARAMS)
-{
 	float n = 1.0f;
 
-	std::vector<VertexData::Attr> *vertices = new std::vector<VertexData::Attr>(4);
-	std::vector<VertexData::Attr> *tangent = new std::vector<VertexData::Attr>(4);
-	std::vector<VertexData::Attr> *textureCoords = new std::vector<VertexData::Attr>(4);
-	std::vector<VertexData::Attr> *normals = new std::vector<VertexData::Attr>(4);
+	std::shared_ptr<std::vector<VertexData::Attr>> vertices = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(4));
+	std::shared_ptr<std::vector<VertexData::Attr>> tangent = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(4));
+	std::shared_ptr<std::vector<VertexData::Attr>> textureCoords = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(4));
+	std::shared_ptr<std::vector<VertexData::Attr>> normals = 
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(4));
 
 	//BOTTOM
 	vertices->at (Square::TOP_LEFT).set		(-n, 0.0f,  n);
@@ -43,17 +44,17 @@ Square::Square(void) : Primitive(),
 	normals->at (Square::BOTTOM_RIGHT).set	( 0.0f, 1.0f, 0.0f);	
 	normals->at (Square::BOTTOM_LEFT).set	( 0.0f, 1.0f, 0.0f); 	
 
-	VertexData &vertexData = getVertexData();
+	std::shared_ptr<VertexData> &vertexData = getVertexData();
 
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("position")), vertices);
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("texCoord0")), textureCoords);
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("tangent")), tangent);
-	vertexData.setDataFor (VertexData::GetAttribIndex(std::string("normal")), normals);
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("position")), vertices);
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("texCoord0")), textureCoords);
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("tangent")), tangent);
+	vertexData->setDataFor (VertexData::GetAttribIndex(std::string("normal")), normals);
 
-
-	MaterialGroup *aMaterialGroup = MaterialGroup::Create(this, "__Light Grey");
+	std::shared_ptr<MaterialGroup> aMaterialGroup = MaterialGroup::Create(this, "__Light Grey");
 	
-	std::vector<unsigned int> *indices = new std::vector<unsigned int>(6);
+	std::shared_ptr<std::vector<unsigned int>> indices = 
+		std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>(6));
 
 	//BOTTOM
 	indices->at (0)= Square::BOTTOM_LEFT;
@@ -65,60 +66,19 @@ Square::Square(void) : Primitive(),
 	indices->at (5)= Square::TOP_RIGHT;
 
 	aMaterialGroup->setIndexList (indices);
-	//aMaterialGroup->setParent (this);
-	//aMaterialGroup->setMaterialName("__Light Grey");
 
 	addMaterialGroup (aMaterialGroup);
 }
 
 
-Square::~Square(void)
-{
+Square::~Square(void) {
 
 }
 
 
 void 
-Square::build()
-{
+Square::build() {
+
 }
 
 
-const std::string &
-Square::getParamfName(unsigned int i) 
-{
-	if (i < Square::COUNT_FLOATPARAMS)
-		return Square::FloatParamNames[i];
-	else
-		return Primitive::NoParam;
-}
-
-
-float 
-Square::getParamf(unsigned int param)
-{
-	assert(param < Square::COUNT_FLOATPARAMS);
-
-	if (param < Square::COUNT_FLOATPARAMS)
-		return(m_Floats[param]);
-	else
-		return (0.0f);
-}
-
-
-void
-Square::setParam(unsigned int param, float value)
-{
-	assert(param < Square::COUNT_FLOATPARAMS);
-
-	if (param < Square::COUNT_FLOATPARAMS)
-		m_Floats[param] = value;
-}
-
-
-unsigned int
-Square::translate(const std::string &name) 
-{
-	assert("name is not a primitive param");
-	return (0);
-}

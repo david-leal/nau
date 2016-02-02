@@ -29,7 +29,7 @@ namespace nau
 		public:
 
 #ifdef NAU_RENDER_FLAGS
-			static nau::geometry::BBox *Geometry;
+			static std::shared_ptr<nau::geometry::BBox> Geometry;
 			static nau::geometry::BBox *getGeometry();
 #endif
 			BoundingBox (void);
@@ -37,7 +37,7 @@ namespace nau
 			BoundingBox (const BoundingBox &aBoundingBox);
 
 			void set(nau::math::vec3 min, nau::math::vec3 max);
-			void calculate (const std::vector<VertexData::Attr> &vertices);
+			void calculate (const std::shared_ptr<std::vector<VertexData::Attr>> &vertices);
 
 			// updates the geometry transform
 			void setTransform(nau::math::mat4 &aTransform);
@@ -61,6 +61,8 @@ namespace nau
 
 		public:
 			virtual ~BoundingBox(void);
+			void eventReceived(const std::string & sender, const std::string & eventType, 
+				const std::shared_ptr<IEventData>& evt);
 		};
 	};
 };

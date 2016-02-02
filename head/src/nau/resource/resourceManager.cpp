@@ -4,6 +4,7 @@
 #include "nau/geometry/sphere.h"
 #include "nau/geometry/square.h"
 #include "nau/geometry/axis.h"
+#include "nau/geometry/terrain.h"
 #include "nau/geometry/boundingBoxPrimitive.h"
 #include "nau/geometry/meshWithPose.h"
 #include "nau/geometry/meshBones.h"
@@ -23,16 +24,14 @@ int ResourceManager::renderableCount = 0;
 
 
 ResourceManager::ResourceManager(std::string path) :
-		//m_pTextureManager(0),
 		m_Path(path),
 		m_RenderTargets(),
 		m_Meshes(),
 		m_States(),
 		m_Programs(),
 		m_Textures()
-//		m_TexImages()
 {
-	//m_pTextureManager = new TextureManager (m_Path);
+	m_EmptyMesh = NULL;
 }
 
 
@@ -55,10 +54,11 @@ ResourceManager::clear() {
 		m_States.erase(m_States.begin());
 	}
 
-	while (!m_Meshes.empty()){
-		delete((*m_Meshes.begin()).second);
-		m_Meshes.erase(m_Meshes.begin());
-	}
+	m_Meshes.clear();
+	//while (!m_Meshes.empty()){
+	//	delete((*m_Meshes.begin()).second);
+	//	m_Meshes.erase(m_Meshes.begin());
+	//}
 
 	while (!m_RenderTargets.empty()){
 		delete((*m_RenderTargets.begin()).second);
@@ -75,40 +75,6 @@ ResourceManager::clear() {
 		m_Buffers.erase(m_Buffers.begin());
 	}
 }
-//-------------------------------------	
-
-//			TEXIMAGES
-
-//-------------------------------------
-
-//
-//nau::material::ITexImage* 
-//ResourceManager::createTexImage(nau::material::ITexture *t) {
-//
-//	if ( m_TexImages.count(t->getLabel())) {
-//		m_TexImages[t->getLabel()]->update();
-//		return m_TexImages[t->getLabel()];
-//	}
-//	
-//	nau::material::ITexImage *ti = nau::material::ITexImage::create(t);
-//
-//	m_TexImages[t->getLabel()] = ti;
-//
-//	return ti;
-//}
-//
-//
-//nau::material::ITexImage* 
-//ResourceManager::getTexImage(std::string aTextureName) {
-//
-//	if ( m_TexImages.count(aTextureName)) {
-//
-//		m_TexImages[aTextureName]->update();
-//		return m_TexImages[aTextureName];
-//	}
-//	else
-//		return NULL;
-//}
 
 //-------------------------------------	
 
@@ -136,11 +102,10 @@ ResourceManager::hasTexture(std::string name) {
 nau::material::ITexture * 
 ResourceManager::createTexture(std::string label) {
 
-//	return (m_pTextureManager->createTexture(label));
 	ITexture *tex;
 
 	if (true == hasTexture(label)) {
-		tex = getTexture(label); /***MARK***/ //Must check if the texture is the same (dimension, format, width, height, ...)
+		tex = getTexture(label); 
 		return(tex);
 	}
 
@@ -157,11 +122,10 @@ ResourceManager::createTexture (std::string label,
 				int width, int height, int depth, 
 				int layers, int levels, int samples) {
 
-//	return (m_pTextureManager->createTexture (label, internalFormat, width, height, depth, layers, levels, samples));
 	ITexture *tex;
 
 	if (true == hasTexture (label)) {
-		tex = getTexture (label); /***MARK***/ //Must check if the texture is the same (dimension, format, width, height, ...)
+		tex = getTexture (label); 
 		return(tex);
 	}
 
@@ -175,7 +139,6 @@ ResourceManager::createTexture (std::string label,
 nau::material::ITexture* 
 ResourceManager::addTexture (std::string filename, std::string label, bool mipmap) {
 
-	//return (m_pTextureManager->addTexture (fn, label, mipmap));
 	size_t siz = m_Textures.size();
 	ITexture *tex;
 
@@ -194,7 +157,6 @@ ResourceManager::addTexture (std::string filename, std::string label, bool mipma
 	}
 
 	// if the texture does not exist yet
-
 	tex = ITexture::Create (filename, label, mipmap);
 	if (tex)
 		m_Textures.push_back(tex);
@@ -206,7 +168,6 @@ ResourceManager::addTexture (std::string filename, std::string label, bool mipma
 nau::material::ITexture* 
 ResourceManager::addTexture (std::vector<std::string> filenames, std::string label, bool mipmap) {
 
-//	return (m_pTextureManager->addTexture (fn, label, mipmap));
 	size_t siz = m_Textures.size();
 	ITexture *tex;
 
@@ -218,7 +179,6 @@ ResourceManager::addTexture (std::vector<std::string> filenames, std::string lab
 	}
 
 	// if the texture does not exist yet
-
 	tex = ITextureCubeMap::Create (filenames, label, mipmap);
 	m_Textures.push_back(tex);
 
@@ -229,7 +189,6 @@ ResourceManager::addTexture (std::vector<std::string> filenames, std::string lab
 void 
 ResourceManager::removeTexture (std::string name) {
 
-//	m_pTextureManager->removeTexture (name);
 	std::vector<ITexture*>::iterator texIter;
 
 	texIter = m_Textures.begin();
@@ -247,7 +206,6 @@ ResourceManager::removeTexture (std::string name) {
 ITexture*
 ResourceManager::getTexture (std::string name) {
 
-//	return (m_pTextureManager->getTexture (name));
 	size_t siz = m_Textures.size();
 	ITexture *tex;
 
@@ -265,7 +223,6 @@ ResourceManager::getTexture (std::string name) {
 ITexture*
 ResourceManager::getTextureByID (unsigned int id) {
 
-//	return (m_pTextureManager->getTexture (id));
 	size_t siz = m_Textures.size();
 	ITexture *tex;
 
@@ -297,9 +254,9 @@ ResourceManager::getNumTextures() {
 }
 
 //-------------------------------------	
-
+//
 //			RENDER TARGETS
-
+//
 //-------------------------------------
 
 nau::render::IRenderTarget* 
@@ -371,10 +328,10 @@ ResourceManager::getRenderTargetNames() {
 
 using namespace nau::geometry;
 
-nau::render::IRenderable* 
+std::shared_ptr<nau::render::IRenderable>
 ResourceManager::createRenderable(std::string type, std::string name, std::string filename) {
 
-	IRenderable *r = NULL;
+	std::shared_ptr<nau::render::IRenderable> r;
 
 	if ("" == name) {
 		std::stringstream z;
@@ -384,31 +341,34 @@ ResourceManager::createRenderable(std::string type, std::string name, std::strin
 	}
 
 	if (hasRenderable(name,filename))
-		return(getRenderable(name, filename));
+		return getRenderable(name, filename);
 
 	if (0 == type.compare ("Mesh")) 
-		r = new Mesh();
+		r =  std::shared_ptr<nau::render::IRenderable>(new Mesh());
 	
 	else if (0 == type.compare("MeshPose")) 
-		r = new MeshPose();
+		r = std::shared_ptr<nau::render::IRenderable>(new MeshPose());
 	
 	else if ("MeshBones" == type) 
-		r = new MeshBones();
+		r = std::shared_ptr<nau::render::IRenderable>(new MeshBones());
 	
 	else if ("BOX" == type) 
-		r = new Box();
+		r = std::shared_ptr<nau::render::IRenderable>(new Box());
 
 	else if ("SQUARE" == type) 
-		r = new Square();
+		r = std::shared_ptr<nau::render::IRenderable>(new Square());
 
 	else if ("SPHERE" == type) 
-		r = new Sphere();
+		r = std::shared_ptr<nau::render::IRenderable>(new Sphere());
 
 	else if ("AXIS" == type)
-		r = new Axis();
+		r = std::shared_ptr<nau::render::IRenderable>(new Axis());
 
 	else if ("BoundingBox" == type)
-		r = new BBox();
+		r = std::shared_ptr<nau::render::IRenderable>(new BBox());
+
+	else if ("Terrain" == type)
+		r = std::shared_ptr<nau::render::IRenderable>(new Terrain());
 	else
 		return NULL;
 
@@ -435,7 +395,7 @@ ResourceManager::hasRenderable (std::string meshName, std::string filename) {
 }
 
 
-nau::render::IRenderable* 
+std::shared_ptr<nau::render::IRenderable> &
 ResourceManager::getRenderable (std::string meshName, std::string filename) {	
 	
 	std::string key (filename);
@@ -448,12 +408,12 @@ ResourceManager::getRenderable (std::string meshName, std::string filename) {
 	if (m_Meshes.count (key) > 0) {
 		return m_Meshes[key];
 	}
-	return 0;
+	return m_EmptyMesh;
 }
 
 
-nau::render::IRenderable* 
-ResourceManager::addRenderable (nau::render::IRenderable* aMesh, std::string filename) {
+std::shared_ptr<nau::render::IRenderable> &
+ResourceManager::addRenderable (std::shared_ptr<nau::render::IRenderable> &aMesh, std::string filename) {
 
 	std::string key (filename);
 	std::string meshName = aMesh->getName();
@@ -487,7 +447,7 @@ ResourceManager::removeRenderable(std::string name) {
 
 
 IState *
-ResourceManager::createState(std::string &stateName) {
+ResourceManager::createState(const std::string &stateName) {
 
 	if (!m_States.count(stateName)) {
 		m_States[stateName] = IState::create();
@@ -498,7 +458,7 @@ ResourceManager::createState(std::string &stateName) {
 
 
 bool 
-ResourceManager::hasState (std::string &stateName) {
+ResourceManager::hasState (const std::string &stateName) {
 
 	if (m_States.count (stateName) > 0) {
 		return true;
@@ -508,7 +468,7 @@ ResourceManager::hasState (std::string &stateName) {
 
 
 nau::material::IState* 
-ResourceManager::getState (std::string &stateName) {
+ResourceManager::getState (const std::string &stateName) {
 
 	if (m_States.count (stateName) > 0) {
 		return m_States[stateName];
@@ -574,17 +534,15 @@ ResourceManager::getProgramNames() {
 //			BUFFERS
 //-------------------------------------
 
-
 void
 ResourceManager::clearBuffers() {
 
-	for (auto b : m_Buffers) {
+	for (auto &b : m_Buffers) {
 
 		if (b.second->getPrope(IBuffer::CLEAR) == IBuffer::BY_FRAME)
 			b.second->clear();
 	}
 }
-
 
 
 nau::material::IBuffer* 

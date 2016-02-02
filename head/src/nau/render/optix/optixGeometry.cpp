@@ -59,15 +59,15 @@ OptixGeometry::setBufferLib(OptixBufferLib *obl) {
 #include "nau/slogger.h"
 
 void
-OptixGeometry::addSceneObject(SceneObject *s, std::map<std::string, nau::material::MaterialID> & materialMap) {
+OptixGeometry::addSceneObject(std::shared_ptr<SceneObject> &s, std::map<std::string, nau::material::MaterialID> & materialMap) {
 //OptixGeometry::addSceneObject(int id, std::map<std::string, nau::material::MaterialID> & materialMap) {
 
 //	IRenderable &r = RENDERMANAGER->getSceneObject(id)->getRenderable();
-	IRenderable &r = s->getRenderable();
-	VertexData &v = r.getVertexData();
-	size_t size = v.getDataOf(0).size();;
+	std::shared_ptr<IRenderable> r = s->getRenderable();
+	std::shared_ptr<VertexData> &v = r->getVertexData();
+	size_t size = v->getDataOf(0)->size();
 
-	std::vector<MaterialGroup *> mg = r.getMaterialGroups();
+	std::vector<std::shared_ptr<MaterialGroup>> &mg = r->getMaterialGroups();
 	for (unsigned int g = 0; g < mg.size(); ++g) {
 		if (mg[g]->getNumberOfPrimitives() > 0) {
 			try {
@@ -75,23 +75,26 @@ OptixGeometry::addSceneObject(SceneObject *s, std::map<std::string, nau::materia
 				geom->setPrimitiveCount(mg[g]->getNumberOfPrimitives());
 				geom->setBoundingBoxProgram(m_BoundingBox);
 				geom->setIntersectionProgram(m_GeomIntersect);
-				geom["vertex_buffer"]->setBuffer(m_BufferLib->getBuffer(v.getBufferID(0),size));
+				geom["vertex_buffer"]->setBuffer(m_BufferLib->getBuffer(v->getBufferID(0),size));
 				for (unsigned int b = 1; b < VertexData::MaxAttribs; ++b) {
-					if (m_VertexAttributes[b] && v.getBufferID(b))
-						geom[VertexData::Syntax[b]]->setBuffer(m_BufferLib->getBuffer(v.getBufferID(b),size));		
+					if (m_VertexAttributes[b] && v->getBufferID(b))
+						geom[VertexData::Syntax[b]]->setBuffer(m_BufferLib->getBuffer(v->getBufferID(b),size));		
 				}
 
-				geom["index_buffer"]->setBuffer(m_BufferLib->getIndexBuffer(mg[g]->getIndexData().getBufferID(), mg[g]->getIndexData().getIndexSize()));
+				geom["index_buffer"]->setBuffer(
+					m_BufferLib->getIndexBuffer(mg[g]->getIndexData()->getBufferID(), 
+												mg[g]->getIndexData()->getIndexSize()));
 
 				m_GeomInstances.push_back(m_Context->createGeometryInstance());
 				m_GeomInstances[m_GeomInstances.size()-1]->setMaterialCount(1);
-				m_MaterialLib->applyMaterial(m_GeomInstances[m_GeomInstances.size()-1], materialMap[mg[g]->getMaterialName()]);
+				m_MaterialLib->applyMaterial(m_GeomInstances[m_GeomInstances.size()-1], 
+					materialMap[mg[g]->getMaterialName()]);
 				m_GeomInstances[m_GeomInstances.size()-1]->setGeometry(geom);
 				
 			}
 			catch ( optix::Exception& e ) {
 				NAU_THROW("Optix Error: Adding scene object %s, material %s(creating buffers from VBOs) [%s]",
-										r.getName().c_str(), mg[g]->getMaterialName().c_str(), e.getErrorString().c_str()); 
+						r->getName().c_str(), mg[g]->getMaterialName().c_str(), e.getErrorString().c_str()); 
 			}
 		}
 	}

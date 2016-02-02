@@ -28,8 +28,7 @@ PassCompute::Init() {
 }
 
 
-PassCompute::PassCompute(const std::string &passName) : Pass(passName),
-m_Mat(0), 
+PassCompute::PassCompute(const std::string &passName) : Pass(passName), 
 m_BufferX(0), m_BufferY(0), m_BufferZ(0),
 m_OffsetX(0), m_OffsetY(0), m_OffsetZ(0) {
 
@@ -39,20 +38,21 @@ m_OffsetX(0), m_OffsetY(0), m_OffsetZ(0) {
 }
 
 
-PassCompute::~PassCompute(){
+PassCompute::~PassCompute() {
 
 }
 
 
-Pass *
+std::shared_ptr<Pass>
 PassCompute::Create(const std::string &passName) {
 
-	return new PassCompute(passName);
+	return dynamic_pointer_cast<Pass>(std::shared_ptr<PassCompute>(new PassCompute(passName)));
 }
 
 
 void
-PassCompute::eventReceived(const std::string &sender, const std::string &eventType, IEventData *evtData) {
+PassCompute::eventReceived(const std::string &sender, const std::string &eventType, 
+	const std::shared_ptr<IEventData> &evt) {
 
 }
 
@@ -60,7 +60,8 @@ PassCompute::eventReceived(const std::string &sender, const std::string &eventTy
 void
 PassCompute::prepare (void) {
 
-	m_Mat->prepare();	
+	RENDERER->setMaterial(m_Mat);
+	//m_Mat->prepare();	
 
 	if (m_BufferX) {
 		m_BufferX->getData(m_OffsetX, 4, &m_UIntProps[DIM_X]);
@@ -97,7 +98,7 @@ PassCompute::setMaterialName(const std::string &lName,const std::string &mName) 
 }
 
 
-Material *
+std::shared_ptr<Material> &
 PassCompute::getMaterial() {
 
 	return m_Mat;

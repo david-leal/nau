@@ -77,14 +77,14 @@ namespace nau
 			// CAMERA
 
 		protected:
-			Viewport *m_Viewport;
-			Camera *m_Camera;
+			std::shared_ptr<Viewport> m_Viewport;
+			std::shared_ptr<Camera> m_Camera;
 
 		public:
-			void setViewport(nau::render::Viewport *vp);
-			Viewport *getViewport();
-			void setCamera(nau::scene::Camera *aCamera);
-			Camera *getCamera();
+			void setViewport(std::shared_ptr<Viewport>);
+			std::shared_ptr<Viewport> getViewport();
+			void setCamera(std::shared_ptr<Camera> &aCamera);
+			std::shared_ptr<Camera> &getCamera();
 
 
 			// COUNTERS
@@ -122,14 +122,18 @@ namespace nau
 			std::map<int, MaterialTexture *> m_Textures;
 			std::map<int, IImageTexture *> m_ImageTextures;
 			nau::render::GLState m_glCurrState, m_glDefaultState;
-			nau::material::ColorMaterial m_Material;
+			nau::material::ColorMaterial m_ColorMaterial;
+			std::shared_ptr<Material> m_Material;
 			IProgram *m_Shader;
 
 		public:
+			virtual void setMaterial(const std::shared_ptr<Material> &aMat);
+			virtual void resetMaterial();
+			const std::shared_ptr<Material>& getMaterial();
 			// COLOR
-			virtual void setMaterial(nau::material::ColorMaterial &mat);
-			virtual void setMaterial(vec4 &diffuse, vec4 &ambient, vec4 &emission, vec4 &specular, float shininess);
-			virtual ColorMaterial *getMaterial();
+			virtual void setColorMaterial(nau::material::ColorMaterial &mat);
+			virtual void setColorMaterial(vec4 &diffuse, vec4 &ambient, vec4 &emission, vec4 &specular, float shininess);
+			virtual ColorMaterial *getColorMaterial();
 
 			// STATE
 			void setState(IState *aState);
@@ -166,9 +170,9 @@ namespace nau
 
 			// DEBUG
 		protected:
-			void showDrawDebugInfo(MaterialGroup *aMatGroup);
+			void showDrawDebugInfo(std::shared_ptr<MaterialGroup> &aMatGroup);
 			void showDrawDebugInfo(PassCompute *aPass);
-			void showDrawDebugInfo(Material *mat, nau::util::Tree *t);
+			void showDrawDebugInfo(std::shared_ptr<Material> &mat, nau::util::Tree *t);
 			void showDrawDebugInfo(IProgram *p, nau::util::Tree *t);
 
 
@@ -180,8 +184,9 @@ namespace nau
 
 		public:
 			void setRenderMode(TRenderMode mode);
-			void drawGroup (nau::material::MaterialGroup* aMatGroup);
+			void drawGroup(std::shared_ptr<MaterialGroup> aMaterialGroup);
 			void setCullFace (Face aFace);
+			unsigned int getVerticesPerPrimitive(unsigned int primitive);
 
 			void dispatchCompute(int dimX, int dimY, int dimZ);
 

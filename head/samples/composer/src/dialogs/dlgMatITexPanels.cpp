@@ -16,9 +16,12 @@ DlgMatImageTexturePanels::~DlgMatImageTexturePanels(){
 
 
 void 
-DlgMatImageTexturePanels::setMaterial(nau::material::Material *aMat) {
+DlgMatImageTexturePanels::setMaterial(std::shared_ptr<nau::material::Material> &aMat) {
 
 	m_Material = aMat;
+
+	if (!aMat)
+		return;
 
 	m_ImageTextureUnits.clear();
 	m_Material->getImageTextureUnits(&m_ImageTextureUnits);
@@ -77,6 +80,21 @@ DlgMatImageTexturePanels::setPanel(wxSizer *siz, wxWindow *parent) {
 
 	siz->Add(sizerL,0,wxGROW|wxEXPAND|wxALL,5);
 	siz->Add(sizerf,1,wxGROW|wxEXPAND|wxALL,5);
+}
+
+
+void 
+DlgMatImageTexturePanels::resetPropGrid() {
+
+	pg->Clear();
+	pg->AddPage(wxT("Standard Items"));
+
+	std::vector<std::string> order = { "UNIT", "TEX_ID" };
+	PropertyManager::createOrderedGrid(pg, nau::material::IImageTexture::Attribs, order);
+	PropertyManager::setAllReadOnly(pg, nau::material::IImageTexture::Attribs);
+
+	pg->SetSplitterLeft(true);
+
 }
 
 

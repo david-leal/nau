@@ -5,7 +5,7 @@
 		<renderTarget name="test">
 			<SIZE width=1024 height=1024 />
 			<LAYERS value=2/>
-			<CLEAR_VALUES r=1 g=1 b=1.0 />
+			<CLEAR_VALUES r=0 g=0 b=0.0 />
 			<colors>
 				<color name="offscreenrender" internalFormat="RGBA" />
 			</colors>
@@ -32,7 +32,7 @@
 		<material name="showArrays">
 			<shader name="showArrays">
 				<values>
-					<valueof uniform="texUnit" 			type="MATERIAL_TEXTURE" context="CURRENT" 
+					<valueof uniform="texUnit" 			type="TEXTURE_BINDING" context="CURRENT" 
 														component="UNIT" id="0" />		
 				</values>
 			</shader>
@@ -87,7 +87,7 @@
 					<valueof uniform="texCount"			type="RENDERER" context="CURRENT" 
 														component="TEXTURE_COUNT" />
 														
-					<valueof uniform="texUnit" 			type="MATERIAL_TEXTURE" context="CURRENT" 
+					<valueof uniform="texUnit" 			type="TEXTURE_BINDING" context="CURRENT" 
 														component="UNIT" id="0" />			
 				</values>
 			</shader>

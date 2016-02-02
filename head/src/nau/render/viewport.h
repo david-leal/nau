@@ -3,7 +3,7 @@
 
 #include "nau/attribute.h"
 #include "nau/attributeValues.h"
-#include "nau/event/ilistener.h"
+#include "nau/event/iListener.h"
 #include "nau/event/eventVec3.h"
 #include "nau/math/vec2.h"
 #include "nau/math/vec4.h"
@@ -20,6 +20,8 @@ namespace nau
 	{
 		class Viewport: public AttributeValues, public IListener
 		{
+			friend class RenderManager;
+
 		public:
 
 			FLOAT2_PROP(ORIGIN, 0);
@@ -35,10 +37,10 @@ namespace nau
 
 			static AttribSet Attribs;
 
-			Viewport(void);
 			~Viewport(void);
 
-			void eventReceived(const std::string &sender, const std::string &eventType, IEventData *evtData);
+			void eventReceived(const std::string &sender, const std::string &eventType, 
+				const std::shared_ptr<IEventData> &evt);
 
 			std::string &getName();
 			void setName(std::string);
@@ -53,6 +55,8 @@ namespace nau
 			float getPropf(FloatProperty prop);
 
 		protected:
+			Viewport(void);
+
 			std::string m_Name;
 
 			static bool Inited;

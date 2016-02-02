@@ -13,13 +13,18 @@ namespace nau {
 
 		class SceneSkeleton : public Scene
 		{
-			public:
+			friend class SceneFactory;
+
+			protected:
 				SceneSkeleton(void);
+
+			public:
 				~SceneSkeleton(void);
 
 				virtual void compile();
 			
-				virtual void eventReceived(const std::string &sender, const std::string &eventType, IEventData *evt);
+				virtual void eventReceived(const std::string &sender, const std::string &eventType, 
+					const std::shared_ptr<IEventData> &evt);
 
 				void addAnim(std::string aName, float aLength);
 				SkeletonAnim &getAnim(std::string aName);
