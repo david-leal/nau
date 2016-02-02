@@ -128,29 +128,30 @@ BulletWorld::setScene (nau::scene::IScene *aScene)
 }
 
 void 
-BulletWorld::_add (float mass, nau::scene::SceneObject *aObject, std::string name, nau::math::vec3 aVec)
+BulletWorld::_add (float mass, std::shared_ptr<nau::scene::SceneObject> &aObject, std::string name, nau::math::vec3 aVec)
 {
 	btRigidBody* body;
 	if (name.compare("plane") == 0) {
 
-		VertexData &vd = aObject->getRenderable().getVertexData();
-
-		std::vector<MaterialGroup*> &matGroups = aObject->getRenderable().getMaterialGroups();
-		std::vector<MaterialGroup*>::iterator matGroupsIter;
+		VertexData &vd = *aObject.get()->getRenderable()->getVertexData();
+		nau::scene::SceneObject &cenas = *aObject.get();
+		std::vector<std::shared_ptr<MaterialGroup>> &matGroups = cenas.getRenderable()->getMaterialGroups(); //->getRenderable().get()->getMaterialGroups();
+		std::vector<std::shared_ptr<MaterialGroup>>::iterator matGroupsIter;
 
 		matGroupsIter = matGroups.begin();
 
 		for (; matGroupsIter != matGroups.end(); matGroupsIter++) {
 
-			if ((*matGroupsIter)->getIndexData().getIndexSize()) {
+			if ((*matGroupsIter)->getIndexData()->getIndexSize()) {
 
-				std::vector<unsigned int> &indexes = (*matGroupsIter)->getIndexData().getIndexData();
+				std::shared_ptr<std::vector<unsigned int>> &indexes = (*matGroupsIter)->getIndexData()->getIndexData();
 				btTriangleIndexVertexArray* indexVertexArrays = new btTriangleIndexVertexArray(
-					static_cast<int> (indexes.size() / 3),
-					reinterpret_cast<int *>(&indexes[0]),
+					static_cast<int> (indexes->size() / 3),
+					//reinterpret_cast<int *>(&indexes[0]),
+					reinterpret_cast<int *>((*indexes.get())[0]),
 					3 * sizeof(unsigned int),
-					static_cast<int> (vd.getDataOf(VertexData::GetAttribIndex(std::string("position"))).size()),
-					reinterpret_cast<btScalar*>(&(vd.getDataOf(VertexData::GetAttribIndex(std::string("position")))[0])),
+					static_cast<int> (vd.getDataOf(VertexData::GetAttribIndex(std::string("position")))->size()),
+					reinterpret_cast<btScalar*>(&(vd.getDataOf(VertexData::GetAttribIndex(std::string("position"))).get()[0])),
 					/*3*/4 * sizeof(float)
 					);
 
