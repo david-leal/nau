@@ -85,7 +85,7 @@ Nau::Nau() :
 	m_WindowWidth (0), 
 	m_WindowHeight (0), 
 	m_Inited (false),
-	m_Physics (false),
+	m_Physics (true),
 	loadedScenes(0),
 	m_ActiveCameraName(""),
 	m_Name("Nau"),

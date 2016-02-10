@@ -3,7 +3,7 @@
 
 #include <btBulletDynamicsCommon.h>
 
-#include "nau/scene/sceneObject.h"
+#include "nau/scene/iScene.h"
 
 namespace nau
 {
@@ -14,11 +14,11 @@ namespace nau
 			public btMotionState
 		{
 		private:
-			std::shared_ptr<nau::scene::SceneObject> m_SceneObject;
+			std::shared_ptr<nau::scene::IScene> m_IScene;
 			nau::math::mat4 m_Matrix;
 
 		public:
-			NauBulletMotionState(std::shared_ptr<nau::scene::SceneObject> &aObject);
+			NauBulletMotionState(std::shared_ptr<nau::scene::IScene> &aScene);
 			~NauBulletMotionState(void);
 
 			/*btMotionState interface*/
