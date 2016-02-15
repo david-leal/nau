@@ -4,6 +4,8 @@
 #include <btBulletDynamicsCommon.h>
 #include "nau/world/iWorld.h"
 #include "nau/scene/iScene.h"
+#include "BulletCollision/Gimpact/btGImpactShape.h"
+#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 
 namespace nau
 {

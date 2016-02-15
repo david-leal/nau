@@ -1,21 +1,25 @@
 <?xml version="1.0" ?>
-<project name="Simple" >
+<project name="Simple" width="800" height="600">
 	<assets> 
 		<scenes>
-			<scene name="ball">
-				<geometry name="ball" type="SPHERE" material="ballMat"
-					SLICES=20 STACKS=20/>
+			<!--scene name="ball">
+				<geometry name="ball" type="SPHERE" material="ballMat" SLICES=20 STACKS=20/>
 					<TRANSLATE x =0 y=4 z =0 />
-					<!--SCALE x=0.5 y=0.5 z=0.5 /-->
-			</scene>
-			<scene name="plane">
+					<SCALE x=0.5 y=0.5 z=0.5/>
+			</scene-->
+			<!--scene name="plane">
 				<geometry name="plane" type="SQUARE" material="azulejo"/>
 				<SCALE x=5 y=5 z=5 />
+			</scene-->
+			<scene name="ball">
+				<geometry name="ball" type="BOX" material="azulejo"/>
+				<TRANSLATE x =0 y=4 z =0 />
+				<ROTATE x=0 y=0 z=1 w=-30 />
 			</scene>
-			<!--scene name="plane">
+			<scene name="plane">
 				<geometry name="plane" type="BOX" material="azulejo"/>
-				<!--TRANSLATE x =0 y=-1 z =0 /-->
-			<!--/scene-->
+				<TRANSLATE x =0 y=-1 z =0 />
+			</scene>
 			<scene name="Axis">
 				<geometry name = "axis" type = "AXIS"  >
 					<SCALE x=5 y=5 z =5 />
@@ -30,7 +34,10 @@
 		
 		<cameras>
 			<camera name="MainCamera" >
-				<viewport name="MainViewport" />
+				<!--viewport name="MainViewport">
+					<SIZE width="1" height= "750" />
+				</viewport-->
+				<viewport name="MainViewport"/>
 				<projection TYPE="PERSPECTIVE" FOV=60.0 NEAR=1 FAR=1000.0 />
 				<!--
 				<TYPE value="PERSPECTIVE"/>

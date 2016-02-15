@@ -996,7 +996,8 @@ FrmMainFrame::buildPhysics(void) {
 			10.0f,
 			ballScene,
 			ballScene->getName(),
-			vec3(0.5f, 0.5f, 0.5f)
+			//vec3(0.5f, 0.5f, 0.5f)
+			vec3(1.0f, 1.0f, 1.0f)
 			);
 	}
 }

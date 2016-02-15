@@ -29,6 +29,7 @@ BulletWorld::update (void)
 	if (0 != m_pDynamicsWorld) {
 		m_pDynamicsWorld->stepSimulation(1 / 120.0f);
 		//m_pDynamicsWorld->updateAabbs();
+		//m_pDynamicsWorld->debugDrawWorld();
 	}
 }
 
@@ -55,8 +56,13 @@ BulletWorld::build (void) /***MARK***/ //I'm assuming all objects inside scene a
 		btBroadphaseInterface* broadphase = new btDbvtBroadphase();
 		btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver;
 
+		btGImpactCollisionAlgorithm::registerAlgorithm(dispatcher);
+
 		m_pDynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
 		m_pDynamicsWorld->setGravity(btVector3(0,-10,0)); /***MARK***/ //Should be user definable
+		
+		//m_pDynamicsWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+		
 
 		//std::vector<std::shared_ptr<SceneObject>> sceneObjects;
 		//m_pScene->getAllObjects(&sceneObjects);
@@ -117,37 +123,73 @@ BulletWorld::setScene (nau::scene::IScene *aScene)
 	m_pScene = aScene;
 }
 
+btCollisionShape* getMeshShape(std::shared_ptr<nau::scene::IScene> &aScene, bool isStatic=true) {
+	std::shared_ptr<nau::scene::SceneObject> &aObject = aScene->getSceneObject(0);
+	std::shared_ptr<VertexData> &vd = aObject->getRenderable()->getVertexData();
+	std::vector<std::shared_ptr<MaterialGroup>> &matGroups = aObject->getRenderable()->getMaterialGroups();
+	std::vector<std::shared_ptr<MaterialGroup>>::iterator matGroupsIter;
+
+	btTriangleIndexVertexArray* indexVertexArrays = new btTriangleIndexVertexArray();
+
+	matGroupsIter = matGroups.begin();
+	for (; matGroupsIter != matGroups.end(); matGroupsIter++) {
+		if ((*matGroupsIter)->getIndexData()->getIndexSize()) {
+			std::shared_ptr<std::vector<unsigned int>> &indexes = (*matGroupsIter)->getIndexData()->getIndexData();
+			btIndexedMesh *mesh = new btIndexedMesh();
+			mesh->m_numTriangles = static_cast<int> (indexes->size() / 3);
+			mesh->m_triangleIndexBase = reinterpret_cast<const unsigned char *>(&((*indexes)[0]));
+			mesh->m_triangleIndexStride = 3 * sizeof(unsigned int);
+			mesh->m_numVertices = static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size());
+			mesh->m_vertexBase = reinterpret_cast<const unsigned char *>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0)));
+			mesh->m_vertexStride = 4 * sizeof(float);
+			indexVertexArrays->addIndexedMesh(*mesh, PHY_INTEGER);
+		}
+	}
+	if (isStatic) {
+		bool useQuantizedAabbCompression = true;
+		return new btBvhTriangleMeshShape(indexVertexArrays, useQuantizedAabbCompression);
+	}
+	else {
+		//return new btConvexTriangleMeshShape(indexVertexArrays);
+		btGImpactMeshShape *gImpa = new btGImpactMeshShape(indexVertexArrays);
+		gImpa->updateBound();
+		return gImpa;
+	}
+}
+
 void 
 BulletWorld::_add (float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec)
 {
 	btRigidBody* body;
 	if (name.compare("plane") == 0) {
 
-		std::shared_ptr<nau::scene::SceneObject> &aObject = aScene->getSceneObject(0);
-		std::shared_ptr<VertexData> &vd = aObject->getRenderable()->getVertexData();
-		std::vector<std::shared_ptr<MaterialGroup>> &matGroups = aObject->getRenderable()->getMaterialGroups();
-		std::vector<std::shared_ptr<MaterialGroup>>::iterator matGroupsIter;
+		//std::shared_ptr<nau::scene::SceneObject> &aObject = aScene->getSceneObject(0);
+		//std::shared_ptr<VertexData> &vd = aObject->getRenderable()->getVertexData();
+		//std::vector<std::shared_ptr<MaterialGroup>> &matGroups = aObject->getRenderable()->getMaterialGroups();
+		//std::vector<std::shared_ptr<MaterialGroup>>::iterator matGroupsIter;
 
-		matGroupsIter = matGroups.begin();
+		//matGroupsIter = matGroups.begin();
 
-		for (; matGroupsIter != matGroups.end(); matGroupsIter++) {
+		//for (; matGroupsIter != matGroups.end(); matGroupsIter++) {
 
-			if ((*matGroupsIter)->getIndexData()->getIndexSize()) {
+		//	if ((*matGroupsIter)->getIndexData()->getIndexSize()) {
 
-				std::shared_ptr<std::vector<unsigned int>> &indexes = (*matGroupsIter)->getIndexData()->getIndexData();
-				btTriangleIndexVertexArray* indexVertexArrays = new btTriangleIndexVertexArray(
-					static_cast<int> (indexes->size() / 3),
-					reinterpret_cast<int *>(&((*indexes)[0])),
-					3 * sizeof(unsigned int),
-					static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size()),
-					reinterpret_cast<btScalar*>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0))),
-					/*3*/4 * sizeof(float)
-					);
+		//		std::shared_ptr<std::vector<unsigned int>> &indexes = (*matGroupsIter)->getIndexData()->getIndexData();
+		//		btTriangleIndexVertexArray* indexVertexArrays = new btTriangleIndexVertexArray(
+		//			static_cast<int> (indexes->size() / 3),
+		//			reinterpret_cast<int *>(&((*indexes)[0])),
+		//			3 * sizeof(unsigned int),
+		//			static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size()),
+		//			reinterpret_cast<btScalar*>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0))),
+		//			/*3*/4 * sizeof(float)
+		//			);
 
 
-				bool useQuantizedAabbCompression = true;
-				btBvhTriangleMeshShape *trimeshShape = new btBvhTriangleMeshShape(indexVertexArrays, useQuantizedAabbCompression);
+		//		bool useQuantizedAabbCompression = true;
+		//		btBvhTriangleMeshShape *trimeshShape = new btBvhTriangleMeshShape(indexVertexArrays, useQuantizedAabbCompression);
 
+				//btBvhTriangleMeshShape *trimeshShape = getMeshShape(aScene);
+				btCollisionShape *trimeshShape = getMeshShape(aScene);
 				NauBulletMotionState *motionState = new NauBulletMotionState(aScene);
 
 				btVector3 localInertia(0, 0, 0);
@@ -156,24 +198,31 @@ BulletWorld::_add (float mass, std::shared_ptr<nau::scene::IScene> &aScene, std:
 				//body = new btRigidBody(0, motionState, new btBoxShape(btVector3(1.0, 1.0, 1.0)), localInertia);
 
 				body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
-				body->setRestitution(0.0f);
+				body->setRestitution(1.0f);
 				//m_RigidBodies[name] = body;
-			}
-		}
+//			}
+//		}
 	}
 	else {
-		btCollisionShape *aShape = new btSphereShape(aVec.z);
+		btCollisionShape *aShape = getMeshShape(aScene, false);
+		btVector3 k; k.setX(aVec.x);
+		k.setY(aVec.y);
+		k.setZ(aVec.z);
+		//btCollisionShape *aShape = new btBoxShape(k);// btSphereShape(aVec.z);
+		//btCollisionShape *aShape = new btSphereShape(aVec.z);
 		NauBulletMotionState *motionState = new NauBulletMotionState(aScene);
 
 		btVector3 localInertia(0, 0, 0);
 		aShape->calculateLocalInertia(mass, localInertia);
 		body = new btRigidBody(mass, motionState, aShape, localInertia);
-		body->setFriction(2.0);
+		body->setFriction(0.2f);
 
 		//m_RigidBodies[name] = body;
 		//m_RigidBodies[name]->setActivationState (DISABLE_DEACTIVATION);
 		//body->setAngularFactor(0.0f);
-		body->setRestitution(0.0f);
+		//body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+		body->setRestitution(0.5f);
+		body->setDeactivationTime(0.5);
 	}
 	m_RigidBodies[name] = body;
 	m_pDynamicsWorld->addRigidBody(body);
