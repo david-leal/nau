@@ -679,6 +679,8 @@
     <ClCompile Include="..\src\nau\world\bulletMotionState.cpp" />
     <ClCompile Include="..\src\nau\world\bulletWorld.cpp" />
     <ClCompile Include="..\src\nau\world\physicalObject.cpp" />
+    <ClCompile Include="..\src\nau\world\physXMotionState.cpp" />
+    <ClCompile Include="..\src\nau\world\physXWorld.cpp" />
     <ClCompile Include="..\src\nau\world\worldFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -883,6 +885,8 @@
     <ClInclude Include="..\src\nau\world\bulletWorld.h" />
     <ClInclude Include="..\src\nau\world\iWorld.h" />
     <ClInclude Include="..\src\nau\world\physicalObject.h" />
+    <ClInclude Include="..\src\nau\world\physXMotionState.h" />
+    <ClInclude Include="..\src\nau\world\physXWorld.h" />
     <ClInclude Include="..\src\nau\world\worldFactory.h" />
     <CustomBuildStep Include="..\src\nau\math\spherical.h" />
     <ClInclude Include="..\src\nau\math\utils.h" />
@@ -1022,6 +1026,9 @@ copy rtvssm.ptx ..\build\samples\optix</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Optix|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Optix|x64'">true</ExcludedFromBuild>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

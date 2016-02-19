@@ -538,6 +538,12 @@
     <ClCompile Include="..\src\nau\interface\interface.cpp">
       <Filter>Source Files\interface</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\nau\world\physXMotionState.cpp">
+      <Filter>Source Files\world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\nau\world\physXWorld.cpp">
+      <Filter>Source Files\world</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\nau\clogger.h">
@@ -1074,6 +1080,12 @@
     <ClInclude Include="..\src\nau\interface\interface.h">
       <Filter>Source Files\interface</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\nau\world\physXMotionState.h">
+      <Filter>Source Files\world</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\nau\world\physXWorld.h">
+      <Filter>Source Files\world</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuildStep Include="..\src\nau\math\spherical.h">
@@ -1093,5 +1105,8 @@
     <CustomBuild Include="..\src\optix\common.cu">
       <Filter>OPTIX</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

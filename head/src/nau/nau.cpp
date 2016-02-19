@@ -168,7 +168,8 @@ Nau::init (bool context, std::string aConfigFile) {
 
 	FontManager::addFont("CourierNew10", m_AppFolder + File::PATH_SEPARATOR + "nauSettings/couriernew10.xml", "__FontCourierNew10");
 
-	m_pWorld = WorldFactory::create ("Bullet");
+	//m_pWorld = WorldFactory::create ("Bullet");
+	m_pWorld = WorldFactory::create("PhysX");
 
 	m_StartTime = (float)clock();// *1000.0 / CLOCKS_PER_MILISEC;
 	m_LastFrameTime = NO_TIME;
