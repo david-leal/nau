@@ -4,6 +4,7 @@
 #include "nau/geometry/vertexData.h"
 #include "nau/material/materialGroup.h"
 
+
 using namespace nau::world;
 using namespace nau::geometry;
 using namespace nau::scene;
@@ -13,6 +14,8 @@ using namespace physx;
 
 PxDefaultAllocator		gAllocator;
 PxDefaultErrorCallback	gErrorCallback;
+PxVisualDebuggerConnection* gConnection = NULL;
+PxCooking* mCooking;
 
 PhsXWorld::PhsXWorld(void) : m_pScene(0), m_pDynamicsWorld(0) {
 }
@@ -20,6 +23,8 @@ PhsXWorld::PhsXWorld(void) : m_pScene(0), m_pDynamicsWorld(0) {
 
 PhsXWorld::~PhsXWorld(void) {
 	//delete m_pDynamicsWorld;
+	if(gConnection)
+		gConnection->release();
 }
 
 
@@ -48,24 +53,27 @@ PhsXWorld::update(void) {
 
 void
 PhsXWorld::build(void) {
+	PxTolerancesScale scale = PxTolerancesScale();
 	PxFoundation* gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
 	PxProfileZoneManager* profileZoneManager = &PxProfileZoneManager::createProfileZoneManager(gFoundation);
-	PxPhysics*	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, profileZoneManager);
-	PxVisualDebuggerConnection* gConnection = NULL;
+	PxPhysics*	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, scale, true, profileZoneManager);
 	if (gPhysics->getPvdConnectionManager()) {
 		gPhysics->getVisualDebugger()->setVisualizeConstraints(true);
 		gPhysics->getVisualDebugger()->setVisualDebuggerFlag(PxVisualDebuggerFlag::eTRANSMIT_CONTACTS, true);
 		gPhysics->getVisualDebugger()->setVisualDebuggerFlag(PxVisualDebuggerFlag::eTRANSMIT_SCENEQUERIES, true);
-		//gConnection = PxVisualDebuggerExt::createConnection(gPhysics->getPvdConnectionManager(), PVD_HOST, 5425, 10);
+		//gPhysics->getVisualDebugger()->setVisualDebuggerFlag(PxVisualDebuggerFlag::eTRANSMIT_CONSTRAINTS, true);
+		gConnection = PxVisualDebuggerExt::createConnection(gPhysics->getPvdConnectionManager(), "127.0.0.1", 5425, 100);
 	}
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
 	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
 	PxDefaultCpuDispatcher* gDispatcher = PxDefaultCpuDispatcherCreate(2);
 	sceneDesc.cpuDispatcher = gDispatcher;
 	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
-	sceneDesc.flags = PxSceneFlag::eENABLE_ACTIVETRANSFORMS;
+	sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVETRANSFORMS;
 	m_pDynamicsWorld = gPhysics->createScene(sceneDesc);
-	//m_pDynamicsWorld->setFlag(PxSceneFlag::eENABLE_ACTIVETRANSFORMS, true);
+	//m_pDynamicsWorld->setFlag(PxSceneFlag::eENABLE_ACTIVETRANSFORMS, true
+
+	mCooking = PxCreateCooking(PX_PHYSICS_VERSION, *gFoundation, PxCookingParams(scale));
 
 }
 
@@ -75,24 +83,132 @@ PhsXWorld::setScene(nau::scene::IScene *aScene) {
 	m_pScene = aScene;
 }
 
+//PxTriangleMesh*
+PxDefaultMemoryInputData
+getTriangleMeshGeo(PxScene *m_pDynamicsWorld, std::shared_ptr<nau::scene::IScene> &aScene, bool isStatic=true) {
+	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());
+
+	std::shared_ptr<nau::scene::SceneObject> &aObject = aScene->getSceneObject(0);
+	std::shared_ptr<VertexData> &vd = aObject->getRenderable()->getVertexData();
+	std::vector<std::shared_ptr<MaterialGroup>> &matGroups = aObject->getRenderable()->getMaterialGroups();
+	std::vector<std::shared_ptr<MaterialGroup>>::iterator matGroupsIter;
+	
+	PxDefaultMemoryOutputStream writeBuffer;
+	
+	PxTriangleMeshDesc meshDesc;
+	matGroupsIter = matGroups.begin();
+	for (; matGroupsIter != matGroups.end(); matGroupsIter++) {
+		if ((*matGroupsIter)->getIndexData()->getIndexSize()) {
+			std::shared_ptr<std::vector<unsigned int>> &indexes = (*matGroupsIter)->getIndexData()->getIndexData();
+
+			meshDesc.points.count = static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size());
+			meshDesc.points.stride = 4 * sizeof(float);
+			meshDesc.points.data = reinterpret_cast<const unsigned char *>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0)));
+
+			meshDesc.triangles.count = static_cast<int> (indexes->size() / 3);
+			meshDesc.triangles.stride = 3 * sizeof(unsigned int);
+			meshDesc.triangles.data = reinterpret_cast<const unsigned char *>(&((*indexes)[0]));
+
+		}
+	}
+	bool status;
+	if (isStatic) {
+		//PxToolkit::MemoryOutputStream writeBuffer;
+		status = mCooking->cookTriangleMesh(meshDesc, writeBuffer);
+		//if (!status)
+		//	return NULL;
+	}
+	else {
+		PxConvexMeshDesc meshDesc2;
+		
+		PxU32 nbVerts = 0;
+		PxVec3 * vertices;
+		PxU32 nbIndices = 0 ;
+		PxU32 *	indices;
+		PxU32 nbPolygons = 0;
+		PxHullPolygon * hullPolygons;
+		
+		if (mCooking->computeHullPolygons(meshDesc, gAllocator, nbVerts, vertices, nbIndices, indices, nbPolygons, hullPolygons)) {
+			meshDesc2.points.count = nbVerts;
+			meshDesc2.points.data = vertices;
+			meshDesc2.points.stride = sizeof(PxVec3);
+			meshDesc2.indices.count = nbIndices;
+			meshDesc2.indices.data = indices;
+			meshDesc2.indices.stride = sizeof(PxU32);
+			meshDesc2.polygons.count = nbPolygons;
+			meshDesc2.polygons.data = hullPolygons;
+			meshDesc2.polygons.stride = sizeof(PxHullPolygon);
+			meshDesc2.flags = PxConvexFlag::eINFLATE_CONVEX;
+		}
+		else {
+			meshDesc2.points.count = meshDesc.points.count;
+			meshDesc2.points.stride = meshDesc.points.stride;
+			meshDesc2.points.data = meshDesc.points.data;
+			meshDesc2.flags = PxConvexFlag::eCOMPUTE_CONVEX | PxConvexFlag::eINFLATE_CONVEX;
+			meshDesc2.vertexLimit = 256;
+		}
+		/*PxConvexMeshDesc meshDesc;
+		matGroupsIter = matGroups.begin();
+		for (; matGroupsIter != matGroups.end(); matGroupsIter++) {
+			if ((*matGroupsIter)->getIndexData()->getIndexSize()) {
+				std::shared_ptr<std::vector<unsigned int>> &indexes = (*matGroupsIter)->getIndexData()->getIndexData();
+
+				meshDesc.points.count = static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size());
+				meshDesc.points.stride = 4 * sizeof(float);
+				meshDesc.points.data = reinterpret_cast<const unsigned char *>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0)));
+				meshDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX | PxConvexFlag::eINFLATE_CONVEX;
+				meshDesc.vertexLimit = 256;
+			}
+		}*/
+		status = mCooking->cookConvexMesh(meshDesc2, writeBuffer);
+
+	}
+
+	//PxToolkit::PxInputStream readBuffer(writeBuffer.getData(), writeBuffer.getSize());
+	PxDefaultMemoryInputData readBuffer(writeBuffer.getData(), writeBuffer.getSize());
+	return readBuffer;
+	//return gPhysics->createTriangleMesh(readBuffer);
+}
+
+
+
 void
 PhsXWorld::_add(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
-	//PxActor* body;
+
 	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());
 	if (name.compare("plane") == 0) {
-		PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics,
+		/*PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics,
 			PxPlane(0, 1, 0, 0),
 			*(gPhysics->createMaterial(0.5f, 0.5f, 0.6f))
-			);
+			);*/
+
+		PxRigidStatic* groundPlane = gPhysics->createRigidStatic(PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))));
+		PxTriangleMeshGeometry triGeom;
+		triGeom.triangleMesh = gPhysics->createTriangleMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene));
+		groundPlane->createShape(triGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));
+
 		m_pDynamicsWorld->addActor(*groundPlane);
 	}
 	else {
-		PxRigidDynamic* dynamic = PxCreateDynamic(*gPhysics,
+		/*PxRigidDynamic* dynamic = PxCreateDynamic(*gPhysics,
 			PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))),
 			PxSphereGeometry(1),
 			*(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)),
-			10.0f);
+			10.0f);*/
 		//dynamic->setLinearVelocity(PxVec3(0, -50, -100));
+
+		PxTransform trans = PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())));
+		PxRigidDynamic* dynamic = gPhysics->createRigidDynamic(trans);
+		PxConvexMesh * convexMesh = gPhysics->createConvexMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene, false));
+		PxConvexMeshGeometry convGeom(convexMesh);
+		//PxConvexMeshGeometry convGeom(convexMesh, PxMeshScale(0.5f));
+		//convGeom.convexMesh = gPhysics->createConvexMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene, false));
+		//PxShape *shape = dynamic->createShape(convGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)), PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE);
+		PxShape *shape = dynamic->createShape(convGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));
+		//shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, true);
+		//dynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, false);
+		
+		
 		dynamic->userData = aScene.get();
 		//dynamic->setAngularDamping(0.5f);
 		//dynamic->setLinearVelocity(velocity);

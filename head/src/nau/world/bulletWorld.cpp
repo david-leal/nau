@@ -4,6 +4,7 @@
 #include "nau/world/bulletMotionState.h"
 #include "nau/geometry/vertexData.h"
 #include "nau/material/materialGroup.h"
+#include "nau\world\bulletDebugger.h"
 
 using namespace nau::world;
 using namespace nau::geometry;
@@ -25,7 +26,7 @@ void
 BulletWorld::update (void) {
 	if (0 != m_pDynamicsWorld) {
 		m_pDynamicsWorld->stepSimulation(1 / 120.0f);
-		//m_pDynamicsWorld->debugDrawWorld();
+		m_pDynamicsWorld->debugDrawWorld();
 	}
 }
 
@@ -45,7 +46,10 @@ BulletWorld::build (void)
 		m_pDynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
 		m_pDynamicsWorld->setGravity(btVector3(0,-10,0));
 		
-		//m_pDynamicsWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+		BulletDebugger *debugDrawer = new BulletDebugger();
+		//debugDrawer->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+		debugDrawer->setDebugMode(btIDebugDraw::DBG_MAX_DEBUG_DRAW_MODE);
+		m_pDynamicsWorld->setDebugDrawer(debugDrawer);
 	}
 }
 
