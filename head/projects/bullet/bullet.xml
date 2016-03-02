@@ -2,19 +2,27 @@
 <project name="Simple" width="800" height="600">
 	<assets> 
 		<scenes>
-			<scene name="ball">
-				<geometry name="ball" type="SPHERE" material="ballMat" SLICES=20 STACKS=20/>
-				<TRANSLATE x =0 y=4 z =0 />
-				<!--SCALE x=0.5 y=0.5 z=0.5/-->
+			<!--scene name="torus">
+				<file name="..\..\models\rugby.3ds" material="ballMat"/>
+				<TRANSLATE x =0 y=1 z =0 />
+			</scene-->
+			<scene name="man">
+				<geometry name="man" type="BOX" material="crate"/>
+				<TRANSLATE x=0 y=2 z=10 />
 			</scene>
 			<!--scene name="ball">
-				<geometry name="ball" type="BOX" material="azulejo"/>
-				<TRANSLATE x =0 y=4 z =0 />
-				<ROTATE x=0 y=0 z=1 w=-30 />
+				<geometry name="ball" type="SPHERE" material="ballMat" SLICES=20 STACKS=20/>
+				<TRANSLATE x =0 y=1.2 z =0 />
+				<!--SCALE x=0.5 y=0.5 z=0.5/>
 			</scene-->
+			<scene name="ball">
+				<geometry name="ball" type="BOX" material="crate"/>
+				<TRANSLATE x =0 y=1 z =0 />
+				<!--ROTATE x=0 y=0 z=1 w=-30 /-->
+			</scene>
 			<scene name="plane">
 				<geometry name="plane" type="SQUARE" material="azulejo"/>
-				<!--SCALE x=5 y=5 z=5 /-->
+				<SCALE x=5 y=5 z=5 />
 			</scene>
 			<!--scene name="plane">
 				<geometry name="plane" type="BOX" material="azulejo"/>
@@ -28,7 +36,7 @@
 		</scenes>
 		<viewports>
 			<viewport name="MainViewport">
-				<CLEAR_COLOR r="1.0" g="1.0" b="1.0" />
+				<CLEAR_COLOR r="0.2" g="0.2" b="0.2" />
 			</viewport>
 		</viewports>
 		
@@ -45,7 +53,7 @@
 				<NEAR value= 1/>
 				<FAR value= 100/>
 				-->
-				<POSITION x=0.0 y=1.0 z=-5.0 />
+				<POSITION x=0.0 y=1.0 z=5.0 />
 				<!--<VIEW x=0.0 y=0.0 z=0.1 />-->
 				<LOOK_AT_POINT x=0 y=0 z=0/>
 				<!--
@@ -58,9 +66,9 @@
 		
 		<lights>
 			<light name="Sun">
-				<DIRECTION x=-2 y=-1 z=2 />
+				<DIRECTION x=-2 y=-1 z=-2 />
 				<COLOR r="0.9" g="0.9" b="0.9" />
-				<AMBIENT r="0.5" g="0.0" b="0.0" />
+				<AMBIENT r="0.2" g="0.2" b="0.2" />
 			</light>
 		</lights>
 		
@@ -74,6 +82,7 @@
 		<pipeline name="fixedfunction" default="true">
 			<pass class="default" name="pass1">
 				<scenes>
+					<!--scene name="man" /-->
 					<scene name="ball" />
 					<scene name="plane" />
 					<scene name="Axis" />
@@ -83,7 +92,8 @@
 					<light name="Sun" />
 				</lights>
 				<materialMaps>
-					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTextured" />
+					<map fromMaterial="crate" toLibrary="Simple" toMaterial="simpleTexturedCrate" />
+					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
 					<map fromMaterial="ballMat" toLibrary="Simple" toMaterial="simpleColored" />
 				</materialMaps>
 			</pass>

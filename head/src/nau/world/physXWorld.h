@@ -10,7 +10,7 @@ namespace nau
 	namespace world
 	{
 		class PhsXWorld :
-			public nau::world::IWorld
+			public nau::world::IWorld , public physx::PxUserControllerHitReport
 		{
 		private:
 			static const int maxProxies = 32766;
@@ -35,8 +35,10 @@ namespace nau
 			void enableObject(std::string name);
 
 			void setVelocity(std::string name, nau::math::vec3 vel);
+			void onShapeHit(const physx::PxControllerShapeHit &hit);
+			void onControllerHit(const physx::PxControllersHit &hit);
+			void onObstacleHit(const physx::PxControllerObstacleHit &hit);
 
-		public:
 			~PhsXWorld(void);
 		};
 	};

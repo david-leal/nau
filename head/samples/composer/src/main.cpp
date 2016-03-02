@@ -999,6 +999,14 @@ FrmMainFrame::buildPhysics(void) {
 			//vec3(0.5f, 0.5f, 0.5f)
 			vec3(1.0f, 1.0f, 1.0f)
 			);
+
+		shared_ptr<IScene> &torusScene = RENDERMANAGER->getScene("man");
+		m_pRoot->getWorld()._add(
+			10.0f,
+			torusScene,
+			torusScene->getName(),
+			vec3(1.0f, 1.0f, 1.0f)
+			);
 	}
 }
 

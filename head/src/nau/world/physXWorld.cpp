@@ -16,6 +16,8 @@ PxDefaultAllocator		gAllocator;
 PxDefaultErrorCallback	gErrorCallback;
 PxVisualDebuggerConnection* gConnection = NULL;
 PxCooking* mCooking;
+PxControllerManager* manager;
+PxController* controller;
 
 PhsXWorld::PhsXWorld(void) : m_pScene(0), m_pDynamicsWorld(0) {
 }
@@ -46,7 +48,8 @@ PhsXWorld::update(void) {
 				m_IScene->setTransform(mat4(m));
 			}
 		}
-		
+	
+		controller->move(PxVec3(0, -9.81f, -0.5f), 0.2f, 1 / 60.0f, NULL);
 	}
 }
 
@@ -71,9 +74,10 @@ PhsXWorld::build(void) {
 	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
 	sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVETRANSFORMS;
 	m_pDynamicsWorld = gPhysics->createScene(sceneDesc);
-	//m_pDynamicsWorld->setFlag(PxSceneFlag::eENABLE_ACTIVETRANSFORMS, true
+	//m_pDynamicsWorld->setFlag(PxSceneFlag::eENABLE_ACTIVETRANSFORMS, true);
 
 	mCooking = PxCreateCooking(PX_PHYSICS_VERSION, *gFoundation, PxCookingParams(scale));
+	manager = PxCreateControllerManager(*m_pDynamicsWorld);
 
 }
 
@@ -121,7 +125,7 @@ getTriangleMeshGeo(PxScene *m_pDynamicsWorld, std::shared_ptr<nau::scene::IScene
 	else {
 		PxConvexMeshDesc meshDesc2;
 		
-		PxU32 nbVerts = 0;
+		/*PxU32 nbVerts = 0;
 		PxVec3 * vertices;
 		PxU32 nbIndices = 0 ;
 		PxU32 *	indices;
@@ -140,13 +144,13 @@ getTriangleMeshGeo(PxScene *m_pDynamicsWorld, std::shared_ptr<nau::scene::IScene
 			meshDesc2.polygons.stride = sizeof(PxHullPolygon);
 			meshDesc2.flags = PxConvexFlag::eINFLATE_CONVEX;
 		}
-		else {
+		else {*/
 			meshDesc2.points.count = meshDesc.points.count;
 			meshDesc2.points.stride = meshDesc.points.stride;
 			meshDesc2.points.data = meshDesc.points.data;
-			meshDesc2.flags = PxConvexFlag::eCOMPUTE_CONVEX | PxConvexFlag::eINFLATE_CONVEX;
+			meshDesc2.flags |= PxConvexFlag::eCOMPUTE_CONVEX | PxConvexFlag::eINFLATE_CONVEX;
 			meshDesc2.vertexLimit = 256;
-		}
+		//}
 		/*PxConvexMeshDesc meshDesc;
 		matGroupsIter = matGroups.begin();
 		for (; matGroupsIter != matGroups.end(); matGroupsIter++) {
@@ -177,19 +181,19 @@ PhsXWorld::_add(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::st
 
 	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());
 	if (name.compare("plane") == 0) {
-		/*PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics,
+		PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics,
 			PxPlane(0, 1, 0, 0),
 			*(gPhysics->createMaterial(0.5f, 0.5f, 0.6f))
-			);*/
+			);
 
-		PxRigidStatic* groundPlane = gPhysics->createRigidStatic(PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))));
+		/*PxRigidStatic* groundPlane = gPhysics->createRigidStatic(PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))));
 		PxTriangleMeshGeometry triGeom;
 		triGeom.triangleMesh = gPhysics->createTriangleMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene));
-		groundPlane->createShape(triGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));
+		groundPlane->createShape(triGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));*/
 
 		m_pDynamicsWorld->addActor(*groundPlane);
 	}
-	else {
+	if (name.compare("ball") == 0) {
 		/*PxRigidDynamic* dynamic = PxCreateDynamic(*gPhysics,
 			PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))),
 			PxSphereGeometry(1),
@@ -214,8 +218,40 @@ PhsXWorld::_add(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::st
 		//dynamic->setLinearVelocity(velocity);
 		m_pDynamicsWorld->addActor(*dynamic);
 	}
+	if (name.compare("man") == 0) {
+		PxCapsuleControllerDesc desc;
+		desc.height = 1;
+		desc.radius = 0.5;
+		PxVec3 pos = PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())).getPosition();
+		desc.position = PxExtendedVec3( pos.x, pos.y, pos.z);
+		desc.material = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+		desc.userData = aScene.get();
+		desc.reportCallback = this;
+		desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
+		desc.stepOffset = 0.30f;
+		desc.slopeLimit = cosf(DegToRad(45.0f));
+		controller = manager->createController(desc);
+		
+	}
+
+
+
+
 	//m_RigidBodies[name] = body;
 	//m_pDynamicsWorld->addActor(*body);
+}
+
+void
+PhsXWorld::onShapeHit(const PxControllerShapeHit &hit) {
+	if(hit.actor->isRigidDynamic())
+		hit.actor->isRigidDynamic()->addForce(PxVec3(hit.dir)*10);
+}
+
+void 
+PhsXWorld::onControllerHit(const PxControllersHit & hit) {
+}
+
+void nau::world::PhsXWorld::onObstacleHit(const PxControllerObstacleHit & hit) {
 }
 
 void

@@ -25,7 +25,7 @@ BulletWorld::~BulletWorld(void) {
 void 
 BulletWorld::update (void) {
 	if (0 != m_pDynamicsWorld) {
-		m_pDynamicsWorld->stepSimulation(1 / 120.0f);
+		m_pDynamicsWorld->stepSimulation(1 / 60.0f);
 		m_pDynamicsWorld->debugDrawWorld();
 	}
 }
@@ -96,12 +96,11 @@ void
 BulletWorld::_add (float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
 	btRigidBody* body;
 	if (name.compare("plane") == 0) {
-		btCollisionShape *trimeshShape = getMeshShape(aScene);
 		NauBulletMotionState *motionState = new NauBulletMotionState(aScene);
-
 		btVector3 localInertia(0, 0, 0);
-		body = new btRigidBody(0, motionState, trimeshShape, localInertia);
-		//body = new btRigidBody(0, motionState, new btStaticPlaneShape(btVector3(0, 1, 0), 0), localInertia);
+		//btCollisionShape *trimeshShape = getMeshShape(aScene);
+		//body = new btRigidBody(0, motionState, trimeshShape, localInertia);
+		body = new btRigidBody(0, motionState, new btStaticPlaneShape(btVector3(0, 1, 0), 0), localInertia);
 		//body = new btRigidBody(0, motionState, new btBoxShape(btVector3(1.0, 1.0, 1.0)), localInertia);
 
 		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
@@ -109,10 +108,8 @@ BulletWorld::_add (float mass, std::shared_ptr<nau::scene::IScene> &aScene, std:
 	}
 	else {
 		btCollisionShape *aShape = getMeshShape(aScene, false);
-		btVector3 k; k.setX(aVec.x);
-		k.setY(aVec.y);
-		k.setZ(aVec.z);
-		//btCollisionShape *aShape = new btBoxShape(k);// btSphereShape(aVec.z);
+		//aShape->setLocalScaling(btVector3(0.5f, 0.5f, 0.5f));
+		//btCollisionShape *aShape = new btBoxShape(k);
 		//btCollisionShape *aShape = new btSphereShape(aVec.z);
 		NauBulletMotionState *motionState = new NauBulletMotionState(aScene);
 
@@ -123,8 +120,8 @@ BulletWorld::_add (float mass, std::shared_ptr<nau::scene::IScene> &aScene, std:
 		//m_RigidBodies[name]->setActivationState (DISABLE_DEACTIVATION);
 		//body->setAngularFactor(0.0f);
 		//body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-		body->setRestitution(0.9f);
-		body->setDeactivationTime(0.5);
+		body->setRestitution(0.3f);
+		//body->setDeactivationTime(0.5);
 	}
 	m_RigidBodies[name] = body;
 	m_pDynamicsWorld->addRigidBody(body);
