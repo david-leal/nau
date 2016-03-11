@@ -29,6 +29,14 @@ PhsXWorld::~PhsXWorld(void) {
 		gConnection->release();
 }
 
+mat4
+getMatFromPhysXTransform(PxTransform transform) {
+	PxMat44 mat = PxMat44(transform);
+	float m[16];
+	for (int i = 0; i < 16; ++i) m[i] = *(mat.front() + i);
+	return mat4(m);
+}
+
 
 void
 PhsXWorld::update(void) {
@@ -42,14 +50,22 @@ PhsXWorld::update(void) {
 		for (PxU32 i = 0; i < nbActiveTransforms; ++i) {
 			if (activeTransforms[i].userData != NULL) {
 				nau::scene::IScene *m_IScene = static_cast<nau::scene::IScene*>(activeTransforms[i].userData);
-				PxMat44 mat = PxMat44(activeTransforms[i].actor2World);
-				float m[16];
-				for (int i = 0; i < 16; ++i) m[i] = *(mat.front() + i);
-				m_IScene->setTransform(mat4(m));
+				m_IScene->setTransform(getMatFromPhysXTransform(activeTransforms[i].actor2World));
 			}
 		}
 	
-		controller->move(PxVec3(0, -9.81f, -0.5f), 0.2f, 1 / 60.0f, NULL);
+		if (controller) {
+			controller->move(PxVec3(0.3f, -9.81f, 0.0f), 0.2f, 1 / 60.0f, NULL);
+			nau::scene::IScene *m_ISceneCharacter = static_cast<nau::scene::IScene*>(controller->getUserData());
+			mat4 mat = getMatFromPhysXTransform(controller->getActor()->getGlobalPose());
+
+			//For Pusher character
+			mat.rotate(-90, vec3(0, 0, 1));
+			//mat.rotate(-90, vec3(0, 1, 0));
+
+			m_ISceneCharacter->setTransform(mat);
+		}
+
 	}
 }
 
@@ -177,68 +193,136 @@ getTriangleMeshGeo(PxScene *m_pDynamicsWorld, std::shared_ptr<nau::scene::IScene
 
 
 void
-PhsXWorld::_add(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
+PhsXWorld::_addRigid(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
 
 	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());
-	if (name.compare("plane") == 0) {
-		PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics,
-			PxPlane(0, 1, 0, 0),
-			*(gPhysics->createMaterial(0.5f, 0.5f, 0.6f))
-			);
+	
+	if (mass == 0.0f) {
+		PxRigidStatic* staticActor;
+		if (name.compare("plane") == 0) {
+			staticActor = PxCreatePlane(*gPhysics,
+				PxPlane(0.0f, 1.0f, 0.0f, 0.0f),
+				*(gPhysics->createMaterial(0.5f, 0.5f, 0.6f))
+				);
 
-		/*PxRigidStatic* groundPlane = gPhysics->createRigidStatic(PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))));
-		PxTriangleMeshGeometry triGeom;
-		triGeom.triangleMesh = gPhysics->createTriangleMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene));
-		groundPlane->createShape(triGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));*/
+		}
+		else {
+			staticActor = gPhysics->createRigidStatic(PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))));
+			PxTriangleMeshGeometry triGeom;
+			triGeom.triangleMesh = gPhysics->createTriangleMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene));
+			staticActor->createShape(triGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));
+		}
+		staticActor->userData = aScene.get();
+		m_pDynamicsWorld->addActor(*staticActor);
+	} 
+	else {
+		if (name.compare("man") == 0) {
+			PxCapsuleControllerDesc desc;
+			desc.height = 1.3f;
+			desc.radius = 0.35f;
+			PxVec3 pos = PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())).getPosition();
+			desc.position = PxExtendedVec3(pos.x, pos.y, pos.z);
+			desc.material = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+			desc.userData = aScene.get();
+			desc.reportCallback = this;
+			desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
+			desc.stepOffset = 0.25f;
+			desc.upDirection = PxVec3(0, 1, 0);
+			//desc.slopeLimit = cosf(DegToRad(80.0f));
+			controller = manager->createController(desc);
+		} 
+		else {
+			PxRigidDynamic* dynamic;
+			//if (name.compare("ball") == 0) {
+			//	dynamic = PxCreateDynamic(*gPhysics,
+			//		PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))),
+			//		PxSphereGeometry(1),
+			//		*(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)),
+			//		10.0f
+			//	);
+			//	//dynamic->setLinearVelocity(PxVec3(0, -50, -100));
+			//}
+			//else {
+				PxTransform trans = PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())));
+				dynamic = gPhysics->createRigidDynamic(trans);
+				PxConvexMesh * convexMesh = gPhysics->createConvexMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene, false));
+				PxConvexMeshGeometry convGeom(convexMesh);
+				//PxConvexMeshGeometry convGeom(convexMesh, PxMeshScale(0.5f));
+				//convGeom.convexMesh = gPhysics->createConvexMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene, false));
 
-		m_pDynamicsWorld->addActor(*groundPlane);
+				//PxShape *shape = dynamic->createShape(convGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)), PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE);
+				PxShape *shape = dynamic->createShape(convGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));
+				//shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, true);
+				//dynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, false);
+			//}
+			dynamic->userData = aScene.get();
+			//dynamic->setAngularDamping(0.5f);
+			//dynamic->setLinearVelocity(velocity);
+
+			m_pDynamicsWorld->addActor(*dynamic);
+		}
 	}
-	if (name.compare("ball") == 0) {
-		/*PxRigidDynamic* dynamic = PxCreateDynamic(*gPhysics,
-			PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))),
-			PxSphereGeometry(1),
-			*(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)),
-			10.0f);*/
-		//dynamic->setLinearVelocity(PxVec3(0, -50, -100));
-
-		PxTransform trans = PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())));
-		PxRigidDynamic* dynamic = gPhysics->createRigidDynamic(trans);
-		PxConvexMesh * convexMesh = gPhysics->createConvexMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene, false));
-		PxConvexMeshGeometry convGeom(convexMesh);
-		//PxConvexMeshGeometry convGeom(convexMesh, PxMeshScale(0.5f));
-		//convGeom.convexMesh = gPhysics->createConvexMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene, false));
-		//PxShape *shape = dynamic->createShape(convGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)), PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE);
-		PxShape *shape = dynamic->createShape(convGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));
-		//shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, true);
-		//dynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, false);
-		
-		
-		dynamic->userData = aScene.get();
-		//dynamic->setAngularDamping(0.5f);
-		//dynamic->setLinearVelocity(velocity);
-		m_pDynamicsWorld->addActor(*dynamic);
-	}
-	if (name.compare("man") == 0) {
-		PxCapsuleControllerDesc desc;
-		desc.height = 1;
-		desc.radius = 0.5;
-		PxVec3 pos = PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())).getPosition();
-		desc.position = PxExtendedVec3( pos.x, pos.y, pos.z);
-		desc.material = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-		desc.userData = aScene.get();
-		desc.reportCallback = this;
-		desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
-		desc.stepOffset = 0.30f;
-		desc.slopeLimit = cosf(DegToRad(45.0f));
-		controller = manager->createController(desc);
-		
-	}
-
-
-
 
 	//m_RigidBodies[name] = body;
 	//m_pDynamicsWorld->addActor(*body);
+}
+
+void
+PhsXWorld::_addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
+	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());
+
+	std::shared_ptr<nau::scene::SceneObject> &aObject = aScene->getSceneObject(0);
+	std::shared_ptr<VertexData> &vd = aObject->getRenderable()->getVertexData();
+	std::vector<std::shared_ptr<MaterialGroup>> &matGroups = aObject->getRenderable()->getMaterialGroups();
+	std::vector<std::shared_ptr<MaterialGroup>>::iterator matGroupsIter;
+
+	PxDefaultMemoryOutputStream writeBuffer;
+
+	int count = static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size());
+
+	float* invMass = new float[count];
+	for (int i = 0; i < count; i++) { invMass[i] = i == 0 ? 0.0f : 1.0f; }
+
+	PxClothMeshDesc meshDesc;
+	matGroupsIter = matGroups.begin();
+	for (; matGroupsIter != matGroups.end(); matGroupsIter++) {
+		if ((*matGroupsIter)->getIndexData()->getIndexSize()) {
+			std::shared_ptr<std::vector<unsigned int>> &indexes = (*matGroupsIter)->getIndexData()->getIndexData();
+
+			meshDesc.points.data = reinterpret_cast<const unsigned char *>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0)));
+			meshDesc.points.count = count;
+			meshDesc.points.stride = 4 * sizeof(float);
+
+			meshDesc.invMasses.data = invMass;
+			meshDesc.invMasses.count = count;
+			meshDesc.invMasses.stride = sizeof(float);
+
+			meshDesc.triangles.data = reinterpret_cast<const unsigned char *>(&((*indexes)[0]));
+			meshDesc.triangles.count = static_cast<int> (indexes->size() / 3);
+			meshDesc.triangles.stride = 3 * sizeof(unsigned int);
+
+		}
+	}
+	float * points = reinterpret_cast<float *>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0)));
+	PxU32 numParticles = static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size());
+	PxU32 stride = 4 * sizeof(float);
+	// create particles
+	PxClothParticle* particles = new PxClothParticle[numParticles];
+	PxClothParticle* pIt = particles;
+	for (PxU32 i = 0; i<numParticles; ++i) {
+		pIt->invWeight = i==0 ? 0.0f : 1.0f;
+		int tempStride = i*stride;
+		pIt->pos = PxVec3(points[tempStride], points[tempStride + 1], points[tempStride + 2]);
+	}
+
+	PxClothFabric* fabric = PxClothFabricCreate(*gPhysics, meshDesc, PxVec3(0, -1, 0));
+	PxTransform pose = PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())));
+	PxClothFlags flags = PxClothFlags();
+	if(!flags.isSet(PxClothFlag::eSCENE_COLLISION))
+		flags.set(PxClothFlag::eSCENE_COLLISION);
+	PxCloth* cloth = gPhysics->createCloth(pose, *fabric, particles, flags);
+	m_pDynamicsWorld->addActor(*cloth);
+
 }
 
 void

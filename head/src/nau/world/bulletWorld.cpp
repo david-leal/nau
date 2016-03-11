@@ -93,7 +93,7 @@ btCollisionShape* getMeshShape(std::shared_ptr<nau::scene::IScene> &aScene, bool
 }
 
 void 
-BulletWorld::_add (float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
+BulletWorld::_addRigid(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
 	btRigidBody* body;
 	if (name.compare("plane") == 0) {
 		NauBulletMotionState *motionState = new NauBulletMotionState(aScene);
@@ -125,6 +125,10 @@ BulletWorld::_add (float mass, std::shared_ptr<nau::scene::IScene> &aScene, std:
 	}
 	m_RigidBodies[name] = body;
 	m_pDynamicsWorld->addRigidBody(body);
+}
+
+void
+BulletWorld::_addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
 }
 
 void 

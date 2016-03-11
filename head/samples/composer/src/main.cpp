@@ -982,31 +982,56 @@ FrmMainFrame::buildPhysics(void) {
 		shared_ptr<IScene> &planeScene = RENDERMANAGER->getScene("plane");
 		//vector<SceneObject*> ballObjects = ballScene->getAllObjects();
 		//SceneObject* plane = planeScene->getSceneObject(0).get();
-		m_pRoot->getWorld()._add(
-			10.0f,
+		m_pRoot->getWorld()._addRigid(
+			0.0f,
 			planeScene,
 			planeScene->getName(),
 			vec3(0.5f, 0.5f, 0.5f)
 			);
 
-		shared_ptr<IScene> &ballScene = RENDERMANAGER->getScene("ball");
-		//vector<SceneObject*> ballObjects = ballScene->getAllObjects();
-		//shared_ptr<SceneObject> ball = ballScene->getSceneObject(0);
-		m_pRoot->getWorld()._add(
-			10.0f,
-			ballScene,
-			ballScene->getName(),
-			//vec3(0.5f, 0.5f, 0.5f)
-			vec3(1.0f, 1.0f, 1.0f)
-			);
+		//shared_ptr<IScene> &stairsScene = RENDERMANAGER->getScene("stairs");
+		//m_pRoot->getWorld()._addRigid(
+		//	0.0f,
+		//	stairsScene,
+		//	stairsScene->getName(),
+		//	vec3(0.5f, 0.5f, 0.5f)
+		//	);
 
-		shared_ptr<IScene> &torusScene = RENDERMANAGER->getScene("man");
-		m_pRoot->getWorld()._add(
+		/*shared_ptr<IScene> &stairsScene = RENDERMANAGER->getScene("skateRamp");
+		m_pRoot->getWorld()._addRigid(
+			0.0f,
+			stairsScene,
+			stairsScene->getName(),
+			vec3(0.5f, 0.5f, 0.5f)
+			);*/
+
+		//shared_ptr<IScene> &ballScene = RENDERMANAGER->getScene("ball");
+		////vector<SceneObject*> ballObjects = ballScene->getAllObjects();
+		////shared_ptr<SceneObject> ball = ballScene->getSceneObject(0);
+		//m_pRoot->getWorld()._addRigid(
+		//	10.0f,
+		//	ballScene,
+		//	ballScene->getName(),
+		//	//vec3(0.5f, 0.5f, 0.5f)
+		//	vec3(1.0f, 1.0f, 1.0f)
+		//	);
+
+		/*shared_ptr<IScene> &torusScene = RENDERMANAGER->getScene("man");
+		m_pRoot->getWorld()._addRigid(
 			10.0f,
 			torusScene,
 			torusScene->getName(),
 			vec3(1.0f, 1.0f, 1.0f)
+			);*/
+
+		shared_ptr<IScene> &clothScene = RENDERMANAGER->getScene("cloth");
+		m_pRoot->getWorld()._addCloth(
+			0.0f,
+			clothScene,
+			clothScene->getName(),
+			vec3(0.5f, 0.5f, 0.5f)
 			);
+
 	}
 }
 
