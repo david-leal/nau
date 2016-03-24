@@ -969,6 +969,81 @@ FrmMainFrame::OnPhysicsBuild (wxCommandEvent &event)
 void
 FrmMainFrame::buildPhysics(void) {
 
+	std::string newSceneName = "bufferScene";
+
+	std::shared_ptr<IScene> is = RENDERMANAGER->createScene(newSceneName);
+
+	std::string primString = "TRIANGLES";
+
+	const char *pMaterial = "crate";
+	const char *pNameSO = "myMesh";
+
+	IRenderable::DrawPrimitive dp = IRenderer::PrimitiveTypes[primString];
+	std::shared_ptr<SceneObject> &so = SceneObjectFactory::Create("SimpleObject");
+	so->setName(pNameSO);
+	std::shared_ptr<IRenderable> &i = RESOURCEMANAGER->createRenderable("Mesh", pNameSO);
+	i->setDrawingPrimitive(dp);
+	std::shared_ptr<MaterialGroup> mg;
+	if (pMaterial)
+		mg = MaterialGroup::Create(i.get(), pMaterial);
+	else
+		mg = MaterialGroup::Create(i.get(), "dirLightDifAmbPix");
+
+	std::shared_ptr<VertexData> &v = i->getVertexData();
+	std::string bufferName = "myBuffer";
+	IBuffer * b;
+	b = RESOURCEMANAGER->createBuffer(bufferName);
+
+	//vec3 arrayPoints[3] = { vec3(0.0f,0.0f,0.0f), vec3(0.0f,1.0f,0.0f), vec3(-1.0f,0.0f,0.0f) };
+	//vec3* points = arrayPoints;
+
+	float arrayPoints[] = { 0.0f,0.0f,0.0f,1.0f, 0.0f,1.0f,0.0f,1.0f, -1.0f,0.0f,0.0f,1.0f }; 
+	float* points = arrayPoints;
+
+	std::shared_ptr<std::vector<VertexData::Attr>> vertices =
+		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(3));
+	vertices->at(0).set(0.0f, 0.0f, 0.0f);
+	vertices->at(1).set(0.0f, 1.0f, 0.0f);
+	vertices->at(2).set(-1.0f, 0.0f, 0.0f);
+
+	std::vector<VertexData::Attr> vvv = *(vertices.get());
+
+	std::shared_ptr<std::vector<unsigned int>> indices =
+		std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>(3));
+	indices->at(0) = 0;
+	indices->at(1) = 1;
+	indices->at(2) = 2;
+
+	v->setBuffer(VertexData::GetAttribIndex(std::string("position")), b->getPropi(IBuffer::ID));
+	b->setData(sizeof(arrayPoints), points);
+	//b->setData(3*sizeof(VertexData::Attr), &(vertices->at(0)));
+	//v->setDataFor(VertexData::GetAttribIndex(std::string("position")), vertices);
+	mg->setIndexList(indices);
+
+	//b->setStructure(std::vector < Enums::DataType > {Enums::FLOAT, Enums::FLOAT, Enums::FLOAT});
+	
+
+	/*int attribIndex = VertexData::GetAttribIndex(std::string("position"));
+
+	if (attribIndex != VertexData::MaxAttribs) {
+		v->setBuffer(attribIndex, b->getPropi(IBuffer::ID));
+	}*/
+
+
+	v->resetCompilationFlag();
+	v->compile();
+	//mg->resetCompilationFlag();
+	//mg->compile();
+	i->addMaterialGroup(mg);
+	//i->resetCompilationFlags();
+	so->setRenderable(i);
+	is->add(so);
+	//is->compile();
+	//is->show();
+	RENDERMANAGER->getActivePipeline()->getCurrentPass()->addScene(newSceneName);
+
+	
+
 	nau::scene::Camera *cam = RENDERMANAGER->getCamera("testCamera").get();
 
 	if (0 != m_pRoot) {
@@ -979,15 +1054,15 @@ FrmMainFrame::buildPhysics(void) {
 		EVENTMANAGER->addListener("DYNAMIC_CAMERA", cam);
 		//m_pRoot->getWorld()._add(60.1f, cam, cam->getName(), vec3(0.3f, 0.3f, 0.5f));//descartar
 
-		shared_ptr<IScene> &planeScene = RENDERMANAGER->getScene("plane");
-		//vector<SceneObject*> ballObjects = ballScene->getAllObjects();
-		//SceneObject* plane = planeScene->getSceneObject(0).get();
-		m_pRoot->getWorld()._addRigid(
-			0.0f,
-			planeScene,
-			planeScene->getName(),
-			vec3(0.5f, 0.5f, 0.5f)
-			);
+		//shared_ptr<IScene> &planeScene = RENDERMANAGER->getScene("plane");
+		////vector<SceneObject*> ballObjects = ballScene->getAllObjects();
+		////SceneObject* plane = planeScene->getSceneObject(0).get();
+		//m_pRoot->getWorld()._addRigid(
+		//	0.0f,
+		//	planeScene,
+		//	planeScene->getName(),
+		//	vec3(0.5f, 0.5f, 0.5f)
+		//	);
 
 		//shared_ptr<IScene> &stairsScene = RENDERMANAGER->getScene("stairs");
 		//m_pRoot->getWorld()._addRigid(
@@ -1016,21 +1091,22 @@ FrmMainFrame::buildPhysics(void) {
 		//	vec3(1.0f, 1.0f, 1.0f)
 		//	);
 
-		/*shared_ptr<IScene> &torusScene = RENDERMANAGER->getScene("man");
+		/*shared_ptr<IScene> &manScene = RENDERMANAGER->getScene("man");
 		m_pRoot->getWorld()._addRigid(
 			10.0f,
-			torusScene,
-			torusScene->getName(),
+			manScene,
+			manScene->getName(),
 			vec3(1.0f, 1.0f, 1.0f)
 			);*/
 
-		shared_ptr<IScene> &clothScene = RENDERMANAGER->getScene("cloth");
-		m_pRoot->getWorld()._addCloth(
-			0.0f,
+		/*shared_ptr<IScene> &clothScene = RENDERMANAGER->getScene("cloth");
+			m_pRoot->getWorld()._addCloth(
+			10.0f,
 			clothScene,
 			clothScene->getName(),
-			vec3(0.5f, 0.5f, 0.5f)
-			);
+			vec3(1.0f, 1.0f, 1.0f)
+			);*/
+		
 
 	}
 }

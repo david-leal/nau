@@ -18,6 +18,7 @@ PxVisualDebuggerConnection* gConnection = NULL;
 PxCooking* mCooking;
 PxControllerManager* manager;
 PxController* controller;
+PxCloth* cloth;
 
 PhsXWorld::PhsXWorld(void) : m_pScene(0), m_pDynamicsWorld(0) {
 }
@@ -54,6 +55,26 @@ PhsXWorld::update(void) {
 			}
 		}
 	
+		if (cloth) {
+			nau::scene::IScene *m_IScene = static_cast<nau::scene::IScene*>(cloth->userData);
+			m_IScene->setTransform(getMatFromPhysXTransform(cloth->getGlobalPose()));
+
+			std::shared_ptr<VertexData> &vd = m_IScene->getSceneObject(0)->getRenderable()->getVertexData();
+
+			int count = static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size());
+
+			PxClothParticleData* pData = cloth->lockParticleData();
+			PxClothParticle* pParticles = pData->particles;
+
+			std::shared_ptr<std::vector<VertexData::Attr>> points = vd->getDataOf(VertexData::GetAttribIndex(std::string("position")));
+			for (int i = 0; i < count; i++) {
+				points->at(i).set(pParticles[i].pos.x, pParticles[i].pos.y, pParticles[i].pos.z);
+			}
+			vd->resetCompilationFlag();
+			vd->compile();
+			pData->unlock();
+		}
+
 		if (controller) {
 			controller->move(PxVec3(0.3f, -9.81f, 0.0f), 0.2f, 1 / 60.0f, NULL);
 			nau::scene::IScene *m_ISceneCharacter = static_cast<nau::scene::IScene*>(controller->getUserData());
@@ -279,23 +300,27 @@ PhsXWorld::_addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, st
 	PxDefaultMemoryOutputStream writeBuffer;
 
 	int count = static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size());
-
-	float* invMass = new float[count];
-	for (int i = 0; i < count; i++) { invMass[i] = i == 0 ? 0.0f : 1.0f; }
+	PxClothParticle *particles = new PxClothParticle[count];
 
 	PxClothMeshDesc meshDesc;
 	matGroupsIter = matGroups.begin();
 	for (; matGroupsIter != matGroups.end(); matGroupsIter++) {
 		if ((*matGroupsIter)->getIndexData()->getIndexSize()) {
 			std::shared_ptr<std::vector<unsigned int>> &indexes = (*matGroupsIter)->getIndexData()->getIndexData();
+			PxClothParticle *ptls = particles;
+			std::shared_ptr<std::vector<VertexData::Attr>> points = vd->getDataOf(VertexData::GetAttribIndex(std::string("position")));
+			for (int i = 0; i < count; i++) {
+				VertexData::Attr tempPoint = points->at(i);
+				ptls[i] = PxClothParticle(PxVec3(tempPoint.x, tempPoint.y, tempPoint.z), i==0 ? 0.0f : 1.0f);
+			}
 
 			meshDesc.points.data = reinterpret_cast<const unsigned char *>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0)));
 			meshDesc.points.count = count;
 			meshDesc.points.stride = 4 * sizeof(float);
 
-			meshDesc.invMasses.data = invMass;
+			meshDesc.invMasses.data = &particles->invWeight;
 			meshDesc.invMasses.count = count;
-			meshDesc.invMasses.stride = sizeof(float);
+			meshDesc.invMasses.stride = sizeof(PxClothParticle);
 
 			meshDesc.triangles.data = reinterpret_cast<const unsigned char *>(&((*indexes)[0]));
 			meshDesc.triangles.count = static_cast<int> (indexes->size() / 3);
@@ -303,24 +328,25 @@ PhsXWorld::_addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, st
 
 		}
 	}
-	float * points = reinterpret_cast<float *>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0)));
-	PxU32 numParticles = static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size());
-	PxU32 stride = 4 * sizeof(float);
-	// create particles
-	PxClothParticle* particles = new PxClothParticle[numParticles];
-	PxClothParticle* pIt = particles;
-	for (PxU32 i = 0; i<numParticles; ++i) {
-		pIt->invWeight = i==0 ? 0.0f : 1.0f;
-		int tempStride = i*stride;
-		pIt->pos = PxVec3(points[tempStride], points[tempStride + 1], points[tempStride + 2]);
-	}
+	//float * points = reinterpret_cast<float *>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0)));
+	//PxU32 numParticles = static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size());
+	//PxU32 stride = 4 * sizeof(float);
+	//// create particles
+	//PxClothParticle* particles = new PxClothParticle[numParticles];
+	//PxClothParticle* pIt = particles;
+	//for (PxU32 i = 0; i<numParticles; ++i) {
+	//	pIt->invWeight = i==0 ? 0.0f : 1.0f;
+	//	int tempStride = i*stride;
+	//	pIt->pos = PxVec3(points[tempStride], points[tempStride + 1], points[tempStride + 2]);
+	//}
 
 	PxClothFabric* fabric = PxClothFabricCreate(*gPhysics, meshDesc, PxVec3(0, -1, 0));
 	PxTransform pose = PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())));
 	PxClothFlags flags = PxClothFlags();
 	if(!flags.isSet(PxClothFlag::eSCENE_COLLISION))
 		flags.set(PxClothFlag::eSCENE_COLLISION);
-	PxCloth* cloth = gPhysics->createCloth(pose, *fabric, particles, flags);
+	cloth = gPhysics->createCloth(pose, *fabric, particles, flags);
+	cloth->userData = aScene.get();
 	m_pDynamicsWorld->addActor(*cloth);
 
 }

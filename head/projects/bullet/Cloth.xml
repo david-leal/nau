@@ -3,15 +3,14 @@
 	<assets> 
 		<scenes>			
 			
-			<scene name="plane">
+			<!--scene name="plane">
 				<geometry name="plane" type="SQUARE" material="azulejo"/>
-				<!--SCALE x=5 y=5 z=5 /-->
-			</scene>
+			</scene-->
 			
-			<scene name="cloth">
-				<geometry name="plane" type="SQUARE" material="azulejo"/>
-				<TRANSLATE x=0 y=5 z=0 />
-			</scene>
+			<!-- <scene name="cloth">
+				<geometry name="plane" type="SQUARE" material="crateCullFaced"/>
+				<TRANSLATE x=0 y=2 z=0 />
+			</scene> -->
 			
 			<scene name="Axis">
 				<geometry name = "axis" type = "AXIS"  >
@@ -67,8 +66,8 @@
 		<pipeline name="fixedfunction" default="true">
 			<pass class="default" name="pass1">
 				<scenes>
-					<scene name="cloth" />
-					<scene name="plane" />
+					<!--scene name="plane" /-->
+					<!-- <scene name="cloth" /> -->
 					<scene name="Axis" />
 				</scenes>
 				<camera name="MainCamera" />
@@ -77,6 +76,7 @@
 				</lights>
 				<materialMaps>
 					<map fromMaterial="crate" toLibrary="Simple" toMaterial="simpleTexturedCrate" />
+					<map fromMaterial="crateCullFaced" toLibrary="Simple" toMaterial="simpleTexturedCrateCullFaced" />
 					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
 					<map fromMaterial="ballMat" toLibrary="Simple" toMaterial="simpleColored" />
 				</materialMaps>
