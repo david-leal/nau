@@ -19,6 +19,9 @@ PxCooking* mCooking;
 PxControllerManager* manager;
 PxController* controller;
 PxCloth* cloth;
+PxParticleSystem* particleSystem;
+std::vector<PxVec3> particlePositions;
+PxParticleExt::IndexPool* particleIndexPool;
 
 PhsXWorld::PhsXWorld(void) : m_pScene(0), m_pDynamicsWorld(0) {
 }
@@ -57,7 +60,7 @@ PhsXWorld::update(void) {
 	
 		if (cloth) {
 			nau::scene::IScene *m_IScene = static_cast<nau::scene::IScene*>(cloth->userData);
-			m_IScene->setTransform(getMatFromPhysXTransform(cloth->getGlobalPose()));
+			//m_IScene->setTransform(getMatFromPhysXTransform(cloth->getGlobalPose()));
 
 			std::shared_ptr<VertexData> &vd = m_IScene->getSceneObject(0)->getRenderable()->getVertexData();
 
@@ -311,7 +314,8 @@ PhsXWorld::_addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, st
 			std::shared_ptr<std::vector<VertexData::Attr>> points = vd->getDataOf(VertexData::GetAttribIndex(std::string("position")));
 			for (int i = 0; i < count; i++) {
 				VertexData::Attr tempPoint = points->at(i);
-				ptls[i] = PxClothParticle(PxVec3(tempPoint.x, tempPoint.y, tempPoint.z), i==0 ? 0.0f : 1.0f);
+				//ptls[i] = PxClothParticle(PxVec3(tempPoint.x, tempPoint.y, tempPoint.z), (i==0 || i==1) ? 0.0f : 1.0f);
+				ptls[i] = PxClothParticle(PxVec3(tempPoint.x, tempPoint.y, tempPoint.z), i == 0 ? 0.0f : 0.1f);
 			}
 
 			meshDesc.points.data = reinterpret_cast<const unsigned char *>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0)));
@@ -343,11 +347,75 @@ PhsXWorld::_addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, st
 	PxClothFabric* fabric = PxClothFabricCreate(*gPhysics, meshDesc, PxVec3(0, -1, 0));
 	PxTransform pose = PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())));
 	PxClothFlags flags = PxClothFlags();
-	if(!flags.isSet(PxClothFlag::eSCENE_COLLISION))
+	/*if(!flags.isSet(PxClothFlag::eSCENE_COLLISION))
 		flags.set(PxClothFlag::eSCENE_COLLISION);
+	if (!flags.isSet(PxClothFlag::eGPU))
+		flags.set(PxClothFlag::eGPU);
+	if (!flags.isSet(PxClothFlag::eSWEPT_CONTACT))
+		flags.set(PxClothFlag::eSWEPT_CONTACT);*/
 	cloth = gPhysics->createCloth(pose, *fabric, particles, flags);
 	cloth->userData = aScene.get();
+	cloth->setClothFlag(PxClothFlag::eSCENE_COLLISION, true);
+	cloth->setClothFlag(PxClothFlag::eGPU, true);
+	cloth->setClothFlag(PxClothFlag::eSWEPT_CONTACT, true);
+	cloth->setSolverFrequency(300.0f);
+	cloth->setInertiaScale(0.9f);
+
+	cloth->setStretchConfig(PxClothFabricPhaseType::eVERTICAL, PxClothStretchConfig(0.2f));
+	cloth->setStretchConfig(PxClothFabricPhaseType::eHORIZONTAL, PxClothStretchConfig(0.2f));
+	cloth->setStretchConfig(PxClothFabricPhaseType::eSHEARING, PxClothStretchConfig(0.75f));
+	cloth->setStretchConfig(PxClothFabricPhaseType::eBENDING, PxClothStretchConfig(0.2f));
 	m_pDynamicsWorld->addActor(*cloth);
+
+}
+
+void
+PhsXWorld::_addParticles(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
+	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());
+
+	// set immutable properties.
+	PxU32 maxParticles = 100;
+	PxU32 numParticles = 1;
+	bool perParticleRestOffset = false;
+
+	// create particle system in PhysX SDK
+	particleSystem = gPhysics->createParticleSystem(maxParticles, perParticleRestOffset);
+
+	// add particle system to scene, in case creation was successful
+	if (particleSystem)
+		m_pDynamicsWorld->addActor(*particleSystem);
+
+
+
+
+	std::vector<PxU32> mTmpIndexArray;
+	mTmpIndexArray.resize(numParticles);
+	PxStrideIterator<PxU32> indexData(&mTmpIndexArray[0]);
+	// allocateIndices() may clamp the number of inserted particles
+	numParticles = particleIndexPool->allocateIndices(numParticles, indexData);
+	particlePositions = std::vector<PxVec3>();
+	particlePositions.push_back(PxVec3(0.0f, 5.0f, 0.0f));
+	
+	PxParticleCreationData particleCreationData;
+	particleCreationData.numParticles = numParticles;
+	particleCreationData.indexBuffer = PxStrideIterator<const PxU32>(&mTmpIndexArray[0]);
+	particleCreationData.positionBuffer = PxStrideIterator<const PxVec3>(&particlePositions[0]);
+	//particleCreationData.velocityBuffer = PxStrideIterator<const PxVec3>(&particles.velocities[0]);
+	bool ok = particleSystem->createParticles(particleCreationData);
+
+
+
+	// declare particle descriptor for creating new particles
+	// based on numNewAppParticles count and newAppParticleIndices, newAppParticlePositions arrays and newAppParticleVelocity
+	//PxParticleCreationData particleCreationData;
+	//particleCreationData.numParticles = 1;
+	//particleCreationData.indexBuffer = PxStrideIterator<const PxU32>(newAppParticleIndices);
+	//particleCreationData.positionBuffer = PxStrideIterator<const PxVec3>(newAppParticlePositions);
+	//particleCreationData.velocityBuffer = PxStrideIterator<const PxVec3>(&newAppParticleVelocity, 0);
+
+	// create particles in *PxParticleSystem* ps
+	//bool success = particleSystem->createParticles(particleCreationData);
+
 
 }
 

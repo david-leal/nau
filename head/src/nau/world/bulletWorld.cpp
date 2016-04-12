@@ -129,6 +129,12 @@ BulletWorld::_addRigid(float mass, std::shared_ptr<nau::scene::IScene> &aScene, 
 
 void
 BulletWorld::_addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
+
+}
+
+void
+BulletWorld::_addParticles(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
+
 }
 
 void 

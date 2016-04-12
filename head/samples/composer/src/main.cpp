@@ -969,81 +969,93 @@ FrmMainFrame::OnPhysicsBuild (wxCommandEvent &event)
 void
 FrmMainFrame::buildPhysics(void) {
 
-	std::string newSceneName = "bufferScene";
+	/****************************************PROGRAMATIC DRAW**************************************/
+	//std::string newSceneName = "bufferScene";
 
-	std::shared_ptr<IScene> is = RENDERMANAGER->createScene(newSceneName);
+	//std::shared_ptr<IScene> is = RENDERMANAGER->createScene(newSceneName);
 
-	std::string primString = "TRIANGLES";
+	//const char *pMaterial = "crate";
+	//const char *pNameSO = "myMesh";
 
-	const char *pMaterial = "crate";
-	const char *pNameSO = "myMesh";
+	//IRenderable::DrawPrimitive dp = IRenderer::PrimitiveTypes["TRIANGLES"];
+	//std::shared_ptr<SceneObject> &so = SceneObjectFactory::Create("SimpleObject");
+	//so->setName(pNameSO);
+	//std::shared_ptr<IRenderable> &i = RESOURCEMANAGER->createRenderable("Mesh", pNameSO);
+	//i->setDrawingPrimitive(dp);
+	//std::shared_ptr<MaterialGroup> mg;
+	//if (pMaterial)
+	//	mg = MaterialGroup::Create(i.get(), pMaterial);
+	//else
+	//	mg = MaterialGroup::Create(i.get(), "dirLightDifAmbPix");
 
-	IRenderable::DrawPrimitive dp = IRenderer::PrimitiveTypes[primString];
-	std::shared_ptr<SceneObject> &so = SceneObjectFactory::Create("SimpleObject");
-	so->setName(pNameSO);
-	std::shared_ptr<IRenderable> &i = RESOURCEMANAGER->createRenderable("Mesh", pNameSO);
-	i->setDrawingPrimitive(dp);
-	std::shared_ptr<MaterialGroup> mg;
-	if (pMaterial)
-		mg = MaterialGroup::Create(i.get(), pMaterial);
-	else
-		mg = MaterialGroup::Create(i.get(), "dirLightDifAmbPix");
+	//std::shared_ptr<VertexData> &v = i->getVertexData();
+	//IBuffer * pointsBuffer = RESOURCEMANAGER->createBuffer("pointsBuffer");
+	////IBuffer * indicesBuffer = RESOURCEMANAGER->createBuffer("indicesBuffer");
 
-	std::shared_ptr<VertexData> &v = i->getVertexData();
-	std::string bufferName = "myBuffer";
-	IBuffer * b;
-	b = RESOURCEMANAGER->createBuffer(bufferName);
+	//float arrayPoints[] = { 0.0f,0.0f,0.0f,1.0f, 0.0f,1.0f,0.0f,1.0f, -1.0f,0.0f,0.0f,1.0f }; 
+	//float* points = arrayPoints;
 
-	//vec3 arrayPoints[3] = { vec3(0.0f,0.0f,0.0f), vec3(0.0f,1.0f,0.0f), vec3(-1.0f,0.0f,0.0f) };
-	//vec3* points = arrayPoints;
+	////unsigned int arrayIndices[] = { 1, 2, 3 };
+	////unsigned int* indices = arrayIndices;
 
-	float arrayPoints[] = { 0.0f,0.0f,0.0f,1.0f, 0.0f,1.0f,0.0f,1.0f, -1.0f,0.0f,0.0f,1.0f }; 
+	///*std::shared_ptr<std::vector<VertexData::Attr>> vertices =
+	//	std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(3));
+	//vertices->at(0).set(0.0f, 0.0f, 0.0f);
+	//vertices->at(1).set(0.0f, 1.0f, 0.0f);
+	//vertices->at(2).set(-1.0f, 0.0f, 0.0f);
+
+	//std::shared_ptr<std::vector<unsigned int>> indices =
+	//	std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>(3));
+	//indices->at(0) = 0;
+	//indices->at(1) = 1;
+	//indices->at(2) = 2;*/
+
+	//v->setBuffer(VertexData::GetAttribIndex(std::string("position")), pointsBuffer->getPropi(IBuffer::ID));
+	//pointsBuffer->setData(sizeof(arrayPoints), points);
+	////pointsBuffer->setData(3*sizeof(VertexData::Attr), &(vertices->at(0)));
+
+	////mg->getIndexData()->setBuffer(indicesBuffer->getPropi(IBuffer::ID));
+	////indicesBuffer->setData(sizeof(arrayIndices), indices);
+	////mg->setIndexList(indices);
+
+
+	////v->setDataFor(VertexData::GetAttribIndex(std::string("position")), vertices);
+	///*int attribIndex = VertexData::GetAttribIndex(std::string("position"));
+
+	//if (attribIndex != VertexData::MaxAttribs) {
+	//	v->setBuffer(attribIndex, b->getPropi(IBuffer::ID));
+	//}*/
+
+	//v->resetCompilationFlag();
+	//v->compile();
+	////mg->resetCompilationFlag();
+	////mg->compile();
+	//i->addMaterialGroup(mg);
+	////i->resetCompilationFlags();
+	//so->setRenderable(i);
+	//is->add(so);
+	////is->compile();
+	////is->show();
+	//RENDERMANAGER->getActivePipeline()->getCurrentPass()->addScene(newSceneName);
+
+	/****************************************PROGRAMATIC DRAW**************************************/
+	RENDERMANAGER->getCurrentPass()->setPropui(Pass::INSTANCE_COUNT, 4);
+
+	IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(std::string("Simple::positions"));
+
+	float arrayPoints[] = { 0.0f,0.0f,-6.0f,1.0f,
+		3.0f,0.0f,0.0f,1.0f,
+		0.0f,3.0f,0.0f,1.0f,
+		0.0f,0.0f,-3.0f,1.0f
+	};
 	float* points = arrayPoints;
 
-	std::shared_ptr<std::vector<VertexData::Attr>> vertices =
-		std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(3));
-	vertices->at(0).set(0.0f, 0.0f, 0.0f);
-	vertices->at(1).set(0.0f, 1.0f, 0.0f);
-	vertices->at(2).set(-1.0f, 0.0f, 0.0f);
+	pointsBuffer->setData(sizeof(arrayPoints), points);
 
-	std::vector<VertexData::Attr> vvv = *(vertices.get());
+	RENDERMANAGER->getScene("particle")->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
+	RENDERMANAGER->getScene("particle")->getSceneObject(0)->getRenderable()->getVertexData()->compile();
 
-	std::shared_ptr<std::vector<unsigned int>> indices =
-		std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>(3));
-	indices->at(0) = 0;
-	indices->at(1) = 1;
-	indices->at(2) = 2;
-
-	v->setBuffer(VertexData::GetAttribIndex(std::string("position")), b->getPropi(IBuffer::ID));
-	b->setData(sizeof(arrayPoints), points);
-	//b->setData(3*sizeof(VertexData::Attr), &(vertices->at(0)));
-	//v->setDataFor(VertexData::GetAttribIndex(std::string("position")), vertices);
-	mg->setIndexList(indices);
-
-	//b->setStructure(std::vector < Enums::DataType > {Enums::FLOAT, Enums::FLOAT, Enums::FLOAT});
-	
-
-	/*int attribIndex = VertexData::GetAttribIndex(std::string("position"));
-
-	if (attribIndex != VertexData::MaxAttribs) {
-		v->setBuffer(attribIndex, b->getPropi(IBuffer::ID));
-	}*/
-
-
-	v->resetCompilationFlag();
-	v->compile();
-	//mg->resetCompilationFlag();
-	//mg->compile();
-	i->addMaterialGroup(mg);
-	//i->resetCompilationFlags();
-	so->setRenderable(i);
-	is->add(so);
-	//is->compile();
-	//is->show();
-	RENDERMANAGER->getActivePipeline()->getCurrentPass()->addScene(newSceneName);
-
-	
-
+	/****************************************PHYSICS!!!**************************************/
 	nau::scene::Camera *cam = RENDERMANAGER->getCamera("testCamera").get();
 
 	if (0 != m_pRoot) {
@@ -1107,6 +1119,7 @@ FrmMainFrame::buildPhysics(void) {
 			vec3(1.0f, 1.0f, 1.0f)
 			);*/
 		
+
 
 	}
 }

@@ -3,17 +3,18 @@
 	<assets> 
 		<scenes>			
 			
-			<!--scene name="plane">
-				<geometry name="plane" type="SQUARE" material="azulejo"/>
-			</scene-->
+			<scene name="plane">
+				<geometry name="plane" type="SQUARE" material="azulejo" />
+			</scene>
 			
-			<!-- <scene name="cloth">
-				<geometry name="plane" type="SQUARE" material="crateCullFaced"/>
+			<scene name="cloth">
+				<geometry name="cloth" type="SQUARE" material="crateCullFaced" />
 				<TRANSLATE x=0 y=2 z=0 />
-			</scene> -->
+				<ROTATE x=0 y=0 z=1 w=90/>
+			</scene>
 			
 			<scene name="Axis">
-				<geometry name = "axis" type = "AXIS"  >
+				<geometry name = "axis" type = "AXIS" >
 					<SCALE x=5 y=5 z =5 />
 				</geometry>
 			</scene>
@@ -33,13 +34,13 @@
 				<projection TYPE="PERSPECTIVE" FOV=60.0 NEAR=1 FAR=1000.0 />
 				<!--
 				<TYPE value="PERSPECTIVE"/>
-				<FOV value=60/>
-				<NEAR value= 1/>
-				<FAR value= 100/>
+				<FOV value=60 />
+				<NEAR value= 1 />
+				<FAR value= 100 />
 				-->
 				<POSITION x=0.0 y=4.0 z=10.0 />
 				<!--<VIEW x=0.0 y=0.0 z=0.1 />-->
-				<LOOK_AT_POINT x=0 y=0 z=0/>
+				<LOOK_AT_POINT x=0 y=0 z=0 />
 				<!--
 				<ZX_ANGLE value = 0.877/>
 				<ELEVATION_ANGLE value=-0.27548/>
@@ -66,8 +67,8 @@
 		<pipeline name="fixedfunction" default="true">
 			<pass class="default" name="pass1">
 				<scenes>
-					<!--scene name="plane" /-->
-					<!-- <scene name="cloth" /> -->
+					<scene name="plane" />
+					<scene name="cloth" />
 					<scene name="Axis" />
 				</scenes>
 				<camera name="MainCamera" />
@@ -75,10 +76,10 @@
 					<light name="Sun" />
 				</lights>
 				<materialMaps>
+					<map fromMaterial="ballMat" toLibrary="Simple" toMaterial="simpleColored" />
+					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
 					<map fromMaterial="crate" toLibrary="Simple" toMaterial="simpleTexturedCrate" />
 					<map fromMaterial="crateCullFaced" toLibrary="Simple" toMaterial="simpleTexturedCrateCullFaced" />
-					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
-					<map fromMaterial="ballMat" toLibrary="Simple" toMaterial="simpleColored" />
 				</materialMaps>
 			</pass>
 		</pipeline>
