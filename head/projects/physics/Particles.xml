@@ -4,7 +4,13 @@
 		<scenes>			
 			<scene name="particle">
 				<geometry name="particle" type="SPHERE" material="particlesMat" SLICES=20 STACKS=20 />
+				<SCALE x=0.2 y=0.2 z=0.2 />
 			</scene>
+			
+			<scene name="plane">
+				<geometry name="plane" type="SQUARE" material="azulejo" />
+			</scene>
+			
 			<scene name="Axis">
 				<geometry name = "axis" type = "AXIS" >
 					<SCALE x=5 y=5 z =5 />
@@ -37,6 +43,7 @@
 		
 		<materialLibs>
 			<materialLib filename = "materialsParticles.mlib"/>
+			<materialLib filename = "materials.mlib"/>
 		</materialLibs> 
 		
 	</assets>
@@ -47,6 +54,7 @@
 				<!-- <scenes instances=4 > -->
 				<scenes>
 					<scene name="particle" />
+					<scene name="plane" />
 				</scenes>
 				<camera name="MainCamera" />
 				<lights>
@@ -54,6 +62,7 @@
 				</lights>
 				<materialMaps>
 					<map fromMaterial="particlesMat" toLibrary="Simple" toMaterial="particlesMat" />
+					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
 				</materialMaps>
 			</pass>
 		</pipeline>

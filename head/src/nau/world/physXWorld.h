@@ -3,6 +3,8 @@
 
 #include "nau/world/iWorld.h"
 #include "nau/scene/iScene.h"
+#include "nau/material/iBuffer.h"
+#include "nau/render/pass.h"
 #include "PxPhysicsAPI.h"
 
 namespace nau
@@ -29,7 +31,7 @@ namespace nau
 
 			void _addRigid(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec);
 			void _addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec);
-			void _addParticles(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec);
+			void _addParticles(nau::render::Pass* pass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::material::IBuffer* positions);
 			void setKinematic(std::string name);
 			void setDynamic(std::string name);
 

@@ -1039,7 +1039,11 @@ FrmMainFrame::buildPhysics(void) {
 	//RENDERMANAGER->getActivePipeline()->getCurrentPass()->addScene(newSceneName);
 
 	/****************************************PROGRAMATIC DRAW**************************************/
-	RENDERMANAGER->getCurrentPass()->setPropui(Pass::INSTANCE_COUNT, 4);
+
+
+	/****************************************INSTANCES**************************************/
+
+	/*RENDERMANAGER->getCurrentPass()->setPropui(Pass::INSTANCE_COUNT, 4);
 
 	IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(std::string("Simple::positions"));
 
@@ -1053,11 +1057,14 @@ FrmMainFrame::buildPhysics(void) {
 	pointsBuffer->setData(sizeof(arrayPoints), points);
 
 	RENDERMANAGER->getScene("particle")->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
-	RENDERMANAGER->getScene("particle")->getSceneObject(0)->getRenderable()->getVertexData()->compile();
+	RENDERMANAGER->getScene("particle")->getSceneObject(0)->getRenderable()->getVertexData()->compile();*/
+
+	/****************************************INSTANCES**************************************/
+
 
 	/****************************************PHYSICS!!!**************************************/
 	nau::scene::Camera *cam = RENDERMANAGER->getCamera("testCamera").get();
-
+	
 	if (0 != m_pRoot) {
 		//std::vector<std::string>* names = RENDERMANAGER->getAllSceneNames();
 		//m_pRoot->getWorld().setScene(RENDERMANAGER->getScene("plane"));
@@ -1066,15 +1073,15 @@ FrmMainFrame::buildPhysics(void) {
 		EVENTMANAGER->addListener("DYNAMIC_CAMERA", cam);
 		//m_pRoot->getWorld()._add(60.1f, cam, cam->getName(), vec3(0.3f, 0.3f, 0.5f));//descartar
 
-		//shared_ptr<IScene> &planeScene = RENDERMANAGER->getScene("plane");
-		////vector<SceneObject*> ballObjects = ballScene->getAllObjects();
-		////SceneObject* plane = planeScene->getSceneObject(0).get();
-		//m_pRoot->getWorld()._addRigid(
-		//	0.0f,
-		//	planeScene,
-		//	planeScene->getName(),
-		//	vec3(0.5f, 0.5f, 0.5f)
-		//	);
+		shared_ptr<IScene> &planeScene = RENDERMANAGER->getScene("plane");
+		//vector<SceneObject*> ballObjects = ballScene->getAllObjects();
+		//SceneObject* plane = planeScene->getSceneObject(0).get();
+		m_pRoot->getWorld()._addRigid(
+			0.0f,
+			planeScene,
+			planeScene->getName(),
+			vec3(0.5f, 0.5f, 0.5f)
+			);
 
 		//shared_ptr<IScene> &stairsScene = RENDERMANAGER->getScene("stairs");
 		//m_pRoot->getWorld()._addRigid(
@@ -1119,7 +1126,13 @@ FrmMainFrame::buildPhysics(void) {
 			vec3(1.0f, 1.0f, 1.0f)
 			);*/
 		
-
+		shared_ptr<IScene> particleScene = RENDERMANAGER->getScene("particle");
+		m_pRoot->getWorld()._addParticles(
+			RENDERMANAGER->getCurrentPass(),
+			particleScene,
+			"particles",
+			RESOURCEMANAGER->getBuffer(std::string("Simple::positions"))
+			);
 
 	}
 }

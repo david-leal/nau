@@ -16,12 +16,19 @@ PxDefaultAllocator		gAllocator;
 PxDefaultErrorCallback	gErrorCallback;
 PxVisualDebuggerConnection* gConnection = NULL;
 PxCooking* mCooking;
+
 PxControllerManager* manager;
 PxController* controller;
+
 PxCloth* cloth;
-PxParticleSystem* particleSystem;
-std::vector<PxVec3> particlePositions;
+
+PxParticleFluid* particleSystem;
+IBuffer* particlePositionBuffer;
+Pass* particlePass;
 PxParticleExt::IndexPool* particleIndexPool;
+PxU32 maxParticles = 1000;
+PxU32 numParticles = 0;
+bool perParticleRestOffset = false;
 
 PhsXWorld::PhsXWorld(void) : m_pScene(0), m_pDynamicsWorld(0) {
 }
@@ -41,6 +48,61 @@ getMatFromPhysXTransform(PxTransform transform) {
 	return mat4(m);
 }
 
+void createParticles() {
+	numParticles += 10;
+	std::vector<PxU32> mTmpIndexArray;
+	mTmpIndexArray.resize(numParticles);
+	PxStrideIterator<PxU32> indexData(&mTmpIndexArray[0]);
+	// allocateIndices() may clamp the number of inserted particles
+	numParticles = particleIndexPool->allocateIndices(numParticles, indexData);
+
+	PxVec3 tempParticlePositions[] = {
+		PxVec3(0.0f,	 3.0f,	 0.0f),
+		PxVec3(0.0f,	 3.2f,	 0.0f),
+		PxVec3(0.0f,	 3.4f,	 0.0f),
+		PxVec3(0.0f,	 2.8f,	 0.0f),
+		PxVec3(0.0f,	 2.6f,	 0.0f),
+		PxVec3(0.0f,	 3.0f,	 0.07f),
+		PxVec3(0.0f,	 3.2f,	 0.07f),
+		PxVec3(0.0f,	 3.4f,	 0.07f),
+		PxVec3(0.0f,	 2.8f,	 0.07f),
+		PxVec3(0.0f,	 2.6f,	 0.07f)
+	};
+	PxVec3* particlePositions = tempParticlePositions;
+
+	PxVec3 appParticleVelocities[] = { PxVec3(0.2f, 0.0f, 0.0f)	};
+
+	PxParticleCreationData particleCreationData;
+	particleCreationData.numParticles = numParticles;
+	particleCreationData.indexBuffer = PxStrideIterator<const PxU32>(&mTmpIndexArray[0]);
+	particleCreationData.positionBuffer = PxStrideIterator<const PxVec3>(particlePositions);
+	particleCreationData.velocityBuffer = PxStrideIterator<const PxVec3>(&appParticleVelocities[0], 0);
+	bool ok = particleSystem->createParticles(particleCreationData);
+
+	//PxVec3 appParticleForces[] = { PxVec3(0.2f, 0.0f, 0.0f) };
+	//// specify strided iterator to provide update forces
+	//PxStrideIterator<const PxVec3> forceBuffer(&appParticleForces[0]);
+
+	//// specify strided iterator to provide indices of particles that need to be updated
+	//PxStrideIterator<const PxU32> indexBuffer(&mTmpIndexArray[0]);
+
+	//// specify force update on PxParticleSystem ps choosing the "force" unit
+	//particleSystem->addForces(10, indexBuffer, forceBuffer, PxForceMode::eFORCE);
+}
+
+
+void
+updateParticlePositions(int n, PxVec3* positions, nau::scene::IScene* scene) {
+	PxVec4* result = new PxVec4[n];
+	for (int i = 0; i < n; i++) {
+		result[i] = PxVec4(positions[i], 1.0f);
+	}
+	particlePass->setPropui(Pass::INSTANCE_COUNT, n);
+	particlePositionBuffer->setData(n*sizeof(PxVec4), result);
+	scene->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
+	scene->getSceneObject(0)->getRenderable()->getVertexData()->compile();
+
+}
 
 void
 PhsXWorld::update(void) {
@@ -58,6 +120,18 @@ PhsXWorld::update(void) {
 			}
 		}
 	
+		if (controller) {
+			controller->move(PxVec3(0.3f, -9.81f, 0.0f), 0.2f, 1 / 60.0f, NULL);
+			nau::scene::IScene *m_ISceneCharacter = static_cast<nau::scene::IScene*>(controller->getUserData());
+			mat4 mat = getMatFromPhysXTransform(controller->getActor()->getGlobalPose());
+
+			//For Pusher character
+			mat.rotate(-90, vec3(0, 0, 1));
+			//mat.rotate(-90, vec3(0, 1, 0));
+
+			m_ISceneCharacter->setTransform(mat);
+		}
+
 		if (cloth) {
 			nau::scene::IScene *m_IScene = static_cast<nau::scene::IScene*>(cloth->userData);
 			//m_IScene->setTransform(getMatFromPhysXTransform(cloth->getGlobalPose()));
@@ -78,19 +152,39 @@ PhsXWorld::update(void) {
 			pData->unlock();
 		}
 
-		if (controller) {
-			controller->move(PxVec3(0.3f, -9.81f, 0.0f), 0.2f, 1 / 60.0f, NULL);
-			nau::scene::IScene *m_ISceneCharacter = static_cast<nau::scene::IScene*>(controller->getUserData());
-			mat4 mat = getMatFromPhysXTransform(controller->getActor()->getGlobalPose());
+		if (particleSystem) {
+			// lock SDK buffers of *PxParticleSystem* ps for reading
+			PxParticleFluidReadData* rd = particleSystem->lockParticleFluidReadData();
 
-			//For Pusher character
-			mat.rotate(-90, vec3(0, 0, 1));
-			//mat.rotate(-90, vec3(0, 1, 0));
+			// access particle data from PxParticleReadData
+			if (rd) {
+				PxU32 nPart = rd->nbValidParticles;
+				PxVec3* newPositions = new PxVec3[nPart];
 
-			m_ISceneCharacter->setTransform(mat);
+				PxStrideIterator<const PxParticleFlags> flagsIt(rd->flagsBuffer);
+				PxStrideIterator<const PxVec3> positionIt(rd->positionBuffer);
+
+				int index = 0;
+				for (unsigned i = 0; i < rd->validParticleRange; ++i, ++flagsIt, ++positionIt) {
+					if (*flagsIt & PxParticleFlag::eVALID) {
+						// access particle position
+						const PxVec3& position = *positionIt;
+						newPositions[index++] = position;
+					}
+				}
+				// return ownership of the buffers back to the SDK
+				nau::scene::IScene* m_IScene = static_cast<nau::scene::IScene*>(particleSystem->userData);
+				updateParticlePositions(nPart, newPositions, m_IScene);
+
+				rd->unlock();
+				if (nPart < maxParticles) {
+					createParticles();
+				}
+			}
 		}
 
 	}
+
 }
 
 
@@ -226,7 +320,7 @@ PhsXWorld::_addRigid(float mass, std::shared_ptr<nau::scene::IScene> &aScene, st
 		if (name.compare("plane") == 0) {
 			staticActor = PxCreatePlane(*gPhysics,
 				PxPlane(0.0f, 1.0f, 0.0f, 0.0f),
-				*(gPhysics->createMaterial(0.5f, 0.5f, 0.6f))
+				*(gPhysics->createMaterial(1.0f, 1.0f, 0.6f))
 				);
 
 		}
@@ -370,53 +464,35 @@ PhsXWorld::_addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, st
 }
 
 void
-PhsXWorld::_addParticles(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
-	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());
+PhsXWorld::_addParticles(nau::render::Pass* pass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::material::IBuffer* positions) {
 
-	// set immutable properties.
-	PxU32 maxParticles = 100;
-	PxU32 numParticles = 1;
-	bool perParticleRestOffset = false;
+	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());	
 
+	float particleDistance = 0.2f;
 	// create particle system in PhysX SDK
-	particleSystem = gPhysics->createParticleSystem(maxParticles, perParticleRestOffset);
+	particleSystem = gPhysics->createParticleFluid(maxParticles);
+	//particleSystem->setGridSize(5.0f);
+	particleSystem->setMaxMotionDistance(0.3f);
+	particleSystem->setRestOffset(particleDistance*0.3f);
+	particleSystem->setContactOffset(particleDistance*0.3f * 2);
+	particleSystem->setDamping(0.0f);
+	particleSystem->setRestitution(0.3f);
+	particleSystem->setDynamicFriction(0.001f);
+	particleSystem->setRestParticleDistance(particleDistance);
+	particleSystem->setViscosity(60.0f);
+	particleSystem->setStiffness(45.0f);
+	//particleSystem->setParticleReadDataFlag(PxParticleReadDataFlag::eVELOCITY_BUFFER, true);
+
+	particleSystem->userData = aScene.get();
 
 	// add particle system to scene, in case creation was successful
 	if (particleSystem)
 		m_pDynamicsWorld->addActor(*particleSystem);
 
-
-
-
-	std::vector<PxU32> mTmpIndexArray;
-	mTmpIndexArray.resize(numParticles);
-	PxStrideIterator<PxU32> indexData(&mTmpIndexArray[0]);
-	// allocateIndices() may clamp the number of inserted particles
-	numParticles = particleIndexPool->allocateIndices(numParticles, indexData);
-	particlePositions = std::vector<PxVec3>();
-	particlePositions.push_back(PxVec3(0.0f, 5.0f, 0.0f));
-	
-	PxParticleCreationData particleCreationData;
-	particleCreationData.numParticles = numParticles;
-	particleCreationData.indexBuffer = PxStrideIterator<const PxU32>(&mTmpIndexArray[0]);
-	particleCreationData.positionBuffer = PxStrideIterator<const PxVec3>(&particlePositions[0]);
-	//particleCreationData.velocityBuffer = PxStrideIterator<const PxVec3>(&particles.velocities[0]);
-	bool ok = particleSystem->createParticles(particleCreationData);
-
-
-
-	// declare particle descriptor for creating new particles
-	// based on numNewAppParticles count and newAppParticleIndices, newAppParticlePositions arrays and newAppParticleVelocity
-	//PxParticleCreationData particleCreationData;
-	//particleCreationData.numParticles = 1;
-	//particleCreationData.indexBuffer = PxStrideIterator<const PxU32>(newAppParticleIndices);
-	//particleCreationData.positionBuffer = PxStrideIterator<const PxVec3>(newAppParticlePositions);
-	//particleCreationData.velocityBuffer = PxStrideIterator<const PxVec3>(&newAppParticleVelocity, 0);
-
-	// create particles in *PxParticleSystem* ps
-	//bool success = particleSystem->createParticles(particleCreationData);
-
-
+	particleIndexPool = PxParticleExt::createIndexPool(maxParticles);
+	particlePass = pass;
+	particlePositionBuffer = positions;
+	createParticles();
 }
 
 void

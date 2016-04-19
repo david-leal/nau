@@ -133,7 +133,7 @@ BulletWorld::_addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, 
 }
 
 void
-BulletWorld::_addParticles(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
+BulletWorld::_addParticles(nau::render::Pass* pass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::material::IBuffer* positions) {
 
 }
 
