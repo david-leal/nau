@@ -11,6 +11,27 @@
 				<geometry name="plane" type="SQUARE" material="azulejo" />
 			</scene>
 			
+			<!-- <scene name="box1">
+				<geometry name="box1" type="BOX" material="azulejo" />
+				<TRANSLATE x=-1.25 y=1 z=0 />
+			</scene>
+			
+			<scene name="box2">
+				<geometry name="box2" type="BOX" material="azulejo" />
+				<TRANSLATE x=1.25 y=1 z=0 />
+			</scene>
+			
+			<scene name="box3">
+				<geometry name="box3" type="BOX" material="azulejo" />
+				<TRANSLATE x=0 y=1 z=-1.25 />
+			</scene>
+			
+			<scene name="box4">
+				<geometry name="box4" type="BOX" material="azulejo" />
+				<TRANSLATE x=0 y=1 z=1.25 />
+			</scene> -->
+			
+			
 			<scene name="Axis">
 				<geometry name = "axis" type = "AXIS" >
 					<SCALE x=5 y=5 z =5 />
@@ -54,7 +75,7 @@
 				<!-- <scenes instances=4 > -->
 				<scenes>
 					<scene name="particle" />
-					<scene name="plane" />
+					<!-- <scene name="plane" /> -->
 				</scenes>
 				<camera name="MainCamera" />
 				<lights>

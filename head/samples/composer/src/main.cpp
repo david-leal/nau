@@ -1083,6 +1083,48 @@ FrmMainFrame::buildPhysics(void) {
 			vec3(0.5f, 0.5f, 0.5f)
 			);
 
+		/*shared_ptr<IScene> &boxScene = RENDERMANAGER->getScene("box");
+		m_pRoot->getWorld()._addRigid(
+			0.0f,
+			boxScene,
+			boxScene->getName(),
+			vec3(0.5f, 0.5f, 0.5f)
+		);*/
+
+
+		/*shared_ptr<IScene> &boxScene1 = RENDERMANAGER->getScene("box1");
+		m_pRoot->getWorld()._addRigid(
+			0.0f,
+			boxScene1,
+			boxScene1->getName(),
+			vec3(0.5f, 0.5f, 0.5f)
+			);
+
+		shared_ptr<IScene> &boxScene2 = RENDERMANAGER->getScene("box2");
+		m_pRoot->getWorld()._addRigid(
+			0.0f,
+			boxScene2,
+			boxScene2->getName(),
+			vec3(0.5f, 0.5f, 0.5f)
+		);
+
+		shared_ptr<IScene> &boxScene3 = RENDERMANAGER->getScene("box3");
+		m_pRoot->getWorld()._addRigid(
+			0.0f,
+			boxScene3,
+			boxScene3->getName(),
+			vec3(0.5f, 0.5f, 0.5f)
+		);
+
+		shared_ptr<IScene> &boxScene4 = RENDERMANAGER->getScene("box4");
+		m_pRoot->getWorld()._addRigid(
+			0.0f,
+			boxScene4,
+			boxScene4->getName(),
+			vec3(0.5f, 0.5f, 0.5f)
+		);*/
+
+
 		//shared_ptr<IScene> &stairsScene = RENDERMANAGER->getScene("stairs");
 		//m_pRoot->getWorld()._addRigid(
 		//	0.0f,

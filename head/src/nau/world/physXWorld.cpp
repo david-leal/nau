@@ -3,7 +3,8 @@
 #include "nau/geometry/iBoundingVolume.h"
 #include "nau/geometry/vertexData.h"
 #include "nau/material/materialGroup.h"
-
+#include <stdlib.h>
+#include <time.h> 
 
 using namespace nau::world;
 using namespace nau::geometry;
@@ -26,9 +27,17 @@ PxParticleFluid* particleSystem;
 IBuffer* particlePositionBuffer;
 Pass* particlePass;
 PxParticleExt::IndexPool* particleIndexPool;
-PxU32 maxParticles = 1000;
+
+#define MAXPARTICLE 2000
+//PxU32 maxParticles = 1000;
 PxU32 numParticles = 0;
 bool perParticleRestOffset = false;
+
+//std::vector<PxVec3>* partPosistions;
+//std::vector<PxVec3>* partVelocities;
+
+#define ITERSTEP 1
+int iter = 1;
 
 PhsXWorld::PhsXWorld(void) : m_pScene(0), m_pDynamicsWorld(0) {
 }
@@ -48,35 +57,41 @@ getMatFromPhysXTransform(PxTransform transform) {
 	return mat4(m);
 }
 
+float getRandomNumber() {
+	return (std::rand() % 31) / 100.0f;
+}
+
 void createParticles() {
+	PxU32 existingParticles = numParticles;
 	numParticles += 10;
 	std::vector<PxU32> mTmpIndexArray;
 	mTmpIndexArray.resize(numParticles);
 	PxStrideIterator<PxU32> indexData(&mTmpIndexArray[0]);
 	// allocateIndices() may clamp the number of inserted particles
-	numParticles = particleIndexPool->allocateIndices(numParticles, indexData);
+	numParticles = particleIndexPool->allocateIndices((numParticles-existingParticles), indexData);
 
-	PxVec3 tempParticlePositions[] = {
-		PxVec3(0.0f,	 3.0f,	 0.0f),
-		PxVec3(0.0f,	 3.2f,	 0.0f),
-		PxVec3(0.0f,	 3.4f,	 0.0f),
-		PxVec3(0.0f,	 2.8f,	 0.0f),
-		PxVec3(0.0f,	 2.6f,	 0.0f),
-		PxVec3(0.0f,	 3.0f,	 0.07f),
-		PxVec3(0.0f,	 3.2f,	 0.07f),
-		PxVec3(0.0f,	 3.4f,	 0.07f),
-		PxVec3(0.0f,	 2.8f,	 0.07f),
-		PxVec3(0.0f,	 2.6f,	 0.07f)
+	PxVec3 partPosistions[] = {
+		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
+		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
+		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
+		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
+		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
+		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
+		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
+		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
+		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
+		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber())
 	};
-	PxVec3* particlePositions = tempParticlePositions;
 
-	PxVec3 appParticleVelocities[] = { PxVec3(0.2f, 0.0f, 0.0f)	};
+	//PxVec3 partPosistions[] = { PxVec3(getRandomNumber(), 5.0f, getRandomNumber()) };
+
+	//PxVec3 appParticleVelocities[] = { PxVec3(0.2f, 0.0f, 0.0f)	};
 
 	PxParticleCreationData particleCreationData;
 	particleCreationData.numParticles = numParticles;
 	particleCreationData.indexBuffer = PxStrideIterator<const PxU32>(&mTmpIndexArray[0]);
-	particleCreationData.positionBuffer = PxStrideIterator<const PxVec3>(particlePositions);
-	particleCreationData.velocityBuffer = PxStrideIterator<const PxVec3>(&appParticleVelocities[0], 0);
+	particleCreationData.positionBuffer = PxStrideIterator<const PxVec3>(&partPosistions[0]);
+	//particleCreationData.velocityBuffer = PxStrideIterator<const PxVec3>(&partVelocities[0]);
 	bool ok = particleSystem->createParticles(particleCreationData);
 
 	//PxVec3 appParticleForces[] = { PxVec3(0.2f, 0.0f, 0.0f) };
@@ -90,19 +105,6 @@ void createParticles() {
 	//particleSystem->addForces(10, indexBuffer, forceBuffer, PxForceMode::eFORCE);
 }
 
-
-void
-updateParticlePositions(int n, PxVec3* positions, nau::scene::IScene* scene) {
-	PxVec4* result = new PxVec4[n];
-	for (int i = 0; i < n; i++) {
-		result[i] = PxVec4(positions[i], 1.0f);
-	}
-	particlePass->setPropui(Pass::INSTANCE_COUNT, n);
-	particlePositionBuffer->setData(n*sizeof(PxVec4), result);
-	scene->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
-	scene->getSceneObject(0)->getRenderable()->getVertexData()->compile();
-
-}
 
 void
 PhsXWorld::update(void) {
@@ -159,7 +161,7 @@ PhsXWorld::update(void) {
 			// access particle data from PxParticleReadData
 			if (rd) {
 				PxU32 nPart = rd->nbValidParticles;
-				PxVec3* newPositions = new PxVec3[nPart];
+				PxVec4* newPositions = new PxVec4[nPart];
 
 				PxStrideIterator<const PxParticleFlags> flagsIt(rd->flagsBuffer);
 				PxStrideIterator<const PxVec3> positionIt(rd->positionBuffer);
@@ -169,15 +171,18 @@ PhsXWorld::update(void) {
 					if (*flagsIt & PxParticleFlag::eVALID) {
 						// access particle position
 						const PxVec3& position = *positionIt;
-						newPositions[index++] = position;
+						newPositions[index++] = PxVec4(position, 1.0f);
 					}
 				}
 				// return ownership of the buffers back to the SDK
 				nau::scene::IScene* m_IScene = static_cast<nau::scene::IScene*>(particleSystem->userData);
-				updateParticlePositions(nPart, newPositions, m_IScene);
+				particlePass->setPropui(Pass::INSTANCE_COUNT, nPart);
+				particlePositionBuffer->setData(nPart * sizeof(PxVec4), newPositions);
+				m_IScene->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
+				m_IScene->getSceneObject(0)->getRenderable()->getVertexData()->compile();
 
 				rd->unlock();
-				if (nPart < maxParticles) {
+				if (nPart < MAXPARTICLE && iter++ % ITERSTEP == 0) {
 					createParticles();
 				}
 			}
@@ -213,6 +218,7 @@ PhsXWorld::build(void) {
 	mCooking = PxCreateCooking(PX_PHYSICS_VERSION, *gFoundation, PxCookingParams(scale));
 	manager = PxCreateControllerManager(*m_pDynamicsWorld);
 
+	std::srand(time(NULL));
 }
 
 
@@ -325,10 +331,19 @@ PhsXWorld::_addRigid(float mass, std::shared_ptr<nau::scene::IScene> &aScene, st
 
 		}
 		else {
-			staticActor = gPhysics->createRigidStatic(PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))));
-			PxTriangleMeshGeometry triGeom;
-			triGeom.triangleMesh = gPhysics->createTriangleMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene));
-			staticActor->createShape(triGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));
+			/*if (name.compare("box") == 0) {
+				staticActor = PxCreateStatic(*gPhysics,
+					PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))),
+					PxBoxGeometry(1.0f,1.0f,1.0f),
+					*(gPhysics->createMaterial(1.0f, 1.0f, 0.6f))
+				);
+			}
+			else {*/
+				staticActor = gPhysics->createRigidStatic(PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))));
+				PxTriangleMeshGeometry triGeom;
+				triGeom.triangleMesh = gPhysics->createTriangleMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene));
+				staticActor->createShape(triGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));
+			//}
 		}
 		staticActor->userData = aScene.get();
 		m_pDynamicsWorld->addActor(*staticActor);
@@ -468,13 +483,15 @@ PhsXWorld::_addParticles(nau::render::Pass* pass, std::shared_ptr<nau::scene::IS
 
 	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());	
 
-	float particleDistance = 0.2f;
+	float particleDistance = 0.05f;
 	// create particle system in PhysX SDK
-	particleSystem = gPhysics->createParticleFluid(maxParticles);
+	particleSystem = gPhysics->createParticleFluid(MAXPARTICLE);
 	//particleSystem->setGridSize(5.0f);
 	particleSystem->setMaxMotionDistance(0.3f);
-	particleSystem->setRestOffset(particleDistance*0.3f);
-	particleSystem->setContactOffset(particleDistance*0.3f * 2);
+	//particleSystem->setRestOffset(particleDistance*0.3f);
+	particleSystem->setRestOffset(0.04f);
+	//particleSystem->setContactOffset(particleDistance*0.3f * 2);
+	particleSystem->setContactOffset(0.036f);
 	particleSystem->setDamping(0.0f);
 	particleSystem->setRestitution(0.3f);
 	particleSystem->setDynamicFriction(0.001f);
@@ -489,7 +506,7 @@ PhsXWorld::_addParticles(nau::render::Pass* pass, std::shared_ptr<nau::scene::IS
 	if (particleSystem)
 		m_pDynamicsWorld->addActor(*particleSystem);
 
-	particleIndexPool = PxParticleExt::createIndexPool(maxParticles);
+	particleIndexPool = PxParticleExt::createIndexPool(MAXPARTICLE);
 	particlePass = pass;
 	particlePositionBuffer = positions;
 	createParticles();
