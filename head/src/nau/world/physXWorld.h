@@ -39,6 +39,9 @@ namespace nau
 			void enableObject(std::string name);
 
 			void setVelocity(std::string name, nau::math::vec3 vel);
+
+			void setDebug(nau::scene::IScene* debugScene = 0, nau::material::IBuffer* debugPositions = 0);
+
 			void onShapeHit(const physx::PxControllerShapeHit &hit);
 			void onControllerHit(const physx::PxControllersHit &hit);
 			void onObstacleHit(const physx::PxControllerObstacleHit &hit);

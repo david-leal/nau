@@ -1,27 +1,26 @@
 #version 420 
 
 uniform vec4 lightDirection, lightColor;
-uniform vec4 diffuse, ambient, emission;
+uniform vec4 diffuse, ambient, emission, specular;
 uniform float shininess;
 
 in vec3 Normal;
 in vec3 LightDirection;
+in vec3 Eye;
 out vec4 outColor;
 
 void main()
 {
-	vec4 color;
-	float intensity;
-	vec4 lightIntensityDiffuse;
-	vec3 lightDir;
-	vec3 n;
-	
-	lightDir = -normalize(LightDirection);
-	n = normalize(Normal);	
-	intensity = max(dot(lightDir,n),0.0);
-		
-	color = diffuse * lightColor * intensity + diffuse * 0.3 ;		
-	outColor = color;
-
-		
+	vec4 spec = vec4(0.0);
+	vec3 n = normalize(Normal);
+	vec3 l = -normalize(LightDirection);
+	vec3 e = normalize(Eye);
+	float intensity = max(dot(n,l), 0.0);
+	if (intensity > 0.0) {
+		vec3 h = normalize(l + e);
+		float intSpec = max(dot(h,n), 0.0);
+		spec = specular * pow(intSpec, shininess);
+	}
+	vec4 aux = max(intensity * diffuse + spec, ambient);
+	outColor = vec4(aux.xyz, 0.4);
 }

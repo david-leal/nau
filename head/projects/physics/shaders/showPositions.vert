@@ -1,6 +1,6 @@
 #version 440
 
-uniform mat4 PVM, V;
+uniform mat4 PVM, V, VM;
 
 uniform mat3 NormalMatrix;
 
@@ -15,10 +15,12 @@ layout(std430, binding = 1) buffer positions {
 
 out vec3 Normal;
 out vec3 LightDirection;
+out vec3 Eye;
 
 void main() {
 	Normal = normalize(NormalMatrix * vec3(normal));
-	LightDirection = normalize(vec3(V * lightDirection));
-	gl_Position = PVM * (pos[gl_InstanceID]+position);
+	LightDirection = vec3(V * lightDirection);
+	Eye = -vec3(VM * position);
+	gl_Position = PVM * (pos[gl_InstanceID]+(position));
 }
 

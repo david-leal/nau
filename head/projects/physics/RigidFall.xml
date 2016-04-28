@@ -2,29 +2,28 @@
 <project name="Simple" width="800" height="600">
 	<assets> 
 		<scenes>			
-			<!--scene name="ball">
-				<geometry name="ball" type="SPHERE" material="ballMat" SLICES=20 STACKS=20/>
-				<TRANSLATE x =0 y=1.2 z =0 />
-				<!--SCALE x=0.5 y=0.5 z=0.5/>
-			</scene-->
-			<scene name="ball">
-				<geometry name="ball" type="BOX" material="crate"/>
-				<TRANSLATE x =0 y=1 z =0 />
+			<!-- <scene name="box">
+				<geometry name="box" type="SPHERE" material="ballMat" SLICES=20 STACKS=20/>
+				<TRANSLATE x=0 y=2 z=0 />
+			</scene> -->
+			<scene name="box">
+				<geometry name="box" type="BOX" material="crate"/>
+				<TRANSLATE x=0 y=5 z=0 />
 				<!--ROTATE x=0 y=0 z=1 w=-30/-->
 			</scene>
 			
 			<scene name="plane">
 				<geometry name="plane" type="SQUARE" material="azulejo"/>
-				<SCALE x=5 y=5 z=5 />
+				<!-- <SCALE x=5 y=5 z=5 /> -->
 			</scene>
-			<!--scene name="plane">
+			<!-- <scene name="plane">
 				<geometry name="plane" type="BOX" material="azulejo"/>
 				<TRANSLATE x =0 y=-1 z =0 />
-			</scene-->
+			</scene> -->
 			
 			<scene name="Axis">
 				<geometry name = "axis" type = "AXIS"  >
-					<SCALE x=5 y=5 z =5 />
+					<SCALE x=5 y=5 z=5 />
 				</geometry>
 			</scene>
 		</scenes>
@@ -76,8 +75,9 @@
 		<pipeline name="fixedfunction" default="true">
 			<pass class="default" name="pass1">
 				<scenes>
-					<scene name="ball" />
-					<scene name="plane" />
+					<!-- <scene name="ball" /> -->
+					<!-- <scene name="box" /> -->
+					<!-- <scene name="plane" /> -->
 					<scene name="Axis" />
 				</scenes>
 				<camera name="MainCamera" />
@@ -88,6 +88,7 @@
 					<map fromMaterial="crate" toLibrary="Simple" toMaterial="simpleTexturedCrate" />
 					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
 					<map fromMaterial="ballMat" toLibrary="Simple" toMaterial="simpleColored" />
+					<map fromMaterial="debugMat" toLibrary="Simple" toMaterial="simpleColoredDebug" />
 				</materialMaps>
 			</pass>
 		</pipeline>

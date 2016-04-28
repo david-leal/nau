@@ -28,13 +28,9 @@ IBuffer* particlePositionBuffer;
 Pass* particlePass;
 PxParticleExt::IndexPool* particleIndexPool;
 
-#define MAXPARTICLE 2000
-//PxU32 maxParticles = 1000;
+#define MAXPARTICLE 20000
 PxU32 numParticles = 0;
 bool perParticleRestOffset = false;
-
-//std::vector<PxVec3>* partPosistions;
-//std::vector<PxVec3>* partVelocities;
 
 #define ITERSTEP 1
 int iter = 1;
@@ -63,14 +59,17 @@ float getRandomNumber() {
 
 void createParticles() {
 	PxU32 existingParticles = numParticles;
-	numParticles += 10;
+	numParticles += 100;
 	std::vector<PxU32> mTmpIndexArray;
 	mTmpIndexArray.resize(numParticles);
 	PxStrideIterator<PxU32> indexData(&mTmpIndexArray[0]);
 	// allocateIndices() may clamp the number of inserted particles
 	numParticles = particleIndexPool->allocateIndices((numParticles-existingParticles), indexData);
-
-	PxVec3 partPosistions[] = {
+	PxVec3 partPosistions[100];
+	for (int i = 0; i < 100; i++) {
+		partPosistions[i] = PxVec3(getRandomNumber(), 3.0f, getRandomNumber());
+	}
+	/*PxVec3 partPosistions[] = {
 		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
 		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
 		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
@@ -81,7 +80,7 @@ void createParticles() {
 		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
 		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber()),
 		PxVec3(getRandomNumber(),	 3.0f,	 getRandomNumber())
-	};
+	};*/
 
 	//PxVec3 partPosistions[] = { PxVec3(getRandomNumber(), 5.0f, getRandomNumber()) };
 
@@ -135,7 +134,7 @@ PhsXWorld::update(void) {
 		}
 
 		if (cloth) {
-			nau::scene::IScene *m_IScene = static_cast<nau::scene::IScene*>(cloth->userData);
+			nau::scene::IScene *m_IScene = static_cast<nau::scene::IScene*>(cloth->userData); 
 			//m_IScene->setTransform(getMatFromPhysXTransform(cloth->getGlobalPose()));
 
 			std::shared_ptr<VertexData> &vd = m_IScene->getSceneObject(0)->getRenderable()->getVertexData();
@@ -483,7 +482,7 @@ PhsXWorld::_addParticles(nau::render::Pass* pass, std::shared_ptr<nau::scene::IS
 
 	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());	
 
-	float particleDistance = 0.05f;
+	float particleDistance = 0.01f;
 	// create particle system in PhysX SDK
 	particleSystem = gPhysics->createParticleFluid(MAXPARTICLE);
 	//particleSystem->setGridSize(5.0f);
@@ -555,3 +554,6 @@ void
 PhsXWorld::enableObject(std::string name) {
 	//m_pDynamicsWorld->addCollisionObject(m_RigidBodies[name]);
 }
+
+void
+PhsXWorld::setDebug(nau::scene::IScene* debugScene, nau::material::IBuffer* debugPositions) {}

@@ -27,16 +27,25 @@
 	<materials>
 		<material name ="particlesMat">
 			<color>
-				<AMBIENT r="0.0" g="0.0" b="1.0" a="0.4" />
-				<DIFFUSE r="0.0" g="0.0" b="1.0" a="0.4" />
-				<SPECULAR r="1.0" g="1.0" b="1.0" a="0.8" />
-				<EMISSION r="0.0" g="0.0" b="0.0" a="0.8" />
-				<SHININESS value="40" />
+				<AMBIENT r="0.0" g="0.0" b="0.3" a="0.8" />
+				<DIFFUSE r="0.0" g="0.0" b="0.8" a="0.8" />
+				<SPECULAR r="1.0" g="1.0" b="1.0" a="0.4" />
+				<EMISSION r="0.0" g="0.0" b="0.0" a="1.0" />
+				<SHININESS value="10.0" />
 			</color>
 			<shader name="showPositions" >
 				<values>			
 					<valueof uniform="PVM" 				type="RENDERER" context="CURRENT"
 														component="PROJECTION_VIEW_MODEL" />
+					
+					<valueof uniform="V"          		type="RENDERER" context="CURRENT" 
+														component="VIEW" />
+					
+					<valueof uniform="VM"          		type="RENDERER" context="CURRENT" 
+														component="VIEW_MODEL" />
+					
+					<valueof uniform="NormalMatrix"   	type="RENDERER" context="CURRENT" 
+														component="NORMAL" />
 						
 					<valueof uniform="ambient" 		  	type="COLOR" context="CURRENT" 
 														component="AMBIENT" />
@@ -58,12 +67,6 @@
 														
 					<valueof uniform="lightColor"     	type="LIGHT" context="CURRENT" 
 														id=0 component="COLOR" />
-					
-					<valueof uniform="NormalMatrix"   	type="RENDERER" context="CURRENT" 
-														component="NORMAL" />
-														
-					<valueof uniform="V"          		type="RENDERER" context="CURRENT" 
-														component="VIEW" />
 				</values>										
 			</shader>
 			<buffers>	

@@ -2,22 +2,33 @@
 #define BULLETDEBUGGER_H
 
 #include "LinearMath/btIDebugDraw.h"
-
-//#include <GL/glew.h>
-#include <glbinding/gl/gl.h>
-#include <glbinding/Binding.h>
-using namespace gl;
+#include "nau/scene/iScene.h"
+#include "nau/material/iBuffer.h"
 
 namespace nau {
 	namespace world {
 		class BulletDebugger : public btIDebugDraw {
 			int m_debugMode;
 
-			
+		private:
+			nau::scene::IScene *scene;
+			nau::material::IBuffer* debugPositions;
+			std::vector<float>* points;
+
 		public:
-			BulletDebugger(void);
-			~BulletDebugger(void);
-			
+			BulletDebugger(nau::scene::IScene* scene, nau::material::IBuffer* debugPositions) {
+				this->scene = scene;
+				this->debugPositions = debugPositions;
+				this->points = new std::vector<float>();
+			};
+
+			~BulletDebugger(void) {
+				this->scene = NULL;
+				this->debugPositions = NULL;
+				free(this->points);
+				this->points = NULL;
+			};
+
 			virtual void   drawLine(const btVector3& from, const btVector3& to, const btVector3& fromColor, const btVector3& toColor);
 
 			virtual void   drawLine(const btVector3& from, const btVector3& to, const btVector3& color);
@@ -35,6 +46,10 @@ namespace nau {
 			virtual void   setDebugMode(int debugMode);
 
 			virtual int      getDebugMode() const { return m_debugMode; }
+
+			void compilePoints(void);
+
+			void clearPoints(void);
 		};
 	};
 };

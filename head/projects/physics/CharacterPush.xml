@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<project name="Simple" width="800" height="600">
+<project name="Simple" width="1024" height="576">
 	<assets> 
 		<scenes>
 			<scene name="man">
@@ -13,8 +13,8 @@
 				<TRANSLATE x =0 y=1.2 z =0 />
 				<!--SCALE x=0.5 y=0.5 z=0.5/>
 			</scene-->
-			<scene name="ball">
-				<geometry name="ball" type="BOX" material="crate"/>
+			<scene name="box">
+				<geometry name="box" type="BOX" material="crate"/>
 				<TRANSLATE x =0 y=1 z =0 />
 				<!--ROTATE x=0 y=0 z=1 w=-30/-->
 			</scene>
@@ -68,9 +68,10 @@
 		<pipeline name="fixedfunction" default="true">
 			<pass class="default" name="pass1">
 				<scenes>
-					<scene name="man" />
-					<scene name="ball" />
-					<scene name="plane" />
+					<!-- <scene name="man" /> -->
+					<!-- <scene name="ball" /> -->
+					<!-- <scene name="box" /> -->
+					<!-- <scene name="plane" /> -->
 					<scene name="Axis" />
 				</scenes>
 				<camera name="MainCamera" />
@@ -81,6 +82,7 @@
 					<map fromMaterial="crate" toLibrary="Simple" toMaterial="simpleTexturedCrate" />
 					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
 					<map fromMaterial="ballMat" toLibrary="Simple" toMaterial="simpleColored" />
+					<map fromMaterial="debugMat" toLibrary="Simple" toMaterial="simpleColoredDebug" />
 				</materialMaps>
 			</pass>
 		</pipeline>

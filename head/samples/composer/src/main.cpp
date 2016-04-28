@@ -974,10 +974,10 @@ FrmMainFrame::buildPhysics(void) {
 
 	//std::shared_ptr<IScene> is = RENDERMANAGER->createScene(newSceneName);
 
-	//const char *pMaterial = "crate";
+	//const char *pMaterial = "ballMat";
 	//const char *pNameSO = "myMesh";
 
-	//IRenderable::DrawPrimitive dp = IRenderer::PrimitiveTypes["TRIANGLES"];
+	//IRenderable::DrawPrimitive dp = IRenderer::PrimitiveTypes["LINES"];
 	//std::shared_ptr<SceneObject> &so = SceneObjectFactory::Create("SimpleObject");
 	//so->setName(pNameSO);
 	//std::shared_ptr<IRenderable> &i = RESOURCEMANAGER->createRenderable("Mesh", pNameSO);
@@ -992,7 +992,8 @@ FrmMainFrame::buildPhysics(void) {
 	//IBuffer * pointsBuffer = RESOURCEMANAGER->createBuffer("pointsBuffer");
 	////IBuffer * indicesBuffer = RESOURCEMANAGER->createBuffer("indicesBuffer");
 
-	//float arrayPoints[] = { 0.0f,0.0f,0.0f,1.0f, 0.0f,1.0f,0.0f,1.0f, -1.0f,0.0f,0.0f,1.0f }; 
+	////float arrayPoints[] = { 0.0f,0.0f,0.0f,1.0f, 0.0f,1.0f,0.0f,1.0f, -1.0f,0.0f,0.0f,1.0f };
+	//float arrayPoints[] = { 1.0f,0.0f,0.0f,1.0f, 0.0f,1.0f,0.0f,1.0f, -1.0f,0.0f,0.0f,1.0f, 0.0f,-1.0f,0.0f,1.0f};
 	//float* points = arrayPoints;
 
 	////unsigned int arrayIndices[] = { 1, 2, 3 };
@@ -1073,9 +1074,43 @@ FrmMainFrame::buildPhysics(void) {
 		EVENTMANAGER->addListener("DYNAMIC_CAMERA", cam);
 		//m_pRoot->getWorld()._add(60.1f, cam, cam->getName(), vec3(0.3f, 0.3f, 0.5f));//descartar
 
+
+	/****************************************Bullet DEBUG**************************************/
+		std::string newSceneName = "debugScene";
+
+		std::shared_ptr<IScene> is = RENDERMANAGER->createScene(newSceneName);
+
+		const char *pMaterial = "debugMat";
+		const char *pNameSO = "myMesh";
+
+		IRenderable::DrawPrimitive dp = IRenderer::PrimitiveTypes["LINES"];
+		std::shared_ptr<SceneObject> &so = SceneObjectFactory::Create("SimpleObject");
+		so->setName(pNameSO);
+		std::shared_ptr<IRenderable> &i = RESOURCEMANAGER->createRenderable("Mesh", pNameSO);
+		i->setDrawingPrimitive(dp);
+		std::shared_ptr<MaterialGroup> mg;
+		if (pMaterial)
+			mg = MaterialGroup::Create(i.get(), pMaterial);
+		else
+			mg = MaterialGroup::Create(i.get(), "dirLightDifAmbPix");
+
+		std::shared_ptr<VertexData> &v = i->getVertexData();
+		IBuffer * pointsBuffer = RESOURCEMANAGER->createBuffer("pointsBuffer");
+
+		v->setBuffer(VertexData::GetAttribIndex(std::string("position")), pointsBuffer->getPropi(IBuffer::ID));
+
+		v->resetCompilationFlag();
+		v->compile();
+		i->addMaterialGroup(mg);
+		so->setRenderable(i);
+		is->add(so);
+		RENDERMANAGER->getActivePipeline()->getCurrentPass()->addScene(newSceneName);
+
+		m_pRoot->getWorld().setDebug(is.get(), pointsBuffer);
+
+		/****************************************Bullet DEBUG**************************************/
+
 		shared_ptr<IScene> &planeScene = RENDERMANAGER->getScene("plane");
-		//vector<SceneObject*> ballObjects = ballScene->getAllObjects();
-		//SceneObject* plane = planeScene->getSceneObject(0).get();
 		m_pRoot->getWorld()._addRigid(
 			0.0f,
 			planeScene,
@@ -1083,13 +1118,13 @@ FrmMainFrame::buildPhysics(void) {
 			vec3(0.5f, 0.5f, 0.5f)
 			);
 
-		/*shared_ptr<IScene> &boxScene = RENDERMANAGER->getScene("box");
+		shared_ptr<IScene> &boxScene = RENDERMANAGER->getScene("box");
 		m_pRoot->getWorld()._addRigid(
-			0.0f,
+			10.0f,
 			boxScene,
 			boxScene->getName(),
-			vec3(0.5f, 0.5f, 0.5f)
-		);*/
+			vec3(1.0f, 1.0f, 1.0f)
+		);
 
 
 		/*shared_ptr<IScene> &boxScene1 = RENDERMANAGER->getScene("box1");
@@ -1152,13 +1187,13 @@ FrmMainFrame::buildPhysics(void) {
 		//	vec3(1.0f, 1.0f, 1.0f)
 		//	);
 
-		/*shared_ptr<IScene> &manScene = RENDERMANAGER->getScene("man");
+		shared_ptr<IScene> &manScene = RENDERMANAGER->getScene("man");
 		m_pRoot->getWorld()._addRigid(
 			10.0f,
 			manScene,
 			manScene->getName(),
 			vec3(1.0f, 1.0f, 1.0f)
-			);*/
+			);
 
 		/*shared_ptr<IScene> &clothScene = RENDERMANAGER->getScene("cloth");
 			m_pRoot->getWorld()._addCloth(
@@ -1168,13 +1203,13 @@ FrmMainFrame::buildPhysics(void) {
 			vec3(1.0f, 1.0f, 1.0f)
 			);*/
 		
-		shared_ptr<IScene> particleScene = RENDERMANAGER->getScene("particle");
+		/*shared_ptr<IScene> particleScene = RENDERMANAGER->getScene("particle");
 		m_pRoot->getWorld()._addParticles(
 			RENDERMANAGER->getCurrentPass(),
 			particleScene,
 			"particles",
 			RESOURCEMANAGER->getBuffer(std::string("Simple::positions"))
-			);
+			);*/
 
 	}
 }

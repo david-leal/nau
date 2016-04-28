@@ -5,6 +5,8 @@
 #include "nau/geometry/vertexData.h"
 #include "nau/material/materialGroup.h"
 #include "nau\world\bulletDebugger.h"
+#include <BulletCollision\CollisionDispatch\btGhostObject.h>
+#include <BulletDynamics\Character\btKinematicCharacterController.h>
 
 using namespace nau::world;
 using namespace nau::geometry;
@@ -25,8 +27,10 @@ BulletWorld::~BulletWorld(void) {
 void 
 BulletWorld::update (void) {
 	if (0 != m_pDynamicsWorld) {
+		((BulletDebugger*)m_pDynamicsWorld->getDebugDrawer())->clearPoints();
 		m_pDynamicsWorld->stepSimulation(1 / 60.0f);
 		m_pDynamicsWorld->debugDrawWorld();
+		((BulletDebugger*)m_pDynamicsWorld->getDebugDrawer())->compilePoints();
 	}
 }
 
@@ -36,7 +40,7 @@ BulletWorld::build (void)
 {
 	if (0 == m_pDynamicsWorld) {
 		btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
-		btCollisionDispatcher* dispatcher = new	btCollisionDispatcher (collisionConfiguration);
+		btCollisionDispatcher* dispatcher = new	btCollisionDispatcher(collisionConfiguration);
 
 		btBroadphaseInterface* broadphase = new btDbvtBroadphase();
 		btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver;
@@ -45,11 +49,6 @@ BulletWorld::build (void)
 
 		m_pDynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
 		m_pDynamicsWorld->setGravity(btVector3(0,-10,0));
-		
-		BulletDebugger *debugDrawer = new BulletDebugger();
-		//debugDrawer->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
-		debugDrawer->setDebugMode(btIDebugDraw::DBG_MAX_DEBUG_DRAW_MODE);
-		m_pDynamicsWorld->setDebugDrawer(debugDrawer);
 	}
 }
 
@@ -92,39 +91,68 @@ btCollisionShape* getMeshShape(std::shared_ptr<nau::scene::IScene> &aScene, bool
 	}
 }
 
-void 
+void
 BulletWorld::_addRigid(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
 	btRigidBody* body;
-	if (name.compare("plane") == 0) {
-		NauBulletMotionState *motionState = new NauBulletMotionState(aScene);
-		btVector3 localInertia(0, 0, 0);
-		//btCollisionShape *trimeshShape = getMeshShape(aScene);
-		//body = new btRigidBody(0, motionState, trimeshShape, localInertia);
-		body = new btRigidBody(0, motionState, new btStaticPlaneShape(btVector3(0, 1, 0), 0), localInertia);
-		//body = new btRigidBody(0, motionState, new btBoxShape(btVector3(1.0, 1.0, 1.0)), localInertia);
+	NauBulletMotionState *motionState = new NauBulletMotionState(aScene);
 
-		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
-		body->setRestitution(1.0f);
+	if (name.compare("man") == 0) {
+		btTransform startTransform;
+		startTransform.setFromOpenGLMatrix(aScene->getTransform().getMatrix());
+
+		btConvexShape* capsule = new btCapsuleShape(1, 1);
+
+		btPairCachingGhostObject* m_ghostObject = new btPairCachingGhostObject();
+		m_ghostObject->setWorldTransform(startTransform);
+		m_pDynamicsWorld->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+		m_ghostObject->setCollisionShape(capsule);
+		m_ghostObject->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
+
+		btKinematicCharacterController* charCon = new btKinematicCharacterController(m_ghostObject, capsule, 0.25f);
+
+		charCon->setGravity(-m_pDynamicsWorld->getGravity().getY());
+		charCon->setWalkDirection(btVector3(0.0f, 0.0f, -0.5f));
+
+		m_pDynamicsWorld->addCollisionObject(m_ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::AllFilter);
+		m_pDynamicsWorld->addAction(charCon);
 	}
 	else {
-		btCollisionShape *aShape = getMeshShape(aScene, false);
-		//aShape->setLocalScaling(btVector3(0.5f, 0.5f, 0.5f));
-		//btCollisionShape *aShape = new btBoxShape(k);
-		//btCollisionShape *aShape = new btSphereShape(aVec.z);
-		NauBulletMotionState *motionState = new NauBulletMotionState(aScene);
-
 		btVector3 localInertia(0, 0, 0);
-		aShape->calculateLocalInertia(mass, localInertia);
-		body = new btRigidBody(mass, motionState, aShape, localInertia);
-		body->setFriction(0.2f);
-		//m_RigidBodies[name]->setActivationState (DISABLE_DEACTIVATION);
-		//body->setAngularFactor(0.0f);
-		//body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-		body->setRestitution(0.3f);
-		//body->setDeactivationTime(0.5);
+		if (mass == 0.0f) {
+			if (name.compare("plane") == 0) {
+				btRigidBody::btRigidBodyConstructionInfo rbGroundInfo(0, motionState, new btStaticPlaneShape(btVector3(0, 1, 0), 0));
+				body = new btRigidBody(rbGroundInfo);
+			}
+			else {
+				body = new btRigidBody(0, motionState, getMeshShape(aScene), localInertia);
+			}
+			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
+			body->setRestitution(1.0f);
+		}
+		else {
+			btCollisionShape *aShape;
+			/*if (name.compare("box") == 0) {
+				aShape = new btBoxShape(btVector3(aVec.x, aVec.y, aVec.z));
+				//aShape = new btSphereShape(aVec.z);
+			}
+			else {*/
+			aShape = getMeshShape(aScene, false);
+			//}
+			//aShape->setLocalScaling(btVector3(0.5f, 0.5f, 0.5f));
+			aShape->calculateLocalInertia(mass, localInertia);
+			//btRigidBody::btRigidBodyConstructionInfo rbBodyInfo(mass, motionState, aShape);
+			//body = new btRigidBody(rbBodyInfo);
+			body = new btRigidBody(mass, motionState, aShape, localInertia);
+			body->setFriction(0.9f);
+			//m_RigidBodies[name]->setActivationState (DISABLE_DEACTIVATION);
+			//body->setAngularFactor(0.0f);
+			//body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+			body->setRestitution(0.3f);
+			//body->setDeactivationTime(0.5);
+		}
+		m_RigidBodies[name] = body;
+		m_pDynamicsWorld->addRigidBody(body);
 	}
-	m_RigidBodies[name] = body;
-	m_pDynamicsWorld->addRigidBody(body);
 }
 
 void
@@ -167,4 +195,13 @@ BulletWorld::disableObject (std::string name) {
 void 
 BulletWorld::enableObject (std::string name) {
 	m_pDynamicsWorld->addCollisionObject (m_RigidBodies[name]);
+}
+
+
+void
+BulletWorld::setDebug(nau::scene::IScene* debugScene, nau::material::IBuffer* debugPositions) {
+	BulletDebugger *debugDrawer = new BulletDebugger(debugScene, debugPositions);
+	debugDrawer->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+	//debugDrawer->setDebugMode(btIDebugDraw::DBG_MAX_DEBUG_DRAW_MODE);
+	m_pDynamicsWorld->setDebugDrawer(debugDrawer);
 }

@@ -11,6 +11,11 @@
 				<geometry name="plane" type="SQUARE" material="azulejo" />
 			</scene>
 			
+			<scene name="box">
+				<geometry name="box" type="BOX" material="azulejo" />
+				<TRANSLATE x=0 y=0 z=0 />
+			</scene>
+			
 			<!-- <scene name="box1">
 				<geometry name="box1" type="BOX" material="azulejo" />
 				<TRANSLATE x=-1.25 y=1 z=0 />
@@ -48,7 +53,7 @@
 			<camera name="MainCamera" >
 				<viewport name="MainViewport"/>
 				<projection TYPE="PERSPECTIVE" FOV=60.0 NEAR=1 FAR=1000.0 />
-				<POSITION x=0.0 y=4.0 z=10.0 />
+				<POSITION x=0.0 y=2.0 z=5.0 />
 				<LOOK_AT_POINT x=0 y=0 z=0 />
 				<UP x=0.0 y=1.0 z=0.0 />
 			</camera>
@@ -56,7 +61,7 @@
 		
 		<lights>
 			<light name="Sun">
-				<DIRECTION x=-2 y=-1 z=-2 />
+				<DIRECTION x=-2 y=-5 z=-2 />
 				<COLOR r="0.9" g="0.9" b="0.9" />
 				<AMBIENT r="0.2" g="0.2" b="0.2" />
 			</light>
@@ -76,6 +81,7 @@
 				<scenes>
 					<scene name="particle" />
 					<!-- <scene name="plane" /> -->
+					<!-- <scene name="box" /> -->
 				</scenes>
 				<camera name="MainCamera" />
 				<lights>

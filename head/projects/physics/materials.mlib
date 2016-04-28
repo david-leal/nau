@@ -84,6 +84,16 @@
 				<SHININESS value="0.0" />
 			</color>
 		</material>
+		
+		<material name="simpleColoredDebug">
+			<color>
+				<AMBIENT r="0.0" g="1.0" b="1.0" a="1.0" />
+				<DIFFUSE r="0.0" g="1.0" b="1.0" a="1.0" />
+				<SPECULAR r="1.0" g="1.0" b="1.0" a="1.0" />
+				<EMISSION r="0.0" g="0.0" b="0.0" a="1.0" />
+				<SHININESS value="0.0" />
+			</color>
+		</material>
 	</materials>
 	<states>
 		<state name="cullFaceDisabled">

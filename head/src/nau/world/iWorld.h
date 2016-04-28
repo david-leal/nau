@@ -31,6 +31,8 @@ namespace nau
 			virtual void enableObject (std::string name) = 0;
 
 			virtual void setVelocity (std::string name, nau::math::vec3 vel) = 0;
+
+			virtual void setDebug(nau::scene::IScene* debugScene = 0, nau::material::IBuffer* debugPositions = 0) = 0;
 		};
 	};
 };
