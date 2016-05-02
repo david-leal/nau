@@ -20,9 +20,10 @@ namespace nau
 			virtual void build (void) = 0;
 			virtual void setScene (nau::scene::IScene *aScene) = 0;
 
-			virtual void _addRigid(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) = 0;
+			virtual void _addRigid(float mass, float friction, float restitution, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) = 0;
 			virtual void _addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) = 0;
 			virtual void _addParticles(nau::render::Pass* pass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::material::IBuffer* positions) = 0;
+			virtual void _addCharacter(float mass, float radius, float height, float stepHeight, std::shared_ptr<nau::scene::IScene> &aScene, std::string name) = 0;
 			
 			virtual void setKinematic (std::string name) = 0;
 			virtual void setDynamic (std::string name) = 0;

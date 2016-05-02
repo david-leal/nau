@@ -13,10 +13,34 @@
 				<TRANSLATE x =0 y=1.2 z =0 />
 				<!--SCALE x=0.5 y=0.5 z=0.5/>
 			</scene-->
-			<scene name="box">
+			<!-- <scene name="box">
 				<geometry name="box" type="BOX" material="crate"/>
 				<TRANSLATE x =0 y=1 z =0 />
-				<!--ROTATE x=0 y=0 z=1 w=-30/-->
+				<!-- <ROTATE x=0 y=0 z=1 w=-30 /> --
+			</scene> -->
+			
+			<scene name="box1">
+				<geometry name="box1" type="BOX" material="crate"/>
+				<TRANSLATE x=0 y=1 z=-3 />
+				<!-- <ROTATE x=0 y=0 z=1 w=-30 /> -->
+			</scene>
+			
+			<scene name="box2">
+				<geometry name="box2" type="BOX" material="crate"/>
+				<TRANSLATE x=-1.5 y=1 z=-5 />
+				<!-- <ROTATE x=0 y=0 z=1 w=-30 /> -->
+			</scene>
+			
+			<scene name="box3">
+				<geometry name="box3" type="BOX" material="crate"/>
+				<TRANSLATE x=1.5 y=1 z=-5 />
+				<!-- <ROTATE x=0 y=0 z=1 w=-30 /> -->
+			</scene>
+			
+			<scene name="box4">
+				<geometry name="box4" type="BOX" material="crate"/>
+				<TRANSLATE x=3 y=1 z=0 />
+				<!-- <ROTATE x=0 y=0 z=1 w=-30 /> -->
 			</scene>
 			
 			<scene name="plane">
@@ -71,6 +95,10 @@
 					<!-- <scene name="man" /> -->
 					<!-- <scene name="ball" /> -->
 					<!-- <scene name="box" /> -->
+					<!-- <scene name="box1" /> -->
+					<!-- <scene name="box2" /> -->
+					<!-- <scene name="box3" /> -->
+					<!-- <scene name="box4" /> -->
 					<!-- <scene name="plane" /> -->
 					<scene name="Axis" />
 				</scenes>
