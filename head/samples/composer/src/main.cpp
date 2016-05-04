@@ -1113,56 +1113,70 @@ FrmMainFrame::buildPhysics(void) {
 		shared_ptr<IScene> &planeScene = RENDERMANAGER->getScene("plane");
 		m_pRoot->getWorld()._addRigid(
 			0.0f,
+			1.0f,
+			1.0f,
 			planeScene,
 			planeScene->getName(),
 			vec3(0.5f, 0.5f, 0.5f)
 			);
 
-		shared_ptr<IScene> &boxScene = RENDERMANAGER->getScene("box");
+		/*shared_ptr<IScene> &boxScene = RENDERMANAGER->getScene("box");
 		m_pRoot->getWorld()._addRigid(
 			10.0f,
+			0.5f,
+			0.5f,
 			boxScene,
 			boxScene->getName(),
 			vec3(1.0f, 1.0f, 1.0f)
-		);
+		);*/
 
 
-		/*shared_ptr<IScene> &boxScene1 = RENDERMANAGER->getScene("box1");
+		shared_ptr<IScene> &boxScene1 = RENDERMANAGER->getScene("box1");
 		m_pRoot->getWorld()._addRigid(
 			0.0f,
+			0.5f,
+			0.5f,
 			boxScene1,
 			boxScene1->getName(),
-			vec3(0.5f, 0.5f, 0.5f)
+			vec3(1.0f, 1.0f, 1.0f)
 			);
 
 		shared_ptr<IScene> &boxScene2 = RENDERMANAGER->getScene("box2");
 		m_pRoot->getWorld()._addRigid(
 			0.0f,
+			0.5f,
+			0.5f,
 			boxScene2,
 			boxScene2->getName(),
-			vec3(0.5f, 0.5f, 0.5f)
+			vec3(1.0f, 1.0f, 1.0f)
 		);
 
 		shared_ptr<IScene> &boxScene3 = RENDERMANAGER->getScene("box3");
 		m_pRoot->getWorld()._addRigid(
 			0.0f,
+			0.5f,
+			0.5f,
 			boxScene3,
 			boxScene3->getName(),
-			vec3(0.5f, 0.5f, 0.5f)
+			vec3(1.0f, 1.0f, 1.0f)
 		);
 
 		shared_ptr<IScene> &boxScene4 = RENDERMANAGER->getScene("box4");
 		m_pRoot->getWorld()._addRigid(
 			0.0f,
+			0.5f,
+			0.5f,
 			boxScene4,
 			boxScene4->getName(),
-			vec3(0.5f, 0.5f, 0.5f)
-		);*/
+			vec3(1.0f, 1.0f, 1.0f)
+		);
 
 
 		//shared_ptr<IScene> &stairsScene = RENDERMANAGER->getScene("stairs");
 		//m_pRoot->getWorld()._addRigid(
 		//	0.0f,
+		//  1.0f,
+		//	1.0f,
 		//	stairsScene,
 		//	stairsScene->getName(),
 		//	vec3(0.5f, 0.5f, 0.5f)
@@ -1171,6 +1185,8 @@ FrmMainFrame::buildPhysics(void) {
 		/*shared_ptr<IScene> &stairsScene = RENDERMANAGER->getScene("skateRamp");
 		m_pRoot->getWorld()._addRigid(
 			0.0f,
+			1.0f,
+			1.0f,
 			stairsScene,
 			stairsScene->getName(),
 			vec3(0.5f, 0.5f, 0.5f)
@@ -1181,6 +1197,8 @@ FrmMainFrame::buildPhysics(void) {
 		////shared_ptr<SceneObject> ball = ballScene->getSceneObject(0);
 		//m_pRoot->getWorld()._addRigid(
 		//	10.0f,
+		//	0.5f,
+		//	0.5f,
 		//	ballScene,
 		//	ballScene->getName(),
 		//	//vec3(0.5f, 0.5f, 0.5f)
@@ -1188,11 +1206,13 @@ FrmMainFrame::buildPhysics(void) {
 		//	);
 
 		shared_ptr<IScene> &manScene = RENDERMANAGER->getScene("man");
-		m_pRoot->getWorld()._addRigid(
+		m_pRoot->getWorld()._addCharacter(
 			10.0f,
+			1.0f,
+			1.0f,
+			0.2f,
 			manScene,
-			manScene->getName(),
-			vec3(1.0f, 1.0f, 1.0f)
+			manScene->getName()
 			);
 
 		/*shared_ptr<IScene> &clothScene = RENDERMANAGER->getScene("cloth");
