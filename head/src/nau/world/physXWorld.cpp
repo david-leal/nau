@@ -122,7 +122,7 @@ PhsXWorld::update(void) {
 		}
 	
 		if (controller) {
-			controller->move(PxVec3(0.0f, -9.81f, -0.3f), 0.2f, 1 / 60.0f, NULL);
+			controller->move(PxVec3(0.3f, -9.81f, 0.0f), 0.2f, 1 / 60.0f, NULL);
 			nau::scene::IScene *m_ISceneCharacter = static_cast<nau::scene::IScene*>(controller->getUserData());
 			mat4 mat = getMatFromPhysXTransform(controller->getActor()->getGlobalPose());
 
@@ -316,7 +316,7 @@ getTriangleMeshGeo(PxScene *m_pDynamicsWorld, std::shared_ptr<nau::scene::IScene
 
 
 void
-PhsXWorld::_addRigid(float mass, float friction, float restitution, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
+PhsXWorld::_addRigid(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
 
 	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());
 	
@@ -325,7 +325,7 @@ PhsXWorld::_addRigid(float mass, float friction, float restitution, std::shared_
 		if (name.compare("plane") == 0) {
 			staticActor = PxCreatePlane(*gPhysics,
 				PxPlane(0.0f, 1.0f, 0.0f, 0.0f),
-				*(gPhysics->createMaterial(friction, friction, restitution))
+				*(gPhysics->createMaterial(1.0f, 1.0f, 0.6f))
 				);
 
 		}
@@ -341,64 +341,63 @@ PhsXWorld::_addRigid(float mass, float friction, float restitution, std::shared_
 				staticActor = gPhysics->createRigidStatic(PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))));
 				PxTriangleMeshGeometry triGeom;
 				triGeom.triangleMesh = gPhysics->createTriangleMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene));
-				staticActor->createShape(triGeom, *(gPhysics->createMaterial(friction, friction, restitution)));
+				staticActor->createShape(triGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));
 			//}
 		}
 		staticActor->userData = aScene.get();
 		m_pDynamicsWorld->addActor(*staticActor);
 	} 
 	else {
-		PxRigidDynamic* dynamic;
-		//if (name.compare("ball") == 0) {
-		//	dynamic = PxCreateDynamic(*gPhysics,
-		//		PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))),
-		//		PxSphereGeometry(1),
-		//		*(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)),
-		//		10.0f
-		//	);
-		//	//dynamic->setLinearVelocity(PxVec3(0, -50, -100));
-		//}
-		//else {
-			PxTransform trans = PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())));
-			dynamic = gPhysics->createRigidDynamic(trans);
-			PxConvexMesh * convexMesh = gPhysics->createConvexMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene, false));
-			PxConvexMeshGeometry convGeom(convexMesh);
-			//PxConvexMeshGeometry convGeom(convexMesh, PxMeshScale(0.5f));
-			//convGeom.convexMesh = gPhysics->createConvexMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene, false));
+		if (name.compare("man") == 0) {
+			PxCapsuleControllerDesc desc;
+			desc.height = 1.3f;
+			desc.radius = 0.35f;
+			PxVec3 pos = PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())).getPosition();
+			desc.position = PxExtendedVec3(pos.x, pos.y, pos.z);
+			desc.material = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+			desc.userData = aScene.get();
+			desc.reportCallback = this;
+			desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
+			desc.stepOffset = 0.25f;
+			desc.upDirection = PxVec3(0, 1, 0);
+			//desc.slopeLimit = cosf(DegToRad(80.0f));
+			controller = manager->createController(desc);
+		} 
+		else {
+			PxRigidDynamic* dynamic;
+			//if (name.compare("ball") == 0) {
+			//	dynamic = PxCreateDynamic(*gPhysics,
+			//		PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix()))),
+			//		PxSphereGeometry(1),
+			//		*(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)),
+			//		10.0f
+			//	);
+			//	//dynamic->setLinearVelocity(PxVec3(0, -50, -100));
+			//}
+			//else {
+				PxTransform trans = PxTransform(PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())));
+				dynamic = gPhysics->createRigidDynamic(trans);
+				PxConvexMesh * convexMesh = gPhysics->createConvexMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene, false));
+				PxConvexMeshGeometry convGeom(convexMesh);
+				//PxConvexMeshGeometry convGeom(convexMesh, PxMeshScale(0.5f));
+				//convGeom.convexMesh = gPhysics->createConvexMesh(getTriangleMeshGeo(m_pDynamicsWorld, aScene, false));
 
-			//PxShape *shape = dynamic->createShape(convGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)), PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE);
-			PxShape *shape = dynamic->createShape(convGeom, *(gPhysics->createMaterial(friction, friction, restitution)));
-			//shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, true);
-			//dynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, false);
-		//}
-		dynamic->userData = aScene.get();
-		//dynamic->setAngularDamping(0.5f);
-		//dynamic->setLinearVelocity(velocity);
+				//PxShape *shape = dynamic->createShape(convGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)), PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE);
+				PxShape *shape = dynamic->createShape(convGeom, *(gPhysics->createMaterial(0.5f, 0.5f, 0.6f)));
+				//shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, true);
+				//dynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, false);
+			//}
+			dynamic->userData = aScene.get();
+			//dynamic->setAngularDamping(0.5f);
+			//dynamic->setLinearVelocity(velocity);
 
-		m_pDynamicsWorld->addActor(*dynamic);
+			m_pDynamicsWorld->addActor(*dynamic);
+		}
 	}
-}
 
-void
-PhsXWorld::_addCharacter(float mass, float radius, float height, float stepHeight, std::shared_ptr<nau::scene::IScene> &aScene, std::string name) {
-	PxPhysics *gPhysics = &(m_pDynamicsWorld->getPhysics());
-	PxCapsuleControllerDesc desc;
-	//desc.height = 1.3f;
-	//desc.radius = 0.35f;
-	desc.height = height;
-	desc.radius = radius;
-	PxVec3 pos = PxMat44(const_cast<float*> (aScene->getTransform().getMatrix())).getPosition();
-	desc.position = PxExtendedVec3(pos.x, pos.y, pos.z);
-	desc.material = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-	desc.userData = aScene.get();
-	desc.reportCallback = this;
-	desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
-	desc.stepOffset = stepHeight;
-	desc.upDirection = PxVec3(0, 1, 0);
-	//desc.slopeLimit = cosf(DegToRad(80.0f));
-	controller = manager->createController(desc);
+	//m_RigidBodies[name] = body;
+	//m_pDynamicsWorld->addActor(*body);
 }
-
 
 void
 PhsXWorld::_addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {

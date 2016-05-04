@@ -92,66 +92,67 @@ btCollisionShape* getMeshShape(std::shared_ptr<nau::scene::IScene> &aScene, bool
 }
 
 void
-BulletWorld::_addRigid(float mass, float friction, float restitution, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
+BulletWorld::_addRigid(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
 	btRigidBody* body;
 	NauBulletMotionState *motionState = new NauBulletMotionState(aScene);
 
-	btVector3 localInertia(0, 0, 0);
-	if (mass == 0.0f) {
-		if (name.compare("plane") == 0) {
-			btRigidBody::btRigidBodyConstructionInfo rbGroundInfo(0, motionState, new btStaticPlaneShape(btVector3(0, 1, 0), 0));
-			body = new btRigidBody(rbGroundInfo);
-		}
-		else {
-			body = new btRigidBody(0, motionState, getMeshShape(aScene), localInertia);
-		}
-		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
+	if (name.compare("man") == 0) {
+		btTransform startTransform;
+		startTransform.setFromOpenGLMatrix(aScene->getTransform().getMatrix());
+
+		btConvexShape* capsule = new btCapsuleShape(1, 1);
+
+		btPairCachingGhostObject* m_ghostObject = new btPairCachingGhostObject();
+		m_ghostObject->setWorldTransform(startTransform);
+		m_pDynamicsWorld->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+		m_ghostObject->setCollisionShape(capsule);
+		m_ghostObject->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
+
+		btKinematicCharacterController* charCon = new btKinematicCharacterController(m_ghostObject, capsule, 0.25f);
+
+		charCon->setGravity(-m_pDynamicsWorld->getGravity().getY());
+		charCon->setWalkDirection(btVector3(0.0f, 0.0f, -0.5f));
+
+		m_pDynamicsWorld->addCollisionObject(m_ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::AllFilter);
+		m_pDynamicsWorld->addAction(charCon);
 	}
 	else {
-		btCollisionShape *aShape;
-		/*if (name.compare("box") == 0) {
-			aShape = new btBoxShape(btVector3(aVec.x, aVec.y, aVec.z));
-			//aShape = new btSphereShape(aVec.z);
+		btVector3 localInertia(0, 0, 0);
+		if (mass == 0.0f) {
+			if (name.compare("plane") == 0) {
+				btRigidBody::btRigidBodyConstructionInfo rbGroundInfo(0, motionState, new btStaticPlaneShape(btVector3(0, 1, 0), 0));
+				body = new btRigidBody(rbGroundInfo);
+			}
+			else {
+				body = new btRigidBody(0, motionState, getMeshShape(aScene), localInertia);
+			}
+			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
+			body->setRestitution(1.0f);
 		}
-		else {*/
-		aShape = getMeshShape(aScene, false);
-		//}
-		//aShape->setLocalScaling(btVector3(0.5f, 0.5f, 0.5f));
-		aShape->calculateLocalInertia(mass, localInertia);
-		//btRigidBody::btRigidBodyConstructionInfo rbBodyInfo(mass, motionState, aShape);
-		//body = new btRigidBody(rbBodyInfo);
-		body = new btRigidBody(mass, motionState, aShape, localInertia);
-		//m_RigidBodies[name]->setActivationState (DISABLE_DEACTIVATION);
-		//body->setAngularFactor(0.0f);
-		//body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-		//body->setDeactivationTime(0.5);
+		else {
+			btCollisionShape *aShape;
+			/*if (name.compare("box") == 0) {
+				aShape = new btBoxShape(btVector3(aVec.x, aVec.y, aVec.z));
+				//aShape = new btSphereShape(aVec.z);
+			}
+			else {*/
+			aShape = getMeshShape(aScene, false);
+			//}
+			//aShape->setLocalScaling(btVector3(0.5f, 0.5f, 0.5f));
+			aShape->calculateLocalInertia(mass, localInertia);
+			//btRigidBody::btRigidBodyConstructionInfo rbBodyInfo(mass, motionState, aShape);
+			//body = new btRigidBody(rbBodyInfo);
+			body = new btRigidBody(mass, motionState, aShape, localInertia);
+			body->setFriction(0.9f);
+			//m_RigidBodies[name]->setActivationState (DISABLE_DEACTIVATION);
+			//body->setAngularFactor(0.0f);
+			//body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+			body->setRestitution(0.3f);
+			//body->setDeactivationTime(0.5);
+		}
+		m_RigidBodies[name] = body;
+		m_pDynamicsWorld->addRigidBody(body);
 	}
-	body->setRestitution(restitution);
-	body->setFriction(friction);
-	m_RigidBodies[name] = body;
-	m_pDynamicsWorld->addRigidBody(body);
-}
-
-void
-BulletWorld::_addCharacter(float mass, float radius, float height, float stedHeight, std::shared_ptr<nau::scene::IScene> &aScene, std::string name) {
-	btTransform startTransform;
-	startTransform.setFromOpenGLMatrix(aScene->getTransform().getMatrix());
-
-	btConvexShape* capsule = new btCapsuleShape(radius, height);
-
-	btPairCachingGhostObject* m_ghostObject = new btPairCachingGhostObject();
-	m_ghostObject->setWorldTransform(startTransform);
-	m_pDynamicsWorld->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
-	m_ghostObject->setCollisionShape(capsule);
-	m_ghostObject->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
-
-	btKinematicCharacterController* charCon = new btKinematicCharacterController(m_ghostObject, capsule, stedHeight);
-
-	charCon->setGravity(-m_pDynamicsWorld->getGravity().getY());
-	charCon->setWalkDirection(btVector3(0.0f, 0.0f, -0.5f));
-
-	m_pDynamicsWorld->addCollisionObject(m_ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::AllFilter);
-	m_pDynamicsWorld->addAction(charCon);
 }
 
 void
