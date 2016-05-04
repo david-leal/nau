@@ -28,12 +28,15 @@ rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
 rtDeclareVariable(uint2, launch_dim,   rtLaunchDim, );
 rtDeclareVariable(PerRayDataResult, prdr, rtPayload, );
 
+rtDeclareVariable(int, Shadow, , );
 
 RT_PROGRAM void buffer_camera(void)
 {
 	float4 i = tex2D( pos_buffer, launch_index.x, launch_index.y );
 	PerRayDataResult prdr;	
+	
 	prdr.result = make_float4(1.0f);
+	// w is greater than zero when pixel is facing the light
 	if (i.w > 0.0f) {	
 		float3 ray_origin = make_float3(i);
 		float3 lDir = make_float3(-lightDir);
@@ -43,7 +46,6 @@ RT_PROGRAM void buffer_camera(void)
 	else
 		prdr.result = make_float4(1.0f);
 
-	//prdr.result.x = ray_origin.x/256.0; prdr.result.y = ray_origin.y/256.0; prdr.result.z = ray_origin.z/256.0; prdr.result.w = 1.0;
 	output0[launch_index] = prdr.result;
 
 }
@@ -70,8 +72,6 @@ RT_PROGRAM void geometryintersection(int primIdx)
 	float4 vecauxa = vertex_buffer[index_buffer[primIdx*3]];
 	float4 vecauxb = vertex_buffer[index_buffer[primIdx*3+1]];
 	float4 vecauxc = vertex_buffer[index_buffer[primIdx*3+2]];
-//	float3 e1, e2, h, s, q;
-//	float a,f,u,v,t;
 
 	float3 v0 = make_float3(vecauxa);
 	float3 v1 = make_float3(vecauxb);
@@ -83,18 +83,6 @@ RT_PROGRAM void geometryintersection(int primIdx)
   if( intersect_triangle( ray, v0, v1, v2, n, t, beta, gamma ) ) {
 
     if(  rtPotentialIntersection( t ) ) {
-
- /*     float3 n0 = make_float3(normal[ index_buffer[primIdx*3]]);
-      float3 n1 = make_float3(normal[ index_buffer[primIdx*3+1]]);
-      float3 n2 = make_float3(normal[ index_buffer[primIdx*3+2]]);
-
-	  float3 t0 = make_float3(texCoord0[ index_buffer[primIdx*3]]);
-	  float3 t1 = make_float3(texCoord0[ index_buffer[primIdx*3+1]]);
-	  float3 t2 = make_float3(texCoord0[ index_buffer[primIdx*3+2]]);
-
-      shading_normal   = normalize( n0*(1.0f-beta-gamma) + n1*beta + n2*gamma );
-	  texCoord =  t0*(1.0f-beta-gamma) + t1*beta + t2*gamma ;
-      geometric_normal = normalize( n );*/
 
 	  rtReportIntersection(0);
     }

@@ -105,16 +105,20 @@ Viewport::setPropf(FloatProperty prop, float value) {
 float
 Viewport::getPropf(FloatProperty prop) {
 
-	switch(prop) {
-	
-		case RATIO:
-			if (m_Float2Props[ABSOLUT_SIZE].y != 0)
-				return (m_Float2Props[ABSOLUT_SIZE].x / m_Float2Props[ABSOLUT_SIZE].y);
-			else
-				return 0;
-		default:
+	switch (prop) {
+
+	case RATIO:
+		if (m_Float2Props[ABSOLUT_SIZE].y != 0)
+			m_FloatProps[RATIO] = m_Float2Props[ABSOLUT_SIZE].x / m_Float2Props[ABSOLUT_SIZE].y;
+			//return m_Float2Props[ABSOLUT_SIZE].x / m_Float2Props[ABSOLUT_SIZE].y;
+		else
+			m_FloatProps[RATIO] = 0;
+			//return 0;
+		return m_FloatProps[RATIO];
+	default:
 			return AttributeValues::getPropf(prop);
 	}
+ 
 }
 
 
@@ -129,7 +133,7 @@ Viewport::setPropf2(Float2Property prop, vec2& values) {
 		case ABSOLUT_SIZE:
 			m_Float2Props[SIZE] = values;
 			if (m_FloatProps[RATIO] > 0.0f)
-				m_Float2Props[SIZE].y = m_Float2Props[SIZE].x * m_FloatProps[RATIO];
+				m_Float2Props[SIZE].y = m_Float2Props[SIZE].x / m_FloatProps[RATIO];
 
 			m_BoolProps[FULL] = false;
 
@@ -148,7 +152,7 @@ Viewport::setPropf2(Float2Property prop, vec2& values) {
 			}
 
 			if (m_FloatProps[RATIO] > 0) {
-				m_Float2Props[ABSOLUT_SIZE].y = m_Float2Props[ABSOLUT_SIZE].x * m_FloatProps[RATIO];
+				m_Float2Props[ABSOLUT_SIZE].y = m_Float2Props[ABSOLUT_SIZE].x / m_FloatProps[RATIO];
 			}
 			break;
 		case ORIGIN:

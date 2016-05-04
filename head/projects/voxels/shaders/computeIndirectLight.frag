@@ -10,6 +10,7 @@ uniform sampler2D texColor;
 uniform sampler3D grid, gridN;
 uniform int GridSize;
 uniform vec3 camPos;
+uniform int mode=0;
 
 vec4 voxelConeTrace1(vec3 origin, vec3 dir, float coneRatio, float maxDist) {
 
@@ -91,7 +92,7 @@ vec4 voxelConeTrace(vec3 origin, vec3 dir, float coneRatio, float maxDist) {
 //sampleValue.a ;
 //		accum.rgb += sampleValue.rgb ;//* sampleValue.a;
 		//sampleValue.a = 1.0 - pow(1.0 - sampleValue.a, minDiameter/sampleDiameter);
-		ao += 1.0 - pow(1.0 - sampleValue.a, minDiameter/sampleDiameter);
+		
 		//ao += sampleValue.a;
 		sampleValue.a /= minDiameter/sampleDiameter;
 		
@@ -219,31 +220,42 @@ void main()
 	//if (shininess > 80.0) 
 	//{
 		 vec3 camDir = normalize(coord*2-1 - camPos);//normalize(vec3(-2,2,2));
-		 re += voxelConeTrace(coord, reflect(camDir, normal), 0.001, 1.0);
+		 //re += voxelConeTrace(coord, reflect(camDir, normal), 0.001, 1.0);
 		//il += voxelConeTrace2(coord, normalize(camDir), 0.25, 1.0);
 	//}
-	// shadow = voxelConeTrace2(coord, normalize(vec3(0,2, -0.5)), 0.001, 1.0);
+	//if (dot(normal, vec3(4.2,10,2)) > 0 && color.a != 0)
+	if (dot(normal, vec3(4.2,10,2)) > 0 )
+		shadow = voxelConeTrace(coord, normalize(vec3(4.2,10,2)), 0.0001, 1.0);
+	else shadow = vec4(0);
 	// shadow.a = max(0.20, shadow.a);
 	if (color.a != 0.0)
 		outColor = color*1.5;
 		//outColor = 0.5* color * color.a + color * il * 0.5 * (1- il.a*.15);
 	else
 		outColor = (0.05 * color + color *  il * 0.2) * (1- il.a*0.25);
+		
+	// if (color.a != 0.0)
+		// outColor = color*1.5;
+	// else
+		// outColor = vec4(0.0);
+		
 	//outColor *= 1.5;	
 	// outColor = vec4(1-il.a*0.25);	
 	// outColor = vec4(1-il.a*0.25);
 	//outColor = color;//* color.a;	
-	//  outColor =  il*0.25;// color *  vec4(1- il.a*0.10);
+	//  outColor =  il*0.2;// color *  vec4(1- il.a*0.10);
 	//outColor = vec4((color * il * 0.33 )*(1- il.a*0.33)) ;
 	//outColor = vec4((color * il*0.33)*(1- il.a*0.10)) ;
 	//outColor = vec4(1- il.a*0.25);
 	 // outColor = re;
+	// outColor = re;
 	 // outColor = vec4(1- shadow.a);
 	//outColor = il*0.5;//vec4(1-il.a*0.15);//vec4(normal*0.5 + 0.5,0);
-	float level = 1;
+	float level = 0;
 	texel = texelFetch(grid, coordi/int(pow(2,level)), int(level));
 	//float a = 1.0 - pow(1.0 - texel.a,255);
 	//outColor = texel;
 	//  outColor = vec4(texel.a);
 	//outColor =  color;//vec4(normal,1);
+	//outColor = vec4(1-shadow.a);
 }

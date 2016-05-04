@@ -134,6 +134,7 @@ Nau::~Nau() {
 #endif
 
 	gInstance = NULL;
+	delete INTERFACE;
 }
 
 
@@ -146,7 +147,7 @@ Nau::init (bool context, std::string aConfigFile) {
 	m_AppFolder = File::GetAppFolder();
 	//bool result;
 	if (true == context) {
-
+		m_pPhysicsManager = nau::physics::PhysicsManager::GetInstance();
 		m_pEventManager = new EventManager;
 		m_pRenderManager = new RenderManager;
 		m_pAPISupport = IAPISupport::GetInstance();
@@ -306,7 +307,6 @@ luaGetBuffer(lua_State *l) {
 	}
 
 	luaGetValues(l, arr, card, bdt);
-
 	return 0;
 }
 
@@ -382,16 +382,17 @@ luaGet(lua_State *l) {
 	void *arr;
 	AttribSet *attr;
 
-	//if (!strcmp(tipo, "CURRENT")) {
-	//	attr = NAU->getAttribs(context);
-	//	if (attr == NULL)
-	//		NAU_THROW("Lua set: Invalid context: %s", context);
-	//}
-	//else {
+	if (!strcmp(context, "CURRENT")) {
+		
+		attr = NAU->getCurrentObjectAttributes(tipo)->getAttribSet();
+		if (attr == NULL)
+			NAU_THROW("Lua set: Invalid context: %s", context);
+	}
+	else {
 		attr = NAU->getAttribs(tipo);
 		if (attr == NULL)
 			NAU_THROW("Lua get: invalid type: %s", tipo);
-	//}
+	}
 
 	std::string s = component;
 	Enums::DataType dt, bdt;
@@ -426,16 +427,18 @@ luaSet(lua_State *l) {
 	Data *arr = NULL;
 	AttribSet *attr;
 
-	//if (!strcmp(tipo, "CURRENT")) {
-	//	attr = NAU->getAttribs(context);
-	//	if (attr == NULL)
-	//		NAU_THROW("Lua set: Invalid context: %s", context);
-	//}
-	//else {
+	if (!strcmp(context, "CURRENT")) {
+
+		AttributeValues *av = NAU->getCurrentObjectAttributes(tipo);
+		attr = av->getAttribSet();
+		if (attr == NULL)
+			NAU_THROW("Lua set: Invalid type: %s", tipo);
+	}
+	else {
 		attr = NAU->getAttribs(tipo);
 		if (attr == NULL)
 			NAU_THROW("Lua set: invalid type: %s", tipo);
-	//}
+	}
 	std::string s = component;
 	Enums::DataType dt, bdt;
 	int id;
@@ -472,6 +475,7 @@ luaSet(lua_State *l) {
 		default:
 			NAU_THROW("Lua set: Type %s not supported", Enums::DataTypeToString[dt].c_str());
 		}
+		free (arrF);
 		break;
 	case Enums::INT:
 	case Enums::BOOL:
@@ -497,6 +501,7 @@ luaSet(lua_State *l) {
 		default:
 			NAU_THROW("Lua set: Type %s not supported", Enums::DataTypeToString[dt].c_str());
 		}
+		free(arrI);
 		break;
 	case Enums::UINT :
 		arrUI = (unsigned int *)malloc(sizeof(unsigned int) * card);
@@ -517,6 +522,7 @@ luaSet(lua_State *l) {
 		default:
 			NAU_THROW("Lua set: Type %s not supported", Enums::DataTypeToString[dt].c_str());
 		}
+		free(arrUI);
 		break;
 	default:
 		NAU_THROW("Lua set: Type %s not supported", Enums::DataTypeToString[bdt].c_str());
@@ -745,10 +751,10 @@ Nau::getObjectAttributes(const std::string &type, const std::string &context, in
 		if (m_pRenderManager->hasScene(scene)) {
 			SceneObject *s = m_pRenderManager->getScene(scene)->getSceneObject(object).get();
 			if (s) {
-				SceneObject *so = (SceneObject *)m_pRenderManager->getScene(scene)->getSceneObject(object)->getRenderable().get();
-				std::string s = typeid(*so).name();
+				IRenderable *r = s->getRenderable().get();
+				std::string s = typeid(*r).name();
 				if (s == "class nau::geometry::Sphere") {
-					Sphere *sp = (Sphere *)so;
+					Sphere *sp = (Sphere *)r;
 					return (AttributeValues *)sp;
 
 				}
@@ -1201,6 +1207,11 @@ Nau::readProjectFile (std::string file, int *width, int *height) {
 	}
 
 	setActiveCameraName(RENDERMANAGER->getDefaultCameraName());
+
+	// Physics Dummy test Init
+
+	//m_pPhysicsManager->addScene(nau::physics::IPhysics::CLOTH, RENDERMANAGER->getScene("CubeLand").get());
+
 	//std::string wn = "test";
 	//std::string wl = "My AT Bar";
 	//INTERFACE->createWindow(wn, wl);
@@ -1379,6 +1390,8 @@ Nau::step() {
 	else
 		RENDERER->setPropui(IRenderer::FRAME_COUNT, ++k);
 
+	if (m_Physics)
+		m_pPhysicsManager->update();
 	//if (getProfileResetRequest())
 	//	Profile::Reset();
 	INTERFACE->render();
@@ -1560,7 +1573,7 @@ Nau::loadAsset (std::string aFilename, std::string sceneName, std::string params
 				//THREEDSLoader::loadScene (RENDERMANAGER->getScene (sceneName), file.getFullPath(),params);				
 				break;
 			case File::WAVEFRONTOBJ:
-				//AssimpLoader::loadScene(RENDERMANAGER->getScene (sceneName), file.getFullPath(),params);
+				//AssimpLoader::loadScene(RENDERMANAGER->getScene (sceneName).get(), file.getFullPath(),params);
 				OBJLoader::loadScene(RENDERMANAGER->getScene (sceneName).get(), file.getFullPath(), params);
 				break;
 			case File::OGREXMLMESH:
@@ -1581,6 +1594,9 @@ Nau::writeAssets (std::string fileType, std::string aFilename, std::string scene
 
 	if (0 == fileType.compare ("NBO")) {
 		CBOLoader::writeScene (RENDERMANAGER->getScene (sceneName).get(), aFilename);
+	}
+	else if (0 == fileType.compare("OBJ")) {
+		OBJLoader::writeScene(RENDERMANAGER->getScene(sceneName).get(), aFilename);
 	}
 }
 
