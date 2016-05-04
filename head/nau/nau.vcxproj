@@ -180,11 +180,11 @@
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IncludePath)</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(TOOLKITS)/includes;$(TOOLKITSPHYSX)/includes;$(TOOLKITSBULLET)/includes;$(IncludePath)</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release Optix|Win32'">D:\OptixSDK.3.7\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.0\include\;$(IncludePath)</IncludePath>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release Optix|x64'">$(IncludePath)</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release Optix|x64'">D:\toolkits\includes64;D:\Optix SDK 3.8.0\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.0\include\;$(IncludePath)</IncludePath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(LibraryPath)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(TOOLKITS)/libs64;$(TOOLKITSPHYSX)/libs64;$(TOOLKITSBULLET)/libs64;$(LibraryPath)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release Optix|Win32'">$(LibraryPath)</LibraryPath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release Optix|x64'">$(LibraryPath)</LibraryPath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release Optix|x64'">D:\toolkits\libs64;$(LibraryPath)</LibraryPath>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nau</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nau64</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release Optix|Win32'">nauOptix</TargetName>
@@ -193,8 +193,8 @@
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(TOOLKITS)/includes;$(TOOLKITSPHYSX)/includes;$(TOOLKITSBULLET)/includes;$(IncludePath)</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug Optix|Win32'">D:\OptixSDK.3.7\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.0\include\;$(IncludePath)</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug Optix Dynamic|Win32'">D:\OptixSDK.3.7\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.0\include\;$(IncludePath)</IncludePath>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug Optix|x64'">$(IncludePath)</IncludePath>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug Optix Dynamic|x64'">$(IncludePath)</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug Optix|x64'">D:\Optix SDK 3.8.0\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.0\include\;d:\toolkits\includes64;$(IncludePath)</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug Optix Dynamic|x64'">D:\Optix SDK 3.8.0\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.0\include\;d:\toolkits\includes64;$(IncludePath)</IncludePath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(LibraryPath)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(TOOLKITS)/libs64;$(TOOLKITSPHYSX)/libs64;$(TOOLKITSBULLET)/libs64;$(LibraryPath)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug Optix|Win32'">$(LibraryPath)</LibraryPath>
@@ -482,7 +482,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src\nau\loader\assimpLoader.cpp" />
-    <ClCompile Include="..\src\nau\loader\bufferLoader.cpp" />
     <ClCompile Include="..\src\nau\loader\cboLoader.cpp" />
     <ClCompile Include="..\src\nau\loader\devilTextureLoader.cpp" />
     <ClCompile Include="..\src\nau\loader\fontXmlLoader.cpp" />
@@ -528,9 +527,6 @@
     <ClCompile Include="..\src\nau\geometry\square.cpp" />
     <ClCompile Include="..\src\nau\loader\patchLoader.cpp" />
     <ClCompile Include="..\src\nau\material\iTextureSampler.cpp" />
-    <ClCompile Include="..\src\nau\physics\physicsDummy.cpp" />
-    <ClCompile Include="..\src\nau\physics\physicsManager.cpp" />
-    <ClCompile Include="..\src\nau\physics\physicsMaterial.cpp" />
     <ClCompile Include="..\src\nau\render\iAPISupport.cpp" />
     <ClCompile Include="..\src\nau\render\iGlobalState.cpp" />
     <ClCompile Include="..\src\nau\render\iRenderable.cpp" />
@@ -724,7 +720,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\src\nau\loader\assimpLoader.h" />
-    <ClInclude Include="..\src\nau\loader\bufferLoader.h" />
     <ClInclude Include="..\src\nau\loader\cboLoader.h" />
     <ClInclude Include="..\src\nau\loader\devilTextureLoader.h" />
     <ClInclude Include="..\src\nau\loader\fontXmlLoader.h" />
@@ -766,10 +761,6 @@
     <ClInclude Include="..\src\nau\math\vec2.h" />
     <ClInclude Include="..\src\nau\math\vec3.h" />
     <ClInclude Include="..\src\nau\math\vec4.h" />
-    <ClInclude Include="..\src\nau\physics\iPhysics.h" />
-    <ClInclude Include="..\src\nau\physics\physicsDummy.h" />
-    <ClInclude Include="..\src\nau\physics\physicsManager.h" />
-    <ClInclude Include="..\src\nau\physics\physicsMaterial.h" />
     <ClInclude Include="..\src\nau\render\iAPISupport.h" />
     <ClInclude Include="..\src\nau\render\iGlobalState.h" />
     <ClInclude Include="..\src\nau\render\iRenderable.h" />
