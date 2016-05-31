@@ -1,19 +1,19 @@
 <?xml version="1.0" ?>
-<project name="Simple" width="800" height="600">
+<project name="Simple" width="1024" height="768">
 	<assets> 
 		<scenes>			
 			<!-- <scene name="box">
 				<geometry name="box" type="SPHERE" material="ballMat" SLICES=20 STACKS=20/>
 				<TRANSLATE x=0 y=2 z=0 />
 			</scene> -->
-			<scene name="box">
-				<geometry name="box" type="BOX" material="crate"/>
+			<scene name="box" physicsMaterial="box">
+				<geometry name="box" type="BOX" material="crate" />
 				<TRANSLATE x=0 y=5 z=0 />
-				<!--ROTATE x=0 y=0 z=1 w=-30/-->
+				<ROTATE x=0 y=0 z=1 w=90 />
 			</scene>
 			
-			<scene name="plane">
-				<geometry name="plane" type="SQUARE" material="azulejo"/>
+			<scene name="plane" physicsMaterial="plane" >
+				<geometry name="plane" type="SQUARE" material="azulejo" />
 				<!-- <SCALE x=5 y=5 z=5 /> -->
 			</scene>
 			<!-- <scene name="plane">
@@ -66,8 +66,12 @@
 		</lights>
 		
 		<materialLibs>
-			<materialLib filename = "materials.mlib"/>
+			<materialLib filename = "materials.mlib" />
 		</materialLibs> 
+		
+		<physicsLibs>
+			<physicsLib filename = "physicsDesc.plib" />
+		</physicsLibs>
 		
 	</assets>
 	
@@ -76,8 +80,8 @@
 			<pass class="default" name="pass1">
 				<scenes>
 					<!-- <scene name="ball" /> -->
-					<!-- <scene name="box" /> -->
-					<!-- <scene name="plane" /> -->
+					<scene name="box" />
+					<scene name="plane" />
 					<scene name="Axis" />
 				</scenes>
 				<camera name="MainCamera" />

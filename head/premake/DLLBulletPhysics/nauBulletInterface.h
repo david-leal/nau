@@ -1,23 +1,22 @@
-#ifndef _PHYSICS_H
-#define _PHYSICS_H
-
-
+#ifndef _NAUBULLETINTERFACE_H
+#define _NAUBULLETINTERFACE_H
 
 #include "nau/physics/iPhysics.h"
-
 #include <map>
 #include <string>
+#include "bulletWorldManager.h"
 
+class NauBulletInterface : public nau::physics::IPhysics {
 
-class Physics : public nau::physics::IPhysics
-{
-protected:
+private:
+	BulletWorldManager * worldManager;
 
 public:
+	
+	static NauBulletInterface * Create();
 
-	static Physics *Create();
-	Physics();
-	~Physics(void);
+	NauBulletInterface();
+	~NauBulletInterface();
 
 	void update();
 	void build();
@@ -30,13 +29,14 @@ public:
 	void applyGlobalFloatProperty(const std::string &property, float value);
 	void applyGlobalVec4Property(const std::string &property, float *value);
 
-	void setScene(const std::string &scene, int nbVetices, float *vertices, int nbInices, unsigned int *indices, float *transform);
+	void setScene(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
 
 	float *getSceneTransform(const std::string &scene);
 	void setSceneTransform(const std::string &scene, float *transform);
 
 	std::map<std::string, nau::physics::IPhysics::Prop> &getGlobalProperties();
 	std::map<std::string, nau::physics::IPhysics::Prop> &getMaterialProperties();
+
 };
 
 extern "C" {
@@ -46,4 +46,4 @@ extern "C" {
 	__declspec(dllexport) char *getClassName();
 }
 
-#endif //DEPTHMAPPASS_H
+#endif

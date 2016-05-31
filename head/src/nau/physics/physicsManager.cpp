@@ -54,9 +54,9 @@ PhysicsManager::PhysicsManager() : m_PhysInst(NULL), m_Built(false) {
 	for (auto &p : props) {
 		Enums::DataType dt = p.second.propType == IPhysics::FLOAT ? Enums::FLOAT : Enums::VEC4;
 		if (p.second.propType == IPhysics::FLOAT) 
-			Attribs.add(Attribute(k, p.first, Enums::FLOAT, false, new NauFloat(p.second.x)));
+			Attribs.add(Attribute(k++, p.first, Enums::FLOAT, false, new NauFloat(p.second.x)));
 		else
-			Attribs.add(Attribute(k, p.first, Enums::VEC4, false, new vec4(p.second.x, p.second.y, p.second.z, p.second.w)));
+			Attribs.add(Attribute(k++, p.first, Enums::VEC4, false, new vec4(p.second.x, p.second.y, p.second.z, p.second.w)));
 	}
 
 	
@@ -65,9 +65,9 @@ PhysicsManager::PhysicsManager() : m_PhysInst(NULL), m_Built(false) {
 	for (auto &p : propsM) {
 		Enums::DataType dt = p.second.propType == IPhysics::FLOAT ? Enums::FLOAT : Enums::VEC4;
 		if (p.second.propType == IPhysics::FLOAT)
-			PhysicsMaterial::Attribs.add(Attribute(k, p.first, Enums::FLOAT, false, new NauFloat(p.second.x)));
+			PhysicsMaterial::Attribs.add(Attribute(k++, p.first, Enums::FLOAT, false, new NauFloat(p.second.x)));
 		else
-			PhysicsMaterial::Attribs.add(Attribute(k, p.first, Enums::VEC4, false, new vec4(p.second.x, p.second.y, p.second.z, p.second.w)));
+			PhysicsMaterial::Attribs.add(Attribute(k++, p.first, Enums::VEC4, false, new vec4(p.second.x, p.second.y, p.second.z, p.second.w)));
 	}
 }
 
@@ -208,8 +208,8 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 
 	std::shared_ptr<IRenderable> &r = aScene->getSceneObject(0)->getRenderable();
 	std::vector<VertexAttrib> *vd = r->getVertexData()->getDataOf(0).get();
-	m_PhysInst->setScene(sn, (float *)&(vd->at(0)), 
-		(unsigned int *)&(r->getIndexData()->getIndexData()->at(0)), 
+	m_PhysInst->setScene(sn, static_cast<int> (vd->size()),  (float *)&(vd->at(0)),
+		static_cast<int> (r->getIndexData()->getIndexData()->size()), (unsigned int *)&(r->getIndexData()->getIndexData()->at(0)),
 		(float *)aScene->getTransform().getMatrix());
 
 	std::map<std::string, std::unique_ptr<Attribute>> &attrs = pm.getAttribSet()->getAttributes();

@@ -1,0 +1,27 @@
+<?xml version="1.0" ?>
+<physicslib name="physicsDesc">
+
+	<globalProperties>
+		<GRAVITY x="0.0" y="-9.81" z="0.0" />
+	</globalProperties>
+
+	<materials>
+		<material name="box" type="RIGID">
+			<MASS value="10.0" />
+			<FRICTION value="0.5" />
+			<RESTITUTION value="0.5" />
+		</material>
+		
+		<material name="plane" type="STATIC">
+			<FRICTION value="0.0" />
+			<RESTITUTION value="0.5" />
+		</material>
+		
+		<material name="cloth" type="CLOTH">
+			<FRICTION value="0.5" />
+			<RESTITUTION value="0.5" />
+		</material>
+		
+	</materials>
+
+</physicslib>

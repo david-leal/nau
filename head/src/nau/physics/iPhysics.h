@@ -61,7 +61,7 @@ namespace nau
 			virtual void applyGlobalFloatProperty(const std::string &property, float value) = 0;
 			virtual void applyGlobalVec4Property(const std::string &property, float *value) = 0;
 
-			virtual void setScene(const std::string &scene, float *vertices, unsigned int *indices, float *transform) = 0;
+			virtual void setScene(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform) = 0;
 			
 			virtual float *getSceneTransform(const std::string &scene) = 0;
 			virtual void setSceneTransform(const std::string &scene, float *transform) = 0;
@@ -73,7 +73,9 @@ namespace nau
 
 			typedef struct {
 				SceneType sceneType;
+				int nbVertices;
 				float *vertices;
+				int nbIndices;
 				unsigned int *indices;
 				float *transform;
 			} SceneProps;

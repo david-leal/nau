@@ -3,11 +3,11 @@
 	<assets> 
 		<scenes>			
 			
-			<scene name="plane">
+			<scene name="plane" physicsMaterial="plane" >
 				<geometry name="plane" type="SQUARE" material="azulejo" />
 			</scene>
 			
-			<scene name="cloth">
+			<scene name="cloth" physicsMaterial="cloth">
 				<geometry name="cloth" type="SQUARE" material="crateCullFaced" />
 				<TRANSLATE x=0 y=2 z=0 />
 				<ROTATE x=0 y=0 z=1 w=90/>
@@ -60,6 +60,10 @@
 		<materialLibs>
 			<materialLib filename = "materials.mlib"/>
 		</materialLibs> 
+		
+		<physicsLibs>
+			<physicsLib filename = "physicsDesc.plib" />
+		</physicsLibs>
 		
 	</assets>
 	

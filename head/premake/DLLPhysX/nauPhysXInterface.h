@@ -1,23 +1,23 @@
-#ifndef _PHYSICS_H
-#define _PHYSICS_H
-
-
+#ifndef _NAUPHYSXINTERFACE_H
+#define _NAUPHYSXINTERFACE_H
 
 #include "nau/physics/iPhysics.h"
 
 #include <map>
 #include <string>
 
+#include "physXWorldManager.h"
 
-class Physics : public nau::physics::IPhysics
-{
-protected:
+class NauPhysXInterface : public nau::physics::IPhysics {
+
+private:
+	PhysXWorldManager * worldManager;
 
 public:
 
-	static Physics *Create();
-	Physics();
-	~Physics(void);
+	static NauPhysXInterface *Create();
+	NauPhysXInterface();
+	~NauPhysXInterface();
 
 	void update();
 	void build();
@@ -30,7 +30,7 @@ public:
 	void applyGlobalFloatProperty(const std::string &property, float value);
 	void applyGlobalVec4Property(const std::string &property, float *value);
 
-	void setScene(const std::string &scene, int nbVetices, float *vertices, int nbInices, unsigned int *indices, float *transform);
+	void setScene(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
 
 	float *getSceneTransform(const std::string &scene);
 	void setSceneTransform(const std::string &scene, float *transform);
@@ -46,4 +46,4 @@ extern "C" {
 	__declspec(dllexport) char *getClassName();
 }
 
-#endif //DEPTHMAPPASS_H
+#endif
