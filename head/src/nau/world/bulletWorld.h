@@ -8,6 +8,10 @@
 #include "nau/render/pass.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h"
+#include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
+#include <BulletSoftBody/btDefaultSoftBodySolver.h>
+#include <BulletSoftBody/btSoftBodyHelpers.h>
+#include <BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
 
 namespace nau
 {
@@ -20,7 +24,7 @@ namespace nau
 			static const int maxProxies = 32766;
 
 			nau::scene::IScene *m_pScene;
-			btDynamicsWorld *m_pDynamicsWorld;
+			btSoftRigidDynamicsWorld * m_pDynamicsWorld;
 
 			std::map <std::string, btRigidBody*> m_RigidBodies;
 

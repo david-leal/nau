@@ -67,8 +67,8 @@
 		<pipeline name="fixedfunction" default="true">
 			<pass class="default" name="pass1">
 				<scenes>
-					<scene name="plane" />
-					<scene name="cloth" />
+					<!-- <scene name="plane" />
+					<scene name="cloth" /> -->
 					<scene name="Axis" />
 				</scenes>
 				<camera name="MainCamera" />

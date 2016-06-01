@@ -1131,7 +1131,7 @@ FrmMainFrame::buildPhysics(void) {
 		);*/
 
 
-		shared_ptr<IScene> &boxScene1 = RENDERMANAGER->getScene("box1");
+		/*shared_ptr<IScene> &boxScene1 = RENDERMANAGER->getScene("box1");
 		m_pRoot->getWorld()._addRigid(
 			0.0f,
 			0.5f,
@@ -1169,7 +1169,7 @@ FrmMainFrame::buildPhysics(void) {
 			boxScene4,
 			boxScene4->getName(),
 			vec3(1.0f, 1.0f, 1.0f)
-		);
+		);*/
 
 
 		//shared_ptr<IScene> &stairsScene = RENDERMANAGER->getScene("stairs");
@@ -1205,7 +1205,7 @@ FrmMainFrame::buildPhysics(void) {
 		//	vec3(1.0f, 1.0f, 1.0f)
 		//	);
 
-		shared_ptr<IScene> &manScene = RENDERMANAGER->getScene("man");
+		/*shared_ptr<IScene> &manScene = RENDERMANAGER->getScene("man");
 		m_pRoot->getWorld()._addCharacter(
 			10.0f,
 			1.0f,
@@ -1213,15 +1213,15 @@ FrmMainFrame::buildPhysics(void) {
 			0.2f,
 			manScene,
 			manScene->getName()
-			);
+			);*/
 
-		/*shared_ptr<IScene> &clothScene = RENDERMANAGER->getScene("cloth");
+		shared_ptr<IScene> &clothScene = RENDERMANAGER->getScene("cloth");
 			m_pRoot->getWorld()._addCloth(
 			10.0f,
 			clothScene,
 			clothScene->getName(),
 			vec3(1.0f, 1.0f, 1.0f)
-			);*/
+			);
 		
 		/*shared_ptr<IScene> particleScene = RENDERMANAGER->getScene("particle");
 		m_pRoot->getWorld()._addParticles(

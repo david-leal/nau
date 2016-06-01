@@ -14,6 +14,8 @@ using namespace nau::scene;
 using namespace nau::render;
 using namespace nau::material;
 
+btSoftBody * cloth;
+
 
 BulletWorld::BulletWorld(void): m_pScene (0), m_pDynamicsWorld (0) {
 }
@@ -29,8 +31,28 @@ BulletWorld::update (void) {
 	if (0 != m_pDynamicsWorld) {
 		((BulletDebugger*)m_pDynamicsWorld->getDebugDrawer())->clearPoints();
 		m_pDynamicsWorld->stepSimulation(1 / 60.0f);
-		m_pDynamicsWorld->debugDrawWorld();
-		((BulletDebugger*)m_pDynamicsWorld->getDebugDrawer())->compilePoints();
+
+		//nau::scene::IScene *m_IScene = static_cast<nau::scene::IScene*>(cloth->getUserPointer());
+		//std::shared_ptr<VertexData> &vd = m_IScene->getSceneObject(0)->getRenderable()->getVertexData();
+		//int count = static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size());
+
+		//std::shared_ptr<std::vector<VertexData::Attr>> points = vd->getDataOf(VertexData::GetAttribIndex(std::string("position")));
+
+		//btSoftBody::tNodeArray&   nodes(cloth->m_nodes);
+		//for (int i = 0; i<nodes.size(); ++i) {
+		//	/*float x = scene.second.extInfo.vertices[4 * i];
+		//	float y = scene.second.extInfo.vertices[(4 * i) + 1];
+		//	float z = scene.second.extInfo.vertices[(4 * i) + 2];*/
+		//	/*scene.second.extInfo.vertices[4 * i] = nodes[i].m_x.getX();
+		//	scene.second.extInfo.vertices[(4 * i) + 1] = nodes[i].m_x.getY();
+		//	scene.second.extInfo.vertices[(4 * i) + 2] = nodes[i].m_x.getZ();*/
+		//	points->at(i).set(nodes[i].m_x.getX(), nodes[i].m_x.getY(), nodes[i].m_x.getZ());
+		//}
+		//vd->resetCompilationFlag();
+		//vd->compile();
+
+		//m_pDynamicsWorld->debugDrawWorld();
+		//((BulletDebugger*)m_pDynamicsWorld->getDebugDrawer())->compilePoints();
 	}
 }
 
@@ -47,7 +69,8 @@ BulletWorld::build (void)
 
 		btGImpactCollisionAlgorithm::registerAlgorithm(dispatcher);
 
-		m_pDynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
+		//m_pDynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
+		m_pDynamicsWorld = new btSoftRigidDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
 		m_pDynamicsWorld->setGravity(btVector3(0,-10,0));
 	}
 }
@@ -157,6 +180,30 @@ BulletWorld::_addCharacter(float mass, float radius, float height, float stedHei
 void
 BulletWorld::_addCloth(float mass, std::shared_ptr<nau::scene::IScene> &aScene, std::string name, nau::math::vec3 aVec) {
 
+	/*std::shared_ptr<nau::scene::SceneObject> &aObject = aScene->getSceneObject(0);
+	std::shared_ptr<VertexData> &vd = aObject->getRenderable()->getVertexData();
+	std::vector<std::shared_ptr<MaterialGroup>> &matGroups = aObject->getRenderable()->getMaterialGroups();
+	std::vector<std::shared_ptr<MaterialGroup>>::iterator matGroupsIter;
+
+	int count = static_cast<int> (vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->size());
+
+	matGroupsIter = matGroups.begin();
+	for (; matGroupsIter != matGroups.end(); matGroupsIter++) {
+		if ((*matGroupsIter)->getIndexData()->getIndexSize()) {
+			std::shared_ptr<std::vector<unsigned int>> &indexes = (*matGroupsIter)->getIndexData()->getIndexData();
+			cloth = btSoftBodyHelpers::CreateFromTriMesh(
+				m_pDynamicsWorld->getWorldInfo(),
+				reinterpret_cast<const float *>(&(vd->getDataOf(VertexData::GetAttribIndex(std::string("position")))->at(0))),
+				reinterpret_cast<const int *> (reinterpret_cast<const unsigned char *>(&((*indexes)[0]))),
+				static_cast<int> (indexes->size() / 3)
+			);
+		}
+	}
+	btTransform trans;
+	trans.setFromOpenGLMatrix(aScene->getTransform().getMatrix());
+	cloth->setWorldTransform(trans);
+	cloth->setUserPointer(static_cast<void*>(aScene.get()));
+	m_pDynamicsWorld->addSoftBody(cloth);*/
 }
 
 void
