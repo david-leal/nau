@@ -43,10 +43,14 @@ PhysicsManager::GetInstance() {
 
 PhysicsManager::PhysicsManager() : m_PhysInst(NULL), m_Built(false) {
 
+	debugPoints = new vector<float>();
+
 	registerAndInitArrays(Attribs);
 	m_PhysInst = loadPlugin();
 	if (!m_PhysInst)
 		return;
+
+	m_PhysInst->setDebug(debugPoints);
 
 	std::map < std::string, IPhysics::Prop> &props = m_PhysInst->getGlobalProperties();
 
@@ -88,7 +92,7 @@ PhysicsManager::loadPlugin() {
 
 	std::vector<std::string> files;
 #ifdef _DEBUG
-	nau::system::File::GetFilesInFolder(".\\nauSettings\\plugins\\physics_d\\", "dll", &files);
+	nau::system::File::GetFilesInFolder(".\\nauSettings\\plugins_d\\physics\\", "dll", &files);
 #else
 	nau::system::File::GetFilesInFolder(".\\nauSettings\\plugins\\physics\\", "dll", &files);
 #endif
@@ -143,11 +147,20 @@ PhysicsManager::update() {
 	if (!m_PhysInst)
 		return;
 
+	debugPoints = new std::vector<float>();
+
+	m_PhysInst->setDebug(debugPoints); 
+
 	m_PhysInst->update();
+
+	if (debugPoints->size() != 0) {
+		debugPositions->setData(debugPoints->size() * sizeof(float), &debugPoints->at(0));
+		scene->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
+		scene->getSceneObject(0)->getRenderable()->getVertexData()->compile();
+	}
 
 	float *t;
 	std::vector<std::shared_ptr<SceneObject>> so;
-
 
 	for (auto s : m_Scenes) {
 		
@@ -162,14 +175,35 @@ PhysicsManager::update() {
 			break;
 
 		case IPhysics::CLOTH: 
+			t = m_PhysInst->getSceneTransform(s.first->getName());
+			s.first->setTransform(math::mat4(t));
 			s.first->getAllObjects(&so);
 			for (auto &o : so) {
 				o->getRenderable()->getVertexData()->resetCompilationFlag();
 				o->getRenderable()->getVertexData()->compile();
+				//o->getRenderable()->getMaterialGroups().at(0)->getIndexData()->resetCompilationFlag();
+				//o->getRenderable()->getMaterialGroups().at(0)->getIndexData()->compile();
+				/*for (auto &mat : o->getRenderable()->getMaterialGroups()) {
+					mat->getIndexData()->resetCompilationFlag();
+					mat->getIndexData()->compile();
+				}*/
 			}
 			break;
 
-		case IPhysics::PARTICLES: break;
+		case IPhysics::PARTICLES: 
+			/*int nPart = m_PhysInst->getParticleCount(s.first->getName());
+			RENDERMANAGER->getCurrentPass()->setPropui(Pass::INSTANCE_COUNT, nPart);
+			t = s.first->getR
+			IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(std::string("Simple::positions"));
+			t = 
+			particlePositionBuffer->setData(nPart * sizeof(PxVec4), newPositions);
+			s.first->getAllObjects(&so);
+			for (auto &o : so) {
+				o->getRenderable()->get
+				o->getRenderable()->getVertexData()->resetCompilationFlag();
+				o->getRenderable()->getVertexData()->compile();
+			}*/
+			break;
 		}
 	}
 }
@@ -214,6 +248,11 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 	m_PhysInst->setScene(sn, static_cast<int> (vd->size()),  (float *)&(vd->at(0)),
 		static_cast<int> (r->getIndexData()->getIndexData()->size()), (unsigned int *)&(r->getIndexData()->getIndexData()->at(0)),
 		(float *)aScene->getTransform().getMatrix());
+
+
+
+	//m_PhysInst->setBuffer()
+
 
 	std::map<std::string, std::unique_ptr<Attribute>> &attrs = pm.getAttribSet()->getAttributes();
 	

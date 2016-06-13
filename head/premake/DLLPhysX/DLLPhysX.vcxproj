@@ -93,7 +93,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName).dll" ..\..\build\samples\nauSettings\plugins\physics</Command>
+      <Command>copy "$(OutDir)$(TargetName).dll" ..\..\build\samples\nauSettings\plugins_d\physics</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalDependencies>LowLevelClothDEBUGDLL.lib;LowLevelDEBUGDLL.lib;PhysX3CharacterKinematicDEBUGDLL_x64.lib;PhysX3CommonDEBUGDLL_x64.lib;PhysX3CookingDEBUGDLL_x64.lib;PhysX3DEBUGDLL_x64.lib;PhysX3ExtensionsDEBUGDLL.lib;PhysX3VehicleDEBUGDLL.lib;PhysXProfileSDKDEBUGDLL.lib;PhysXVisualDebuggerSDKDEBUGDLL.lib;PvdRuntimeDEBUGDLL.lib;PxTaskDEBUGDLL.lib;SceneQueryDEBUGDLL.lib;SimulationControllerDEBUGDLL.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -136,6 +136,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="nauPhysXInterface.h" />
+    <ClInclude Include="physXParticleManager.h" />
     <ClInclude Include="physXRigidManager.h" />
     <ClInclude Include="physXScene.h" />
     <ClInclude Include="physXSoftManager.h" />
@@ -143,6 +144,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="nauPhysXInterface.cpp" />
+    <ClCompile Include="physXParticleManager.cpp" />
     <ClCompile Include="physXRigidManager.cpp" />
     <ClCompile Include="physXScene.cpp" />
     <ClCompile Include="physXSoftManager.cpp" />

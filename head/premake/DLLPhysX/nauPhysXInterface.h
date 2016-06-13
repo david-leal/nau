@@ -35,6 +35,10 @@ public:
 	float *getSceneTransform(const std::string &scene);
 	void setSceneTransform(const std::string &scene, float *transform);
 
+	int getParticleCount(const std::string &scene);
+
+	void setDebug(std::vector<float> * debugPoint);
+
 	std::map<std::string, nau::physics::IPhysics::Prop> &getGlobalProperties();
 	std::map<std::string, nau::physics::IPhysics::Prop> &getMaterialProperties();
 };

@@ -13,6 +13,7 @@
 
 #include "bulletRigidManager.h"
 #include "bulletSoftManager.h"
+#include "bulletDebugger.h"
 
 class BulletWorldManager {
 
@@ -20,6 +21,7 @@ private:
 	btSoftRigidDynamicsWorld * world;
 	BulletRigidManager * rigidManager;
 	BulletSoftManager * softManager;
+	BulletDebugger * debugDrawer;
 
 public:
 	BulletWorldManager();
@@ -34,6 +36,7 @@ public:
 	void addCloth(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform);
 	void setSoftProperty(std::string scene, std::string propName, float value);
 	void moveSoft(std::string scene, float * transform);
+	void setDebug(std::vector<float> * debugPoints);
 
 	//void addCharacter();
 

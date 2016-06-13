@@ -8,7 +8,7 @@
 #define APIENTRY __stdcall
 #endif
 
-#include <vld.h>
+//#include <vld.h>
 
 
 #include <main.h>
@@ -985,6 +985,44 @@ FrmMainFrame::OnPhysicsMode (wxCommandEvent &event)
 	if (idMenuPhysicsOff == event.GetId()) {
 		m_pRoot->disablePhysics();	
 	}
+
+
+
+	std::string newSceneName = "debugScene";
+
+	std::shared_ptr<IScene> is = RENDERMANAGER->createScene(newSceneName);
+
+	const char *pMaterial = "debugMat";
+	const char *pNameSO = "myMesh";
+
+	IRenderable::DrawPrimitive dp = IRenderer::PrimitiveTypes["LINES"];
+	std::shared_ptr<SceneObject> &so = SceneObjectFactory::Create("SimpleObject");
+	so->setName(pNameSO);
+	std::shared_ptr<IRenderable> &i = RESOURCEMANAGER->createRenderable("Mesh", pNameSO);
+	i->setDrawingPrimitive(dp);
+	std::shared_ptr<MaterialGroup> mg;
+	if (pMaterial)
+		mg = MaterialGroup::Create(i.get(), pMaterial);
+	else
+		mg = MaterialGroup::Create(i.get(), "dirLightDifAmbPix");
+
+	std::shared_ptr<VertexData> &v = i->getVertexData();
+	IBuffer * pointsBuffer = RESOURCEMANAGER->createBuffer("pointsBuffer");
+
+	v->setBuffer(VertexData::GetAttribIndex(std::string("position")), pointsBuffer->getPropi(IBuffer::ID));
+
+	v->resetCompilationFlag();
+	v->compile();
+	i->addMaterialGroup(mg);
+	so->setRenderable(i);
+	is->add(so);
+	RENDERMANAGER->getActivePipeline()->getCurrentPass()->addScene(newSceneName);
+
+	m_pRoot->getPhysicsManager()->scene = is.get();
+	m_pRoot->getPhysicsManager()->debugPositions = pointsBuffer;
+
+
+
 }
 
 

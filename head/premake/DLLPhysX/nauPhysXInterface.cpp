@@ -115,6 +115,14 @@ void NauPhysXInterface::setSceneTransform(const std::string & scene, float * tra
 	}
 }
 
+int NauPhysXInterface::getParticleCount(const std::string & scene) {
+	return 0;
+}
+
+void NauPhysXInterface::setDebug(std::vector<float>* debugPoint) {
+
+}
+
 std::map<std::string, nau::physics::IPhysics::Prop>& NauPhysXInterface::getGlobalProperties() {
 	return m_GlobalProps;
 }

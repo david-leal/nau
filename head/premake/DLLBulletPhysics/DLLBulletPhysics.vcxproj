@@ -91,7 +91,7 @@
       <AdditionalIncludeDirectories>../../src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName).dll" ..\..\build\samples\nauSettings\plugins\physics</Command>
+      <Command>copy "$(OutDir)$(TargetName).dll" ..\..\build\samples\nauSettings\plugins_d\physics</Command>
     </PostBuildEvent>
     <Link>
       <AdditionalDependencies>Bullet3Common_vs2010_x64_debugDLL.lib;Bullet3Dynamics_vs2010_x64_debugDLL.lib;Bullet3Collision_vs2010_x64_debugDLL.lib;BulletSoftBody_vs2010_x64_debugDLL.lib;LinearMath_vs2010_x64_debugDLL.lib;BulletCollision_vs2010_x64_debugDLL.lib;BulletDynamics_vs2010_x64_debugDLL.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -129,6 +129,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="bulletDebugger.h" />
     <ClInclude Include="bulletMotionState.h" />
     <ClInclude Include="bulletRigidManager.h" />
     <ClInclude Include="bulletScene.h" />
@@ -137,6 +138,7 @@
     <ClInclude Include="nauBulletInterface.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="bulletDebugger.cpp" />
     <ClCompile Include="bulletMotionState.cpp" />
     <ClCompile Include="bulletRigidManager.cpp" />
     <ClCompile Include="bulletSoftManager.cpp" />

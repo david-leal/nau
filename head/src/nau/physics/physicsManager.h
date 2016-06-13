@@ -7,6 +7,7 @@
 #include "nau/physics/iPhysics.h"
 #include "nau/physics/physicsMaterial.h"
 #include "nau/scene/iScene.h"
+#include "nau/material/iBuffer.h"
 
 #include <map>
 #include <string>
@@ -22,7 +23,9 @@ namespace nau
 		public:
 		
 			FLOAT4_PROP(GRAVITY, 0);
-
+			std::vector<float>* debugPoints;
+			nau::scene::IScene *scene;
+			nau::material::IBuffer* debugPositions;
 
 			
 			static AttribSet Attribs;

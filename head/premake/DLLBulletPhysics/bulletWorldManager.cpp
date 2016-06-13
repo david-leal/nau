@@ -3,7 +3,7 @@
 
 
 BulletWorldManager::BulletWorldManager() {
-	btDefaultCollisionConfiguration * collisionConfiguration = new btSoftBodyRigidBodyCollisionConfiguration();// btDefaultCollisionConfiguration();
+	btSoftBodyRigidBodyCollisionConfiguration * collisionConfiguration = new btSoftBodyRigidBodyCollisionConfiguration();// btDefaultCollisionConfiguration();
 	btCollisionDispatcher* dispatcher = new	btCollisionDispatcher(collisionConfiguration);
 
 	btBroadphaseInterface* broadphase = new btDbvtBroadphase();
@@ -13,7 +13,7 @@ BulletWorldManager::BulletWorldManager() {
 	btDefaultSoftBodySolver * softbodySolver = new btDefaultSoftBodySolver();
 	world = new btSoftRigidDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration, softbodySolver);
 	//world = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
-	world->setGravity(btVector3(0, -10, 0));
+	//world->setGravity(btVector3(0, -10, 0));
 
 	rigidManager = new BulletRigidManager();
 	softManager = new BulletSoftManager();
@@ -30,6 +30,9 @@ void BulletWorldManager::update() {
 		world->stepSimulation(1 / 60.0f);
 		rigidManager->update();
 		softManager->update();
+		if (debugDrawer) {
+			world->debugDrawWorld();
+		}
 	}
 }
 
@@ -59,7 +62,7 @@ void BulletWorldManager::setRigidProperty(std::string scene, std::string propNam
 }
 
 void BulletWorldManager::moveRigid(std::string scene, float * transform) {
-	rigidManager->move(scene, transform);
+	rigidManager->move(scene, transform); 
 }
 
 void BulletWorldManager::addCloth(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
@@ -71,5 +74,17 @@ void BulletWorldManager::setSoftProperty(std::string scene, std::string propName
 }
 
 void BulletWorldManager::moveSoft(std::string scene, float * transform) {
-	//softManager->move(scene, transform);
+	softManager->move(scene, transform);
+}
+
+void BulletWorldManager::setDebug(std::vector<float>* debugPoints) {
+	if (debugDrawer) {
+		debugDrawer->setPoints(debugPoints);
+	} else {
+		debugDrawer = new BulletDebugger(debugPoints);
+		debugDrawer->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+		//debugDrawer->setDebugMode(btIDebugDraw::DBG_MAX_DEBUG_DRAW_MODE);
+		world->setDebugDrawer(debugDrawer);
+	}
+	
 }

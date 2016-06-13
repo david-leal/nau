@@ -116,6 +116,14 @@ void NauBulletInterface::setSceneTransform(const std::string & scene, float * tr
 	}
 }
 
+int NauBulletInterface::getParticleCount(const std::string & scene) {
+	return 0;
+}
+
+void NauBulletInterface::setDebug(std::vector<float> * debugPoint) {
+	worldManager->setDebug(debugPoint);
+}
+
 std::map<std::string, nau::physics::IPhysics::Prop>& NauBulletInterface::getGlobalProperties() {
 	return m_GlobalProps;
 }

@@ -85,13 +85,26 @@ void PhysXRigidManager::addDynamicBody(physx::PxScene * world, physx::PxCooking*
 	PxPhysics *gPhysics = &(world->getPhysics());
 	PxRigidDynamic* dynamic;
 	PxTransform trans = PxTransform(PxMat44(rigidBodies[scene].extInfo.transform));
-	dynamic = gPhysics->createRigidDynamic(trans);
 
-	PxConvexMesh * convexMesh = gPhysics->createConvexMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo, false));
-	PxShape *shape = dynamic->createShape(PxConvexMeshGeometry(convexMesh), *(gPhysics->createMaterial(1.0f, 1.0f, 1.0f)));
+	if (scene.find("billiardBall") != std::string::npos) {
+		dynamic = PxCreateDynamic(*gPhysics,
+					trans,
+					PxSphereGeometry(1),
+					*(gPhysics->createMaterial(1.0f, 1.0f, 1.0f)),
+					1.0f
+				);
+	}
+	else {
+		dynamic = gPhysics->createRigidDynamic(trans);
+
+		PxConvexMesh * convexMesh = gPhysics->createConvexMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo, false));
+		PxShape *shape = dynamic->createShape(PxConvexMeshGeometry(convexMesh), *(gPhysics->createMaterial(1.0f, 1.0f, 1.0f)));
+	}
 	dynamic->userData = static_cast<void*> (new std::string(scene));
-
 	world->addActor(*dynamic);
+	if (scene.compare("billiardBallWhite") == 0) {
+		dynamic->addForce(PxVec3(500.0, 0, 0), PxForceMode::eIMPULSE);
+	}
 	rigidBodies[scene].actor = dynamic;
 }
 

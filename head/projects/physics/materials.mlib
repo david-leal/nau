@@ -70,9 +70,6 @@
 					<WRAP_T value="REPEAT"/>
 				</texture>
 			</textures>
-			<!--imageTextures>
-				<imageTexture name="Crate" UNIT="0"/>
-			</imageTextures-->
 		</material>
 		
 		<material name="simpleColored">

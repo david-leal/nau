@@ -8,10 +8,14 @@
 			</scene>
 			
 			<scene name="cloth" physicsMaterial="cloth">
+				<file name="..\..\models\flag\flag.obj" />
+				<TRANSLATE x=0 y=2 z=0 />
+			</scene>
+			
+			<!-- <scene name="cloth" physicsMaterial="cloth">
 				<geometry name="cloth" type="SQUARE" material="crateCullFaced" />
 				<TRANSLATE x=0 y=2 z=0 />
-				<ROTATE x=0 y=0 z=1 w=90/>
-			</scene>
+			</scene> -->
 			
 			<scene name="Axis">
 				<geometry name = "axis" type = "AXIS" >
@@ -84,6 +88,7 @@
 					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
 					<map fromMaterial="crate" toLibrary="Simple" toMaterial="simpleTexturedCrate" />
 					<map fromMaterial="crateCullFaced" toLibrary="Simple" toMaterial="simpleTexturedCrateCullFaced" />
+					<map fromMaterial="debugMat" toLibrary="Simple" toMaterial="simpleColoredDebug" />
 				</materialMaps>
 			</pass>
 		</pipeline>

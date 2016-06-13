@@ -13,9 +13,29 @@
 		</material>
 		
 		<material name="plane" type="STATIC">
-			<FRICTION value="0.0" />
-			<RESTITUTION value="0.5" />
+			<FRICTION value="1.0" />
+			<RESTITUTION value="1.0" />
 		</material>
+		
+		
+		
+		<material name="billiardBall" type="RIGID">
+			<MASS value="1.0" />
+			<FRICTION value="0.8" />
+			<RESTITUTION value="0.8" />
+		</material>
+		
+		<material name="poolTablePlane" type="STATIC">
+			<FRICTION value="0.9" />
+			<RESTITUTION value="0.0" />
+		</material>
+		
+		<material name="poolTableBorder" type="STATIC">
+			<FRICTION value="0.8" />
+			<RESTITUTION value="0.8" />
+		</material>
+		
+		
 		
 		<material name="cloth" type="CLOTH">
 			<FRICTION value="0.5" />
