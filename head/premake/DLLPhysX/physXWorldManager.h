@@ -5,6 +5,7 @@
 #include "nau/physics/iPhysics.h"
 #include "physXRigidManager.h"
 #include "physXSoftManager.h"
+#include "physXParticleManager.h"
 
 class PhysXWorldManager {
 
@@ -17,6 +18,7 @@ private:
 
 	PhysXRigidManager * rigidManager;
 	PhysXSoftManager * softManager;
+	PhysXParticleManager * particleManager;
 
 public:
 	PhysXWorldManager();
@@ -31,6 +33,9 @@ public:
 	void addCloth(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform);
 	void setSoftProperty(std::string scene, std::string propName, float value);
 	void moveSoft(std::string scene, float * transform);
+
+	void addParticles(const std::string &scene, float * maxParticles, float * nbParticles, float *transform);
+	float * getParticlePositions(const std::string & scene);
 	
 	//void addCharacter();
 

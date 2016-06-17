@@ -115,8 +115,15 @@ void NauPhysXInterface::setSceneTransform(const std::string & scene, float * tra
 	}
 }
 
-int NauPhysXInterface::getParticleCount(const std::string & scene) {
-	return 0;
+void NauPhysXInterface::setParticleScene(const std::string &scene, float * maxParticles, float * nbParticles, float * transform) {
+	m_Scenes[scene].maxParticles = maxParticles;
+	m_Scenes[scene].nbParticles = nbParticles;
+	m_Scenes[scene].transform = transform;
+	worldManager->addParticles(scene, m_Scenes[scene].maxParticles, m_Scenes[scene].nbParticles, transform);
+}
+
+float * NauPhysXInterface::getParticlePositions(const std::string & scene) {
+	return worldManager->getParticlePositions(scene);
 }
 
 void NauPhysXInterface::setDebug(std::vector<float>* debugPoint) {

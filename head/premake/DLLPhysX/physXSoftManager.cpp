@@ -29,7 +29,12 @@ void PhysXSoftManager::update() {
 }
 
 void PhysXSoftManager::addSoftBody(physx::PxScene * world, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	softBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
+	softBodies[scene].extInfo.nbVertices = nbVertices;
+	softBodies[scene].extInfo.vertices = vertices;
+	softBodies[scene].extInfo.nbIndices = nbIndices;
+	softBodies[scene].extInfo.indices = indices;
+	softBodies[scene].extInfo.transform = transform;
+	//softBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
 	PxPhysics *gPhysics = &(world->getPhysics());
 
 	PxDefaultMemoryOutputStream writeBuffer;

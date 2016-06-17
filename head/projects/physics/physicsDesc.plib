@@ -12,11 +12,16 @@
 			<RESTITUTION value="0.5" />
 		</material>
 		
+		<material name="staticBox" type="STATIC">
+			<MASS value="10.0" />
+			<FRICTION value="0.5" />
+			<RESTITUTION value="0.5" />
+		</material>
+		
 		<material name="plane" type="STATIC">
 			<FRICTION value="1.0" />
 			<RESTITUTION value="1.0" />
 		</material>
-		
 		
 		
 		<material name="billiardBall" type="RIGID">
@@ -40,6 +45,12 @@
 		<material name="cloth" type="CLOTH">
 			<FRICTION value="0.5" />
 			<RESTITUTION value="0.5" />
+		</material>
+		
+		
+		
+		<material name="waterfall" type="PARTICLES">
+			<MAX_PARTICLES value="20000.0" />
 		</material>
 		
 	</materials>

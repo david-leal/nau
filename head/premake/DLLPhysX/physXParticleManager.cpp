@@ -3,6 +3,7 @@
 using namespace physx;
 
 PhysXParticleManager::PhysXParticleManager() {
+	std::srand(time(NULL));
 }
 
 
@@ -11,11 +12,17 @@ PhysXParticleManager::~PhysXParticleManager() {
 
 void PhysXParticleManager::update() {
 	for (auto scene : particleSystems) {
+
+		if ((*scene.second.extInfo.nbParticles < *scene.second.extInfo.maxParticles) && ((particleSystems[scene.first].iterStep++ % scene.second.maxIterStep) == 0)) {
+			createParticles(scene.first, 100.0f, 0.3f);
+		}
+
+		scene.second.positions->clear();
 		PxParticleFluidReadData* rd = scene.second.particleSystem->lockParticleFluidReadData();
 
 		if (rd) {
 			PxU32 nPart = rd->nbValidParticles;
-			PxVec4* newPositions = new PxVec4[nPart];
+			//PxVec4* newPositions = new PxVec4[nPart];
 
 			PxStrideIterator<const PxParticleFlags> flagsIt(rd->flagsBuffer);
 			PxStrideIterator<const PxVec3> positionIt(rd->positionBuffer);
@@ -24,36 +31,38 @@ void PhysXParticleManager::update() {
 			for (unsigned i = 0; i < rd->validParticleRange; ++i, ++flagsIt, ++positionIt) {
 				if (*flagsIt & PxParticleFlag::eVALID) {
 					const PxVec3& position = *positionIt;
-					newPositions[index++] = PxVec4(position, 1.0f);
+					//newPositions[index++] = PxVec4(position, 1.0f);
+					scene.second.positions->push_back(position.x);
+					scene.second.positions->push_back(position.y);
+					scene.second.positions->push_back(position.z);
+					scene.second.positions->push_back(1.0f);
 				}
 			}
-			/*nau::scene::IScene* m_IScene = static_cast<nau::scene::IScene*>(particleSystem->userData);
-			particlePass->setPropui(Pass::INSTANCE_COUNT, nPart);
-			particlePositionBuffer->setData(nPart * sizeof(PxVec4), newPositions);
-			m_IScene->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
-			m_IScene->getSceneObject(0)->getRenderable()->getVertexData()->compile();*/
-
-			rd->unlock();
-			int np = nPart;
-			if ((np < scene.second.maxParticles) && ((scene.second.iterStep++ % scene.second.maxIterStep) == 0)) {
-				float waterPos[] = { 0.0f,3.0f,0.0f };
-				createParticles(scene.first, 100, 0.1f, waterPos);
+			if (scene.second.positions->size() > 0) {
+				particleSystems[scene.first].extInfo.positions = &scene.second.positions->at(0);
+			} else {
+				scene.second.extInfo.positions = NULL;
 			}
+			rd->unlock();
 		}
 	}
 }
 
-void PhysXParticleManager::addParticleSystem(physx::PxScene * world, int max, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	particleSystems[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
-	particleSystems[scene].maxParticles = max;
-	particleSystems[scene].maxIterStep = 10000;
+void PhysXParticleManager::addParticleSystem(physx::PxScene * world, const std::string &scene, float * maxParticles, float * nbParticles, float *transform) {
+	particleSystems[scene].positions = new std::vector<float>();
+	particleSystems[scene].extInfo.maxParticles = maxParticles;
+	particleSystems[scene].extInfo.nbParticles = nbParticles;
+	particleSystems[scene].extInfo.transform = transform;
+	//particleSystems[scene].extInfo.positions = &particleSystems[scene].positions->at(0);
+	//particleSystems[scene].extInfo = externalParticles(maxParticles, nbParticles, &particleSystems[scene].positions->at(0), transform);
+	particleSystems[scene].maxIterStep = 1;
 	particleSystems[scene].iterStep = 1;
 
 	PxPhysics *gPhysics = &(world->getPhysics());
 
 	float particleDistance = 0.01f;
 
-	particleSystems[scene].particleSystem = gPhysics->createParticleFluid(max);
+	particleSystems[scene].particleSystem = gPhysics->createParticleFluid(*particleSystems[scene].extInfo.maxParticles);
 
 	//particleSystems[scene].particleSystem->setGridSize(5.0f);
 	particleSystems[scene].particleSystem->setMaxMotionDistance(0.3f);
@@ -74,7 +83,7 @@ void PhysXParticleManager::addParticleSystem(physx::PxScene * world, int max, co
 	if (particleSystems[scene].particleSystem)
 		world->addActor(*particleSystems[scene].particleSystem);
 
-	particleSystems[scene].particleIndexPool = PxParticleExt::createIndexPool(max);
+	particleSystems[scene].particleIndexPool = PxParticleExt::createIndexPool(*particleSystems[scene].extInfo.maxParticles);
 	//createParticles();
 }
 
@@ -82,25 +91,29 @@ float getRandomNumber(float factor) {
 	return ((std::rand() % int((factor*2) *100.f)) / 100.0f) - factor;
 }
 
-void PhysXParticleManager::createParticles(std::string scene, int n, float randomFactor, float * position) {
-	PxU32 existingParticles = particleSystems[scene].numParticles;
-	particleSystems[scene].numParticles += n;
+void PhysXParticleManager::createParticles(std::string scene, float n, float randomFactor) {
+	PxU32 existingParticles = *particleSystems[scene].extInfo.nbParticles;
+	float nb = *particleSystems[scene].extInfo.nbParticles;
+	nb += n;
+	//*particleSystems[scene].extInfo.nbParticles += n;
 	std::vector<PxU32> mTmpIndexArray;
-	mTmpIndexArray.resize(particleSystems[scene].numParticles);
+	mTmpIndexArray.resize(nb);
 	PxStrideIterator<PxU32> indexData(&mTmpIndexArray[0]);
 	
-	particleSystems[scene].numParticles = particleSystems[scene].particleIndexPool->allocateIndices((particleSystems[scene].numParticles- existingParticles), indexData);
-	PxVec3 partPosistions[100];
-	for (int i = 0; i < 100; i++) {
-		partPosistions[i] = PxVec3(position[0] + getRandomNumber(randomFactor), position[1], position[2] + getRandomNumber(randomFactor));
+	PxTransform trans = PxTransform(PxMat44(const_cast<float*> (particleSystems[scene].extInfo.transform)));
+
+	float newNb = particleSystems[scene].particleIndexPool->allocateIndices((nb - existingParticles), indexData);
+	std::vector<PxVec3> * partPositions = new std::vector<PxVec3>();
+	for (int i = 0; i < newNb; i++) {
+		partPositions->push_back(PxVec3(trans.p.x + getRandomNumber(randomFactor), trans.p.y, trans.p.z + getRandomNumber(randomFactor)));
 	}
 
 	//PxVec3 appParticleVelocities[] = { PxVec3(0.2f, 0.0f, 0.0f)	};
 
 	PxParticleCreationData particleCreationData;
-	particleCreationData.numParticles = particleSystems[scene].numParticles;
+	particleCreationData.numParticles = newNb;
 	particleCreationData.indexBuffer = PxStrideIterator<const PxU32>(&mTmpIndexArray[0]);
-	particleCreationData.positionBuffer = PxStrideIterator<const PxVec3>(&partPosistions[0]);
+	particleCreationData.positionBuffer = PxStrideIterator<const PxVec3>(&partPositions->at(0));
 	//particleCreationData.velocityBuffer = PxStrideIterator<const PxVec3>(&partVelocities[0]);
 	bool ok = particleSystems[scene].particleSystem->createParticles(particleCreationData);
 
@@ -113,4 +126,10 @@ void PhysXParticleManager::createParticles(std::string scene, int n, float rando
 
 	//// specify force update on PxParticleSystem ps choosing the "force" unit
 	//particleSystem->addForces(10, indexBuffer, forceBuffer, PxForceMode::eFORCE);
+
+	*particleSystems[scene].extInfo.nbParticles += newNb;
+}
+
+float * PhysXParticleManager::getPositions(std::string scene) {
+	return particleSystems[scene].extInfo.positions;
 }

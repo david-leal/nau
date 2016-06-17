@@ -3,7 +3,7 @@
 
 
 	<buffers>
-		<buffer name="positions" >
+		<buffer name="pswaterfall" >
 			<DIM x=3 y=1 z=1 />
 			<structure>
 				<field value="FLOAT" />
@@ -70,7 +70,7 @@
 				</values>										
 			</shader>
 			<buffers>	
-				<buffer name="positions">
+				<buffer name="pswaterfall">
 					<TYPE value="SHADER_STORAGE" />
 					<BINDING_POINT value="1" />
 				</buffer>

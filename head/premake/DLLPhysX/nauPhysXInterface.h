@@ -35,7 +35,9 @@ public:
 	float *getSceneTransform(const std::string &scene);
 	void setSceneTransform(const std::string &scene, float *transform);
 
-	int getParticleCount(const std::string &scene);
+	void setParticleScene(const std::string &scene, float * maxParticles, float * nbParticles, float * transform);
+
+	float * getParticlePositions(const std::string &scene);
 
 	void setDebug(std::vector<float> * debugPoint);
 

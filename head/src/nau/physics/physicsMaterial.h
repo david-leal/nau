@@ -17,8 +17,10 @@ namespace nau
 			
 
 		public:
-			FLOAT_PROP(MASS, 0);
+			//FLOAT_PROP(MASS, 0);
 			ENUM_PROP(SCENE_TYPE, 0);
+			FLOAT_PROP(NBPARTICLES, 0);
+			FLOAT_PROP(MAX_PARTICLE, 1);
 
 			static AttribSet Attribs;
 
@@ -27,6 +29,8 @@ namespace nau
 
 			void setPropf(FloatProperty p, float value);
 			void setPropf4(Float4Property p, vec4 &value);
+
+			float * getPropfPointer(FloatProperty prop);
 
 		protected:
 

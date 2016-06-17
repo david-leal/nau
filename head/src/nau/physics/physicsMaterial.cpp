@@ -15,6 +15,9 @@ PhysicsMaterial::Init() {
 	Attribs.listAdd("SCENE_TYPE", "CLOTH", IPhysics::CLOTH);
 	Attribs.listAdd("SCENE_TYPE", "PARTICLES", IPhysics::PARTICLES);
 
+	Attribs.add(Attribute(MAX_PARTICLE, "MAX_PARTICLES",  Enums::DataType::FLOAT, false, new NauFloat(0.0f)));
+	Attribs.add(Attribute(NBPARTICLES, "NBPARTICLES", Enums::DataType::FLOAT, false, new NauFloat(0.0f)));
+
 	NAU->registerAttributes("PHYSICS_MATERIAL", &Attribs);
 
 	return true;
@@ -50,4 +53,9 @@ PhysicsMaterial::setPropf4(Float4Property p, vec4 &value) {
 
 	m_Float4Props[p] = value;
 	PhysicsManager::GetInstance()->applyMaterialVec4Property(m_Name, Attribs.getName(p, Enums::VEC4), &value.x);
+}
+
+float * 
+PhysicsMaterial::getPropfPointer(FloatProperty prop) {
+	return  &m_FloatProps[prop];
 }

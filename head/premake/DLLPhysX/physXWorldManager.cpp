@@ -27,6 +27,7 @@ PhysXWorldManager::PhysXWorldManager() {
 
 	rigidManager = new PhysXRigidManager();
 	softManager = new PhysXSoftManager();
+	particleManager = new PhysXParticleManager();
 }
 
 PhysXWorldManager::~PhysXWorldManager() {
@@ -49,6 +50,9 @@ void PhysXWorldManager::update() {
 		
 		//SOFT BODIES UPDATE
 		softManager->update();
+
+		//PARTICLE UPDATE
+		particleManager->update();
 	}
 }
 
@@ -91,4 +95,12 @@ void PhysXWorldManager::setSoftProperty(std::string scene, std::string propName,
 
 void PhysXWorldManager::moveSoft(std::string scene, float * transform) {
 	softManager->move(scene, transform);
+}
+
+void PhysXWorldManager::addParticles(const std::string & scene, float * maxParticles, float * nbParticles, float * transform) {
+	particleManager->addParticleSystem(world, scene, maxParticles, nbParticles, transform);
+}
+
+float * PhysXWorldManager::getParticlePositions(const std::string & scene) {
+	return particleManager->getPositions(scene);
 }

@@ -56,7 +56,7 @@ PhysXRigidManager::getTriangleMeshGeo(PxScene *world, physx::PxCooking* mCooking
 
 void 
 PhysXRigidManager::addStaticBody(physx::PxScene * world, physx::PxCooking* mCooking, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	rigidBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
+	setExtInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
 
 	PxPhysics *gPhysics = &(world->getPhysics());
 	PxRigidStatic* staticActor;
@@ -81,7 +81,8 @@ PhysXRigidManager::addStaticBody(physx::PxScene * world, physx::PxCooking* mCook
 }
 
 void PhysXRigidManager::addDynamicBody(physx::PxScene * world, physx::PxCooking* mCooking, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	rigidBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
+	setExtInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
+
 	PxPhysics *gPhysics = &(world->getPhysics());
 	PxRigidDynamic* dynamic;
 	PxTransform trans = PxTransform(PxMat44(rigidBodies[scene].extInfo.transform));
@@ -164,4 +165,14 @@ void PhysXRigidManager::move(std::string scene, float * transform) {
 			actor->setGlobalPose(PxTransform(PxMat44(transform)));
 		}
 	}
+}
+
+void
+PhysXRigidManager::setExtInfo(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
+	rigidBodies[scene].extInfo.nbVertices = nbVertices;
+	rigidBodies[scene].extInfo.vertices = vertices;
+	rigidBodies[scene].extInfo.nbIndices = nbIndices;
+	rigidBodies[scene].extInfo.indices = indices;
+	rigidBodies[scene].extInfo.transform = transform;
+	//rigidBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
 }

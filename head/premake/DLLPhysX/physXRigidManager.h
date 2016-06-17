@@ -23,6 +23,7 @@ public:
 protected:
 	std::map<std::string, PhysXScene> rigidBodies;
 	physx::PxInputStream * getTriangleMeshGeo(physx::PxScene *world, physx::PxCooking* mCooking, ExternalInfo externInfo, bool isStatic = true);
+	void setExtInfo(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform);
 };
 
 #endif
