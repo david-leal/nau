@@ -7,6 +7,7 @@ BulletSoftManager::BulletSoftManager() {
 
 
 BulletSoftManager::~BulletSoftManager() {
+	delete &softBodies;
 }
 
 void BulletSoftManager::update() {

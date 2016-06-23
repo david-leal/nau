@@ -43,14 +43,10 @@ PhysicsManager::GetInstance() {
 
 PhysicsManager::PhysicsManager() : m_PhysInst(NULL), m_Built(false) {
 
-	debugPoints = new vector<float>();
-
 	registerAndInitArrays(Attribs);
 	m_PhysInst = loadPlugin();
 	if (!m_PhysInst)
 		return;
-
-	m_PhysInst->setDebug(debugPoints);
 
 	std::map < std::string, IPhysics::Prop> &props = m_PhysInst->getGlobalProperties();
 
@@ -147,26 +143,16 @@ PhysicsManager::update() {
 	if (!m_PhysInst)
 		return;
 
-	debugPoints = new std::vector<float>();
-
-	m_PhysInst->setDebug(debugPoints); 
-
 	m_PhysInst->update();
-
-	if (debugPoints->size() != 0) {
-		debugPositions->setData(debugPoints->size() * sizeof(float), &debugPoints->at(0));
-		scene->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
-		scene->getSceneObject(0)->getRenderable()->getVertexData()->compile();
-	}
 
 	float *t;
 	std::vector<std::shared_ptr<SceneObject>> so;
 
 	for (auto s : m_Scenes) {
-		
+
 		int st = getMaterial(s.second).getPrope(PhysicsMaterial::SCENE_TYPE);
 		switch (st) {
-		
+
 		case IPhysics::STATIC: break;
 
 		case IPhysics::RIGID:
@@ -174,7 +160,7 @@ PhysicsManager::update() {
 			s.first->setTransform(math::mat4(t));
 			break;
 
-		case IPhysics::CLOTH: 
+		case IPhysics::CLOTH:
 			t = m_PhysInst->getSceneTransform(s.first->getName());
 			s.first->setTransform(math::mat4(t));
 			s.first->getAllObjects(&so);
@@ -189,7 +175,14 @@ PhysicsManager::update() {
 				}*/
 			}
 			break;
-		case IPhysics::PARTICLES: 
+
+		case IPhysics::CHARACTER:
+			t = m_PhysInst->getSceneTransform(s.first->getName());
+			s.first->setTransform(math::mat4(t));
+			break;
+
+		case IPhysics::PARTICLES:
+		{
 			std::string &sceneName = s.first->getName();
 			PhysicsMaterial &pm = getMaterial(s.second);
 			float * partPos = m_PhysInst->getParticlePositions(sceneName);
@@ -204,14 +197,27 @@ PhysicsManager::update() {
 				RENDERMANAGER->getCurrentPass()->setPropui(Pass::INSTANCE_COUNT, nPart);
 				IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(bufferNames->at(i));
 				pointsBuffer->setData(nPart * 4 * sizeof(float), partPos);
-				s.first->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
-				s.first->getSceneObject(0)->getRenderable()->getVertexData()->compile();
-				/*s.first->getAllObjects(&so);
+				//s.first->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
+				//s.first->getSceneObject(0)->getRenderable()->getVertexData()->compile();
+				s.first->getAllObjects(&so);
 				for (auto &o : so) {
 					o->getRenderable()->getVertexData()->resetCompilationFlag();
 					o->getRenderable()->getVertexData()->compile();
-				}*/
+				}
 			}
+		}
+			break;
+		case IPhysics::DEBUG:
+		{
+			IBuffer * b = RESOURCEMANAGER->getBufferByID(s.first->getSceneObject(0)->getRenderable()->getVertexData()->getBufferID(VertexData::GetAttribIndex(std::string("position"))));
+			std::vector<float> * debugPos = m_PhysInst->getDebug();
+			b->setData(debugPos->size() * sizeof(float), &debugPos->at(0));
+			s.first->getAllObjects(&so);
+			for (auto &o : so) {
+				o->getRenderable()->getVertexData()->resetCompilationFlag();
+				o->getRenderable()->getVertexData()->compile();
+			}
+		}
 			break;
 		}
 	}
@@ -251,18 +257,24 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 
 	m_PhysInst->setSceneType(sn, type);
 
-	if (type == IPhysics::SceneType::PARTICLES) {
-		float * maxParticles = pm.getPropfPointer((FloatProperty)pm.getAttribSet()->getAttributes()["MAX_PARTICLES"]->getId());//&(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["MAX_PARTICLES"]->getId()));
+	switch (type) {
+	case IPhysics::PARTICLES: 
+	{
 		float * nbParticles = pm.getPropfPointer((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId());//&(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId()));
-
 		m_PhysInst->setParticleScene(
 			sn,
-			maxParticles,
+			pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["MAX_PARTICLES"]->getId()),
 			nbParticles,
 			(float *)aScene->getTransform().getMatrix()
 		);
 	}
-	else {
+		break;
+
+	case IPhysics::DEBUG:
+		m_PhysInst->setScene(sn, 0, NULL, 0, NULL, (float *)aScene->getTransform().getMatrix());
+		break;
+
+	default:
 		m_PhysInst->setSceneTransform(sn, (float *)aScene->getTransform().getMatrix());
 
 		std::shared_ptr<IRenderable> &r = aScene->getSceneObject(0)->getRenderable();
@@ -270,10 +282,8 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 		m_PhysInst->setScene(sn, static_cast<int> (vd->size()),  (float *)&(vd->at(0)),
 			static_cast<int> (r->getIndexData()->getIndexData()->size()), (unsigned int *)&(r->getIndexData()->getIndexData()->at(0)),
 			(float *)aScene->getTransform().getMatrix());
+		break;
 	}
-
-	//m_PhysInst->setBuffer()
-
 
 	std::map<std::string, std::unique_ptr<Attribute>> &attrs = pm.getAttribSet()->getAttributes();
 	

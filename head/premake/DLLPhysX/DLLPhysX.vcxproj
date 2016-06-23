@@ -136,6 +136,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="nauPhysXInterface.h" />
+    <ClInclude Include="physXCharacterManager.h" />
     <ClInclude Include="physXParticleManager.h" />
     <ClInclude Include="physXRigidManager.h" />
     <ClInclude Include="physXScene.h" />
@@ -144,6 +145,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="nauPhysXInterface.cpp" />
+    <ClCompile Include="physXCharacterManager.cpp" />
     <ClCompile Include="physXParticleManager.cpp" />
     <ClCompile Include="physXRigidManager.cpp" />
     <ClCompile Include="physXScene.cpp" />

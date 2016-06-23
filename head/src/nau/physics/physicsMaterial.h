@@ -19,8 +19,8 @@ namespace nau
 		public:
 			//FLOAT_PROP(MASS, 0);
 			ENUM_PROP(SCENE_TYPE, 0);
-			FLOAT_PROP(NBPARTICLES, 0);
-			FLOAT_PROP(MAX_PARTICLE, 1);
+			FLOAT_PROP(NBPARTICLES, 1);
+			FLOAT_PROP(MAX_PARTICLE, 2);
 
 			static AttribSet Attribs;
 

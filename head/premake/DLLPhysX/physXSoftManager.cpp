@@ -73,7 +73,7 @@ void PhysXSoftManager::addSoftBody(physx::PxScene * world, const std::string & s
 	
 	//TODO: Set parameters apart from inicialization
 	PxCloth* cloth = gPhysics->createCloth(pose, *fabric, particles, flags);
-	cloth->userData = static_cast<void*> (new std::string(scene));;
+	cloth->userData = static_cast<void*> (new std::string(scene));
 	cloth->setClothFlag(PxClothFlag::eSCENE_COLLISION, true);
 	cloth->setClothFlag(PxClothFlag::eGPU, true);
 	cloth->setClothFlag(PxClothFlag::eSWEPT_CONTACT, true);

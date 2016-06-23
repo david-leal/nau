@@ -23,10 +23,6 @@ namespace nau
 		public:
 		
 			//FLOAT4_PROP(GRAVITY, 0);
-			std::vector<float>* debugPoints;
-			nau::scene::IScene *scene;
-			nau::material::IBuffer* debugPositions;
-
 			
 			static AttribSet Attribs;
 

@@ -17,6 +17,13 @@
 				<TRANSLATE x=0 y=2 z=0 />
 			</scene> -->
 			
+			<scene name="dbScene" physicsMaterial="debug">
+				<buffers name="dbBuffer" primitive="LINES" material="debugMat">
+					<index name="dbIndex" fromLibrary="Simple" />
+					<position name="dbPosition" fromLibrary="Simple" /> 
+				</buffers>
+			</scene>
+			
 			<scene name="Axis">
 				<geometry name = "axis" type = "AXIS" >
 					<SCALE x=5 y=5 z =5 />
@@ -78,6 +85,7 @@
 					<scene name="plane" />
 					<scene name="cloth" />
 					<scene name="Axis" />
+					<scene name="dbScene" />
 				</scenes>
 				<camera name="MainCamera" />
 				<lights>

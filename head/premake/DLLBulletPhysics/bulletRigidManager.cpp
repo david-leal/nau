@@ -7,6 +7,7 @@ BulletRigidManager::BulletRigidManager() {
 
 
 BulletRigidManager::~BulletRigidManager() {
+	delete &rigidBodies;
 }
 
 void BulletRigidManager::update() {

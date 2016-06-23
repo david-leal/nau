@@ -8,7 +8,7 @@
 	<materials>
 		<material name="box" type="RIGID">
 			<MASS value="10.0" />
-			<FRICTION value="0.5" />
+			<FRICTION value="0.1" />
 			<RESTITUTION value="0.5" />
 		</material>
 		
@@ -19,8 +19,8 @@
 		</material>
 		
 		<material name="plane" type="STATIC">
-			<FRICTION value="1.0" />
-			<RESTITUTION value="1.0" />
+			<FRICTION value="0.8" />
+			<RESTITUTION value="0.95" />
 		</material>
 		
 		
@@ -48,9 +48,25 @@
 		</material>
 		
 		
+		<material name="man" type="CHARACTER" >
+			<PACE value="0.2" />
+			<HIT_MAGNITUDE value="100.0" />
+			<HEIGHT value="1.0" />
+			<RADIUS value="1.0" />
+			<STEP_OFFSET value="0.2" />
+			<DIRECTION x="0.0" y="0.0" z="-0.3" w="1.0" />
+			<MASS value="10.0" />
+			<FRICTION value="0.5" />
+			<RESTITUTION value="0.5" />
+		</material>
+		
+		
 		
 		<material name="waterfall" type="PARTICLES">
 			<MAX_PARTICLES value="20000.0" />
+		</material>
+		
+		<material name="debug" type="DEBUG">
 		</material>
 		
 	</materials>

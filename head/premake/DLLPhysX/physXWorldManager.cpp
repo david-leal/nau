@@ -28,11 +28,13 @@ PhysXWorldManager::PhysXWorldManager() {
 	rigidManager = new PhysXRigidManager();
 	softManager = new PhysXSoftManager();
 	particleManager = new PhysXParticleManager();
+	characterManager = new PhysXCharacterManager(world);
 }
 
 PhysXWorldManager::~PhysXWorldManager() {
 	if (gConnection)
 		gConnection->release();
+	world->release();
 	delete &world;
 	delete rigidManager;
 }
@@ -40,7 +42,8 @@ PhysXWorldManager::~PhysXWorldManager() {
 void PhysXWorldManager::update() {
 	//TODO: XML defined step tine
 	if (world) {
-		world->simulate(1/60.0f);
+		float time = 1 / 60.0f;
+		world->simulate(time);
 		world->fetchResults(true);
 
 		//RIGID BODIES UPDATE
@@ -53,6 +56,9 @@ void PhysXWorldManager::update() {
 
 		//PARTICLE UPDATE
 		particleManager->update();
+
+		//CHARACTER UPDATE
+		characterManager->update(time, world->getGravity());
 	}
 }
 
@@ -97,10 +103,51 @@ void PhysXWorldManager::moveSoft(std::string scene, float * transform) {
 	softManager->move(scene, transform);
 }
 
-void PhysXWorldManager::addParticles(const std::string & scene, float * maxParticles, float * nbParticles, float * transform) {
+void PhysXWorldManager::addParticles(const std::string & scene, float maxParticles, float * nbParticles, float * transform) {
 	particleManager->addParticleSystem(world, scene, maxParticles, nbParticles, transform);
 }
 
 float * PhysXWorldManager::getParticlePositions(const std::string & scene) {
 	return particleManager->getPositions(scene);
+}
+
+void PhysXWorldManager::addCharacter(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
+	characterManager->addCharacter(world, scene, nbVertices, vertices, nbIndices, indices, transform);
+}
+
+void PhysXWorldManager::setCharacterProperty(std::string scene, std::string propName, float value) {
+	if (propName.compare("PACE") == 0) {
+		characterManager->setPace(scene, value);
+	}
+	else if (propName.compare("HIT_MAGNITUDE") == 0) {
+		characterManager->setHitMagnitude(scene, value);
+	}
+	else if (propName.compare("HEIGHT") == 0) {
+		characterManager->setHeight(scene, value);
+	}
+	else if (propName.compare("RADIUS") == 0) {
+		characterManager->setRadius(scene, value);
+	}
+	else if (propName.compare("STEP_OFFSET") == 0) {
+		characterManager->setStepOffset(scene, value);
+	}
+	else if (propName.compare("MASS") == 0) {
+		characterManager->setMass(scene, value);
+	}
+	else if (propName.compare("FRICTION") == 0) {
+		characterManager->setFriction(scene, value);
+	}
+	else if (propName.compare("RESTITUTION") == 0) {
+		characterManager->setRestitution(scene, value);
+	}
+}
+
+void PhysXWorldManager::setCharacterProperty(std::string scene, std::string propName, float * value) {
+	if (propName.compare("DIRECTION") == 0) {
+		characterManager->setDirection(scene, PxVec3(value[0], value[1], value[2]));
+	}
+}
+
+void PhysXWorldManager::moveCharacter(std::string scene, float * transform) {
+	characterManager->move(scene, 1 / 60.0f, world->getGravity());
 }

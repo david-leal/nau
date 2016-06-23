@@ -18,6 +18,10 @@
 				<geometry name="box" type="BOX" material="azulejo" />
 				<TRANSLATE x=0 y=-3 z=0 />
 			</scene>
+			<scene name="box2" >
+				<geometry name="box" type="BOX" material="crate" />
+				<TRANSLATE x=0 y=-3 z=0 />
+			</scene>
 			
 			<!-- <scene name="box1">
 				<geometry name="box1" type="BOX" material="azulejo" />
@@ -107,11 +111,13 @@
 					<!-- <scene name="plane" /> -->
 				</scenes>
 				<COLOR_CLEAR value = false />
+				<DEPTH_CLEAR value = false />
 				<camera name="MainCamera" />
 				<lights>
 					<light name="Sun" />
 				</lights>
 				<materialMaps>
+					<map fromMaterial="DefaultOBJMaterial" toLibrary="Simple" toMaterial="particlesMat" />
 					<map fromMaterial="particlesMat" toLibrary="Simple" toMaterial="particlesMat" />
 					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
 					<map fromMaterial="debugMat" toLibrary="Simple" toMaterial="simpleColoredDebug" />

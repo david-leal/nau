@@ -21,6 +21,9 @@ BulletWorldManager::BulletWorldManager() {
 
 
 BulletWorldManager::~BulletWorldManager() {
+	delete debugDrawer;
+	delete rigidManager;
+	delete softManager;
 	delete world;
 }
 
@@ -31,6 +34,7 @@ void BulletWorldManager::update() {
 		rigidManager->update();
 		softManager->update();
 		if (debugDrawer) {
+			debugDrawer->clear();
 			world->debugDrawWorld();
 		}
 	}
@@ -77,14 +81,11 @@ void BulletWorldManager::moveSoft(std::string scene, float * transform) {
 	softManager->move(scene, transform);
 }
 
-void BulletWorldManager::setDebug(std::vector<float>* debugPoints) {
-	if (debugDrawer) {
-		debugDrawer->setPoints(debugPoints);
-	} else {
-		debugDrawer = new BulletDebugger(debugPoints);
+void BulletWorldManager::setDebug() {
+	if (!debugDrawer) {
+		debugDrawer = new BulletDebugger();
 		debugDrawer->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
 		//debugDrawer->setDebugMode(btIDebugDraw::DBG_MAX_DEBUG_DRAW_MODE);
 		world->setDebugDrawer(debugDrawer);
 	}
-	
 }

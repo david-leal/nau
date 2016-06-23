@@ -43,3 +43,7 @@ void BulletDebugger::setDebugMode(int debugMode) {
 	m_debugMode = debugMode;
 }
 
+std::vector<float> * BulletDebugger::getDebugPoints() {
+	return points;
+}
+

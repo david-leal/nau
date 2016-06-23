@@ -36,11 +36,13 @@ public:
 	void addCloth(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform);
 	void setSoftProperty(std::string scene, std::string propName, float value);
 	void moveSoft(std::string scene, float * transform);
-	void setDebug(std::vector<float> * debugPoints);
+	std::vector<float> * getDebug() { return debugDrawer->getDebugPoints(); }
+	void setDebug();
 
 	//void addCharacter();
 
-	btDynamicsWorld * getWorld() { return world; };
+	// TODO: Remove this get
+	//btDynamicsWorld * getWorld() { return world; };
 
 };
 

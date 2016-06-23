@@ -8,12 +8,12 @@ class BulletDebugger : public btIDebugDraw {
 	
 	int m_debugMode;
 
-private:
+protected:
 	std::vector<float> * points;
 
 public:
-	BulletDebugger(std::vector<float> * debugPoints) {
-		this->points = debugPoints;
+	BulletDebugger() {
+		this->points = new std::vector<float>();
 	};
 	~BulletDebugger() {};
 
@@ -35,7 +35,9 @@ public:
 
 	virtual int getDebugMode() const { return m_debugMode; }
 
-	void setPoints(std::vector<float> * debugPoints) { points = debugPoints; }
+	std::vector<float> * getDebugPoints();
+
+	void clear() { points->clear(); }
 
 };
 

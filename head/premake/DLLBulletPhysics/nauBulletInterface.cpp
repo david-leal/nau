@@ -97,6 +97,11 @@ void NauBulletInterface::setScene(const std::string & scene, int nbVertices, flo
 	case IPhysics::CLOTH:
 		worldManager->addCloth(scene, nbVertices, vertices, nbIndices, indices, transform);
 		break;
+	case IPhysics::CHARACTER:
+		break;
+	case IPhysics::DEBUG:
+		worldManager->setDebug();
+		break;
 	default:
 		break;
 	}
@@ -116,12 +121,15 @@ void NauBulletInterface::setSceneTransform(const std::string & scene, float * tr
 	}
 }
 
-int NauBulletInterface::getParticleCount(const std::string & scene) {
-	return 0;
+void NauBulletInterface::setParticleScene(const std::string & scene, float maxParticles, float * nbParticles, float * transform) {
 }
 
-void NauBulletInterface::setDebug(std::vector<float> * debugPoint) {
-	worldManager->setDebug(debugPoint);
+float * NauBulletInterface::getParticlePositions(const std::string & scene) {
+	return nullptr;
+}
+
+std::vector<float> * NauBulletInterface::getDebug() {
+	return worldManager->getDebug();
 }
 
 std::map<std::string, nau::physics::IPhysics::Prop>& NauBulletInterface::getGlobalProperties() {

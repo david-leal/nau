@@ -13,7 +13,7 @@ PhysXParticleManager::~PhysXParticleManager() {
 void PhysXParticleManager::update() {
 	for (auto scene : particleSystems) {
 
-		if ((*scene.second.extInfo.nbParticles < *scene.second.extInfo.maxParticles) && ((particleSystems[scene.first].iterStep++ % scene.second.maxIterStep) == 0)) {
+		if ((*scene.second.extInfo.nbParticles < scene.second.extInfo.maxParticles) && ((particleSystems[scene.first].iterStep++ % scene.second.maxIterStep) == 0)) {
 			createParticles(scene.first, 100.0f, 0.3f);
 		}
 
@@ -48,7 +48,7 @@ void PhysXParticleManager::update() {
 	}
 }
 
-void PhysXParticleManager::addParticleSystem(physx::PxScene * world, const std::string &scene, float * maxParticles, float * nbParticles, float *transform) {
+void PhysXParticleManager::addParticleSystem(physx::PxScene * world, const std::string &scene, float maxParticles, float * nbParticles, float *transform) {
 	particleSystems[scene].positions = new std::vector<float>();
 	particleSystems[scene].extInfo.maxParticles = maxParticles;
 	particleSystems[scene].extInfo.nbParticles = nbParticles;
@@ -62,7 +62,7 @@ void PhysXParticleManager::addParticleSystem(physx::PxScene * world, const std::
 
 	float particleDistance = 0.01f;
 
-	particleSystems[scene].particleSystem = gPhysics->createParticleFluid(*particleSystems[scene].extInfo.maxParticles);
+	particleSystems[scene].particleSystem = gPhysics->createParticleFluid(particleSystems[scene].extInfo.maxParticles);
 
 	//particleSystems[scene].particleSystem->setGridSize(5.0f);
 	particleSystems[scene].particleSystem->setMaxMotionDistance(0.3f);
@@ -83,7 +83,7 @@ void PhysXParticleManager::addParticleSystem(physx::PxScene * world, const std::
 	if (particleSystems[scene].particleSystem)
 		world->addActor(*particleSystems[scene].particleSystem);
 
-	particleSystems[scene].particleIndexPool = PxParticleExt::createIndexPool(*particleSystems[scene].extInfo.maxParticles);
+	particleSystems[scene].particleIndexPool = PxParticleExt::createIndexPool(particleSystems[scene].extInfo.maxParticles);
 	//createParticles();
 }
 

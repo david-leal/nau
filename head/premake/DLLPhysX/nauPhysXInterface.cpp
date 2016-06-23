@@ -38,6 +38,12 @@ NauPhysXInterface::NauPhysXInterface() {
 	m_MaterialProps["MASS"] = Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["FRICTION"] = Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["RESTITUTION"] = Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["PACE"] = Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["HIT_MAGNITUDE"] = Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["HEIGHT"] = Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["RADIUS"] = Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["STEP_OFFSET"] = Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["DIRECTION"] = Prop(IPhysics::VEC4, 0.0f, 0.0f, -1.0f, 1.0f);
 	
 	worldManager = new PhysXWorldManager();
 	Prop p = m_GlobalProps["GRAVITY"];
@@ -64,12 +70,18 @@ void NauPhysXInterface::applyFloatProperty(const std::string & scene, const std:
 	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC) {
 		worldManager->setRigidProperty(scene, property, value);
 	}
-	if (m_Scenes[scene].sceneType == SceneType::CLOTH) {
+	else if (m_Scenes[scene].sceneType == SceneType::CLOTH) {
 		worldManager->setSoftProperty(scene, property, value);
+	}
+	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER) {
+		worldManager->setCharacterProperty(scene, property, value);
 	}
 }
 
 void NauPhysXInterface::applyVec4Property(const std::string & scene, const std::string & property, float * value) {
+	if (m_Scenes[scene].sceneType == SceneType::CHARACTER) {
+		worldManager->setCharacterProperty(scene, property, value);
+	}
 }
 
 void NauPhysXInterface::applyGlobalFloatProperty(const std::string & property, float value) {
@@ -96,6 +108,8 @@ void NauPhysXInterface::setScene(const std::string &scene, int nbVertices, float
 	case IPhysics::CLOTH:
 		worldManager->addCloth(scene, nbVertices, vertices, nbIndices, indices, transform);
 		break;
+	case IPhysics::CHARACTER:
+		worldManager->addCharacter(scene, nbVertices, vertices, nbIndices, indices, transform);
 	default:
 		break;
 	}
@@ -110,12 +124,15 @@ void NauPhysXInterface::setSceneTransform(const std::string & scene, float * tra
 	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC) {
 		worldManager->moveRigid(scene, transform);
 	}
-	if (m_Scenes[scene].sceneType == SceneType::CLOTH) {
+	else if (m_Scenes[scene].sceneType == SceneType::CLOTH) {
 		worldManager->moveSoft(scene, transform);
+	}
+	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER) {
+		worldManager->moveCharacter(scene, transform);
 	}
 }
 
-void NauPhysXInterface::setParticleScene(const std::string &scene, float * maxParticles, float * nbParticles, float * transform) {
+void NauPhysXInterface::setParticleScene(const std::string &scene, float maxParticles, float * nbParticles, float * transform) {
 	m_Scenes[scene].maxParticles = maxParticles;
 	m_Scenes[scene].nbParticles = nbParticles;
 	m_Scenes[scene].transform = transform;
@@ -126,8 +143,8 @@ float * NauPhysXInterface::getParticlePositions(const std::string & scene) {
 	return worldManager->getParticlePositions(scene);
 }
 
-void NauPhysXInterface::setDebug(std::vector<float>* debugPoint) {
-
+std::vector<float> * NauPhysXInterface::getDebug() {
+	return nullptr;
 }
 
 std::map<std::string, nau::physics::IPhysics::Prop>& NauPhysXInterface::getGlobalProperties() {

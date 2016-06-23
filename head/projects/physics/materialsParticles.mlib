@@ -12,12 +12,12 @@
 				<field value="FLOAT" />
 			</structure>	
 		</buffer>
-		<buffer name="instanceNo" >
+		<!-- <buffer name="instanceNo" >
 			<DIM x=1 y=1 z=1 />
 			<structure>
 				<field value="INT" />
 			</structure>	
-		</buffer>
+		</buffer> -->
 	</buffers>
 	
 	<shaders>
@@ -37,6 +37,8 @@
 				<values>			
 					<valueof uniform="PVM" 				type="RENDERER" context="CURRENT"
 														component="PROJECTION_VIEW_MODEL" />
+					<valueof uniform="PV" 				type="RENDERER" context="CURRENT"
+														component="PROJECTION_VIEW" />
 					
 					<valueof uniform="V"          		type="RENDERER" context="CURRENT" 
 														component="VIEW" />

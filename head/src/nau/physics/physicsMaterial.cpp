@@ -14,6 +14,8 @@ PhysicsMaterial::Init() {
 	Attribs.listAdd("SCENE_TYPE", "RIGID", IPhysics::RIGID);
 	Attribs.listAdd("SCENE_TYPE", "CLOTH", IPhysics::CLOTH);
 	Attribs.listAdd("SCENE_TYPE", "PARTICLES", IPhysics::PARTICLES);
+	Attribs.listAdd("SCENE_TYPE", "CHARACTER", IPhysics::CHARACTER);
+	Attribs.listAdd("SCENE_TYPE", "DEBUG", IPhysics::DEBUG);
 
 	Attribs.add(Attribute(MAX_PARTICLE, "MAX_PARTICLES",  Enums::DataType::FLOAT, false, new NauFloat(0.0f)));
 	Attribs.add(Attribute(NBPARTICLES, "NBPARTICLES", Enums::DataType::FLOAT, false, new NauFloat(0.0f)));

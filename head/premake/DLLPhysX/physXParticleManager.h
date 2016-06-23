@@ -15,7 +15,7 @@ public:
 	~PhysXParticleManager();
 
 	void update();
-	void addParticleSystem(physx::PxScene * world, const std::string &scene, float * maxParticles, float * nbParticles, float *transform);
+	void addParticleSystem(physx::PxScene * world, const std::string &scene, float maxParticles, float * nbParticles, float *transform);
 	void createParticles(std::string scene, float n, float randomFactor);
 	float * getPositions(std::string scene);
 

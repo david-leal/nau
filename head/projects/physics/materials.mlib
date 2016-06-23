@@ -1,6 +1,25 @@
 <?xml version="1.0" ?>
 <materialLib name="Simple">
 
+	<buffers>
+		<buffer name="dbPosition" >
+			<DIM x=3 y=1 z=1 />
+			<structure>
+				<field value="FLOAT" />
+				<field value="FLOAT" />
+				<field value="FLOAT" />
+				<field value="FLOAT" />
+			</structure>	
+		</buffer>
+		<buffer name="dbIndex" >
+			<DIM x=2 y=1 z=1 />
+			<structure>
+				<field value="INT" />
+			</structure>	
+		</buffer>
+	</buffers>
+
+
 	<textures>
 		<!--texture name="Crate" filename="../../models/Texturas/crate.jpg" mipmap=true/-->	
 		<texture name="Azulejo" filename="../../models/Texturas/AzulejoCapStAnt.tif">

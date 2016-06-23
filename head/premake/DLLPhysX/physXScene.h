@@ -31,7 +31,7 @@ typedef struct ExternalInfo {
 } externalInfo;
 
 typedef struct ExternalParticles {
-	float * maxParticles;
+	float maxParticles;
 	float * nbParticles;
 	float * positions;
 	float * transform;

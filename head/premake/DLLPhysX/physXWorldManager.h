@@ -6,6 +6,7 @@
 #include "physXRigidManager.h"
 #include "physXSoftManager.h"
 #include "physXParticleManager.h"
+#include "physXCharacterManager.h"
 
 class PhysXWorldManager {
 
@@ -19,6 +20,7 @@ private:
 	PhysXRigidManager * rigidManager;
 	PhysXSoftManager * softManager;
 	PhysXParticleManager * particleManager;
+	PhysXCharacterManager * characterManager;
 
 public:
 	PhysXWorldManager();
@@ -34,10 +36,13 @@ public:
 	void setSoftProperty(std::string scene, std::string propName, float value);
 	void moveSoft(std::string scene, float * transform);
 
-	void addParticles(const std::string &scene, float * maxParticles, float * nbParticles, float *transform);
+	void addParticles(const std::string &scene, float maxParticles, float * nbParticles, float *transform);
 	float * getParticlePositions(const std::string & scene);
 	
-	//void addCharacter();
+	void addCharacter(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
+	void setCharacterProperty(std::string scene, std::string propName, float value);
+	void setCharacterProperty(std::string scene, std::string propName, float * value);
+	void moveCharacter(std::string scene, float * transform);
 
 	physx::PxScene * getWorld() { return world; }
 	

@@ -21,7 +21,9 @@ namespace nau
 				STATIC,
 				RIGID,
 				CLOTH,
-				PARTICLES
+				PARTICLES,
+				CHARACTER,
+				DEBUG
 			} SceneType;
 
 			typedef enum {
@@ -66,14 +68,14 @@ namespace nau
 			virtual float *getSceneTransform(const std::string &scene) = 0;
 			virtual void setSceneTransform(const std::string &scene, float *transform) = 0;
 
-			virtual void setParticleScene(const std::string &scene, float * maxParticles, float * nbParticles, float * transform) = 0;
+			virtual void setParticleScene(const std::string &scene, float maxParticles, float * nbParticles, float * transform) = 0;
 
 			virtual float * getParticlePositions(const std::string &scene) = 0;
 
 			virtual std::map<std::string, nau::physics::IPhysics::Prop> &getGlobalProperties() = 0;
 			virtual std::map<std::string, nau::physics::IPhysics::Prop> &getMaterialProperties() = 0;
 
-			virtual void setDebug(std::vector<float> * debugPoint) = 0;
+			virtual std::vector<float> * getDebug() = 0;
 
 		protected:
 
@@ -88,7 +90,7 @@ namespace nau
 				};
 				struct {
 					SceneType sceneType;
-					float * maxParticles;
+					float maxParticles;
 					float * nbParticles;
 					float * particlePos;
 					float * transform;
