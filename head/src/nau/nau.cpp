@@ -1196,10 +1196,10 @@ Nau::clear() {
 
 
 void
-Nau::readProjectFile (std::string file, int *width, int *height) {
+Nau::readProjectFile(std::string file, int *width, int *height) {
 
 	try {
-		ProjectLoader::load (file, width, height);
+		ProjectLoader::load(file, width, height);
 	}
 	catch (std::string s) {
 		clear();
@@ -1207,22 +1207,6 @@ Nau::readProjectFile (std::string file, int *width, int *height) {
 	}
 
 	setActiveCameraName(RENDERMANAGER->getDefaultCameraName());
-
-	// Physics Dummy test Init
-
-	//m_pPhysicsManager->addScene(RENDERMANAGER->getScene("CubeLand").get(), "BLE");	//std::string wn = "test";
-	
-																											//std::string wl = "My AT Bar";
-	//INTERFACE->createWindow(wn, wl);
-	////INTERFACE->addVar("test", "Viewport_Size", "VIEWPORT", "__nauDefault", "SIZE", 0);
-	////INTERFACE->addVar("test", "Camera_Far", "CAMERA", "MainCamera", "FAR", 0);
-	////INTERFACE->addVar("test", "Depth_Func", "STATE", "nau_material_lib::__Emission Purple", "DEPTH_FUNC");
-	//INTERFACE->addPipelineList("test", "Step");
-	//INTERFACE->addColor("test", "dark", "RENDERER", "Materials::woodRings", "dark", 0);
-	//INTERFACE->addDir("test", "LightDir", "LIGHT", "Sun", "DIRECTION", 0);
-	//INTERFACE->addVar("test", "normal", "RENDERER", "CURRENT", "NORMAL");
-	//INTERFACE->addVar("test", "view", "CAMERA", "MainCamera", "VIEW_MATRIX");
-	//SLOG("AntTweakBar error : %s", TwGetLastError());
 }
 
 
@@ -1395,6 +1379,8 @@ Nau::step() {
 	if (m_Physics)
 		m_pPhysicsManager->update();
 
+	if (m_Physics)
+		m_pPhysicsManager->update();
 	//if (getProfileResetRequest())
 	//	Profile::Reset();
 	INTERFACE->render();
