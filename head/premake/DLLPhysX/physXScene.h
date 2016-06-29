@@ -13,7 +13,7 @@ typedef struct ExternalInfo {
 	unsigned int * indices;
 	float * transform;
 
-	/*ExternalInfo() {
+	ExternalInfo() {
 		nbVertices	= 0;
 		vertices	= 0;
 		nbIndices	= 0;
@@ -27,10 +27,10 @@ typedef struct ExternalInfo {
 		nbIndices	= nbInd;
 		indices		= ind;
 		transform	= transf;
-	};*/
+	};
 } externalInfo;
 
-typedef struct ExternalParticles {
+/*typedef struct ExternalParticles {
 	float maxParticles;
 	float * nbParticles;
 	float * positions;
@@ -48,17 +48,17 @@ typedef struct ExternalParticles {
 		nbParticles		= nbParts;
 		positions		= pos;
 		transform		= transf;
-	};*/
+	};
 
-} externalParticles;
+} externalParticles;*/
 
 
 typedef struct {
 
-	union {
+	//union {
 		externalInfo extInfo;
-		externalParticles extParticles;
-	};
+	//	externalParticles extParticles;
+	//};
 
 	physx::PxActor* actor;
 

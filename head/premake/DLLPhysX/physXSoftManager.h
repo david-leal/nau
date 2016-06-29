@@ -13,8 +13,6 @@ public:
 
 	void update();
 	void addSoftBody(physx::PxScene * world, const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
-	void setFriction(std::string name, float value);
-	void setRestitution(std::string name, float value);
 	void move(std::string scene, float * transform);
 
 protected:

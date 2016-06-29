@@ -30,8 +30,6 @@ namespace nau
 			void setPropf(FloatProperty p, float value);
 			void setPropf4(Float4Property p, vec4 &value);
 
-			float * getPropfPointer(FloatProperty prop);
-
 		protected:
 
 			static bool Init();

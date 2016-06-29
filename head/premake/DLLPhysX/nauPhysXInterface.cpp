@@ -3,15 +3,22 @@
 #include <memory>
 
 static char className[] = "Dummy";
+static NauPhysXInterface * Instance = NULL;
 
 __declspec(dllexport)
 void *
 createPhysics() {
 
-	NauPhysXInterface *p = new NauPhysXInterface();
-	return p;
+	Instance = new NauPhysXInterface();
+	return Instance;
 }
 
+__declspec(dllexport)
+void
+deletePhysics() {
+
+	delete Instance;
+}
 
 __declspec(dllexport)
 void
@@ -35,15 +42,16 @@ NauPhysXInterface::NauPhysXInterface() {
 	//INFO: Declare Physics Properties reflected in XML file
 	m_GlobalProps["GRAVITY"] = Prop(IPhysics::VEC4, 0.0f, -9.8f, 0.0f, 0.0f);
 
-	m_MaterialProps["MASS"] = Prop(IPhysics::FLOAT, 1.0f);
-	m_MaterialProps["FRICTION"] = Prop(IPhysics::FLOAT, 1.0f);
-	m_MaterialProps["RESTITUTION"] = Prop(IPhysics::FLOAT, 1.0f);
-	m_MaterialProps["PACE"] = Prop(IPhysics::FLOAT, 1.0f);
-	m_MaterialProps["HIT_MAGNITUDE"] = Prop(IPhysics::FLOAT, 1.0f);
-	m_MaterialProps["HEIGHT"] = Prop(IPhysics::FLOAT, 1.0f);
-	m_MaterialProps["RADIUS"] = Prop(IPhysics::FLOAT, 1.0f);
-	m_MaterialProps["STEP_OFFSET"] = Prop(IPhysics::FLOAT, 1.0f);
-	m_MaterialProps["DIRECTION"] = Prop(IPhysics::VEC4, 0.0f, 0.0f, -1.0f, 1.0f);
+	m_MaterialProps["MASS"]				= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["STATIC_FRICTION"]	= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["DYNAMIC_FRICTION"]	= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["RESTITUTION"]		= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["PACE"]				= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["HIT_MAGNITUDE"]	= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["HEIGHT"]			= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["RADIUS"]			= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["STEP_OFFSET"]		= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["DIRECTION"]		= Prop(IPhysics::VEC4, 0.0f, 0.0f, -1.0f, 1.0f);
 	
 	worldManager = new PhysXWorldManager();
 	Prop p = m_GlobalProps["GRAVITY"];
@@ -54,8 +62,15 @@ NauPhysXInterface::NauPhysXInterface() {
 NauPhysXInterface::~NauPhysXInterface() {
 }
 
+void NauPhysXInterface::setPropertyManager(nau::physics::IPhysicsPropertyManager * pm) {
+	m_PropertyManager = pm;
+}
+
 void NauPhysXInterface::update() {
 	worldManager->update();
+	for (auto particleMaterial : *worldManager->getMaterialParticleNb()) {
+		m_PropertyManager->setMaterialFloatProperty(particleMaterial.first, "NBPARTICLES", particleMaterial.second);
+	}
 }
 
 void NauPhysXInterface::build() {
@@ -93,23 +108,52 @@ void NauPhysXInterface::applyGlobalVec4Property(const std::string & property, fl
 	}
 }
 
-void NauPhysXInterface::setScene(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform) {
+void NauPhysXInterface::setScene(const std::string &scene, const std::string &material, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform) {
 	m_Scenes[scene].vertices = vertices;
 	m_Scenes[scene].indices = indices;
 	m_Scenes[scene].transform = transform;
 	switch (m_Scenes[scene].sceneType)
 	{
 	case IPhysics::STATIC:
-		worldManager->addRigid(scene, nbVertices, vertices, nbIndices, indices, transform, true);
+		worldManager->addRigid(
+			scene,
+			nbVertices,
+			vertices,
+			nbIndices,
+			indices,
+			transform,
+			m_PropertyManager->getMaterialFloatProperty(material, "STATIC_FRICTION"),
+			m_PropertyManager->getMaterialFloatProperty(material, "DYNAMIC_FRICTION"),
+			m_PropertyManager->getMaterialFloatProperty(material, "RESTITUTION"),
+			true
+		);
 		break;
 	case IPhysics::RIGID:
-		worldManager->addRigid(scene, nbVertices, vertices, nbIndices, indices, transform);
+		worldManager->addRigid(
+			scene,
+			nbVertices,
+			vertices,
+			nbIndices,
+			indices,
+			transform,
+			m_PropertyManager->getMaterialFloatProperty(material, "STATIC_FRICTION"),
+			m_PropertyManager->getMaterialFloatProperty(material, "DYNAMIC_FRICTION"),
+			m_PropertyManager->getMaterialFloatProperty(material, "RESTITUTION")
+		);
 		break;
 	case IPhysics::CLOTH:
 		worldManager->addCloth(scene, nbVertices, vertices, nbIndices, indices, transform);
 		break;
 	case IPhysics::CHARACTER:
 		worldManager->addCharacter(scene, nbVertices, vertices, nbIndices, indices, transform);
+	case IPhysics::PARTICLES:
+		worldManager->addParticles(
+			scene,
+			material,
+			m_PropertyManager->getMaterialFloatProperty(material, "MAX_PARTICLES"),
+			vertices,
+			transform
+		);
 	default:
 		break;
 	}
@@ -130,17 +174,6 @@ void NauPhysXInterface::setSceneTransform(const std::string & scene, float * tra
 	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER) {
 		worldManager->moveCharacter(scene, transform);
 	}
-}
-
-void NauPhysXInterface::setParticleScene(const std::string &scene, float maxParticles, float * nbParticles, float * transform) {
-	m_Scenes[scene].maxParticles = maxParticles;
-	m_Scenes[scene].nbParticles = nbParticles;
-	m_Scenes[scene].transform = transform;
-	worldManager->addParticles(scene, m_Scenes[scene].maxParticles, m_Scenes[scene].nbParticles, transform);
-}
-
-float * NauPhysXInterface::getParticlePositions(const std::string & scene) {
-	return worldManager->getParticlePositions(scene);
 }
 
 std::vector<float> * NauPhysXInterface::getDebug() {

@@ -15,20 +15,20 @@ public:
 	~PhysXParticleManager();
 
 	void update();
-	void addParticleSystem(physx::PxScene * world, const std::string &scene, float maxParticles, float * nbParticles, float *transform);
+	void addParticleSystem(physx::PxScene * world, const std::string &scene, const std::string &material, float maxParticles, float * positions, float *transform);
 	void createParticles(std::string scene, float n, float randomFactor);
-	float * getPositions(std::string scene);
+	std::map<std::string, int> * getParticleSystemsParticleNb();
+
 
 protected:
 	typedef struct {
-		externalParticles extInfo;
+		externalInfo extInfo;
 		physx::PxParticleFluid * particleSystem;
 		physx::PxParticleExt::IndexPool* particleIndexPool;
-		std::vector<float> * positions;
-		//bool perParticleRestOffset = false;
+		int currentNbParticles;
 		int maxIterStep;
 		int iterStep;
-
+		std::string materialName;
 	} PhysXParticleSystem;
 
 	std::map<std::string, PhysXParticleSystem> particleSystems;

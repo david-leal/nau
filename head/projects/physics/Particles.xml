@@ -3,7 +3,7 @@
 	<assets> 
 		<scenes>			
 			<!-- <scene name="waterfall" physicsMaterial="waterfall">
-				<geometry name="waterfall" type="SPHERE" material="particlesMat" SLICES=20 STACKS=20 />
+				<geometry name="waterfall" type="SPHERE" material="particlesMat" SLICES=8 STACKS=8 />
 			</scene> -->
 			
 			<scene name="waterfall" physicsMaterial="waterfall">
@@ -14,14 +14,14 @@
 				<geometry name="plane" type="SQUARE" material="azulejo" />
 			</scene> -->
 			
-			<scene name="box" physicsMaterial="staticBox">
+			<!-- <scene name="box" physicsMaterial="staticBox">
 				<geometry name="box" type="BOX" material="azulejo" />
 				<TRANSLATE x=0 y=-3 z=0 />
 			</scene>
 			<scene name="box2" >
 				<geometry name="box" type="BOX" material="crate" />
 				<TRANSLATE x=0 y=-3 z=0 />
-			</scene>
+			</scene> -->
 			
 			<!-- <scene name="box1">
 				<geometry name="box1" type="BOX" material="azulejo" />
@@ -76,7 +76,7 @@
 		
 		<materialLibs>
 			<materialLib filename = "materialsParticles.mlib"/>
-			<materialLib filename = "materials.mlib"/>
+			<!-- <materialLib filename = "materials.mlib"/> -->
 		</materialLibs> 
 		
 		<physicsLibs>
@@ -87,12 +87,11 @@
 	
 	<pipelines mode="RUN_ALL" default="fixedfunction" >
 		<pipeline name="fixedfunction" default="true">
-			<pass class="default" name="axisPass">
+			<!-- <pass class="default" name="axisPass">
 				<scenes>
 					<scene name="box" />
 					<scene name="Axis" />
 				</scenes>
-				<!-- <COLOR_CLEAR value = false /> -->
 				<camera name="MainCamera" />
 				<lights>
 					<light name="Sun" />
@@ -102,7 +101,7 @@
 					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
 					<map fromMaterial="debugMat" toLibrary="Simple" toMaterial="simpleColoredDebug" />
 				</materialMaps>
-			</pass>
+			</pass> -->
 			
 			<pass class="default" name="mainPass">
 				<!-- <scenes instances=4 > -->
@@ -119,8 +118,8 @@
 				<materialMaps>
 					<map fromMaterial="DefaultOBJMaterial" toLibrary="Simple" toMaterial="particlesMat" />
 					<map fromMaterial="particlesMat" toLibrary="Simple" toMaterial="particlesMat" />
-					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
-					<map fromMaterial="debugMat" toLibrary="Simple" toMaterial="simpleColoredDebug" />
+					<!-- <map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
+					<map fromMaterial="debugMat" toLibrary="Simple" toMaterial="simpleColoredDebug" /> -->
 				</materialMaps>
 			</pass>
 		</pipeline>

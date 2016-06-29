@@ -56,8 +56,3 @@ PhysicsMaterial::setPropf4(Float4Property p, vec4 &value) {
 	m_Float4Props[p] = value;
 	PhysicsManager::GetInstance()->applyMaterialVec4Property(m_Name, Attribs.getName(p, Enums::VEC4), &value.x);
 }
-
-float * 
-PhysicsMaterial::getPropfPointer(FloatProperty prop) {
-	return  &m_FloatProps[prop];
-}

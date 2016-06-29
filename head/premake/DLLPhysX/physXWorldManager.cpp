@@ -66,12 +66,12 @@ void PhysXWorldManager::setGravity(float x, float y, float z) {
 		world->setGravity(PxVec3(x, y, z));
 }
 
-void PhysXWorldManager::addRigid(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, bool isStatic) {
+void PhysXWorldManager::addRigid(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, float dynamicFrction, float staticFriction, float restitution, bool isStatic) {
 	if (isStatic) {
-		rigidManager->addStaticBody(world, mCooking, scene, nbVertices, vertices, nbIndices, indices, transform);
+		rigidManager->addStaticBody(world, mCooking, scene, nbVertices, vertices, nbIndices, indices, transform, staticFriction, dynamicFrction, restitution);
 	}
 	else {
-		   rigidManager->addDynamicBody(world, mCooking, scene, nbVertices, vertices, nbIndices, indices, transform);
+		   rigidManager->addDynamicBody(world, mCooking, scene, nbVertices, vertices, nbIndices, indices, transform, staticFriction, dynamicFrction, restitution);
 	}
 }
 
@@ -79,8 +79,11 @@ void PhysXWorldManager::setRigidProperty(std::string scene, std::string propName
 	if (propName.compare("MASS") == 0) {
 		rigidManager->setMass(scene, value);
 	}
-	if (propName.compare("FRICTION") == 0) {
-		rigidManager->setFriction(scene, value);
+	if (propName.compare("STATIC_FRICTION") == 0) {
+		rigidManager->setStaticFriction(scene, value);
+	}
+	if (propName.compare("DYNAMIC_FRICTION") == 0) {
+		rigidManager->setDynamicFriction(scene, value);
 	}
 	if (propName.compare("RESTITUTION") == 0) {
 		rigidManager->setRestitution(scene, value);
@@ -96,19 +99,19 @@ void PhysXWorldManager::addCloth(const std::string & scene, int nbVertices, floa
 }
 
 void PhysXWorldManager::setSoftProperty(std::string scene, std::string propName, float value) {
-	//TODO: Check properties for cloths
+	// TODO: Check properties for cloths
 }
 
 void PhysXWorldManager::moveSoft(std::string scene, float * transform) {
 	softManager->move(scene, transform);
 }
 
-void PhysXWorldManager::addParticles(const std::string & scene, float maxParticles, float * nbParticles, float * transform) {
-	particleManager->addParticleSystem(world, scene, maxParticles, nbParticles, transform);
+void PhysXWorldManager::addParticles(const std::string &scene, const std::string &material, float maxParticles, float * positions, float *transform) {
+	particleManager->addParticleSystem(world, scene, material, maxParticles, positions, transform);
 }
 
-float * PhysXWorldManager::getParticlePositions(const std::string & scene) {
-	return particleManager->getPositions(scene);
+std::map<std::string, int>* PhysXWorldManager::getMaterialParticleNb() {
+	return particleManager->getParticleSystemsParticleNb();
 }
 
 void PhysXWorldManager::addCharacter(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {

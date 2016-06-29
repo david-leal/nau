@@ -8,43 +8,49 @@
 	<materials>
 		<material name="box" type="RIGID">
 			<MASS value="10.0" />
-			<FRICTION value="0.1" />
+			<STATIC_FRICTION value="0.1" />
+			<DYNAMIC_FRICTION value="0.1" />
 			<RESTITUTION value="0.5" />
 		</material>
 		
 		<material name="staticBox" type="STATIC">
 			<MASS value="10.0" />
-			<FRICTION value="0.5" />
+			<STATIC_FRICTION value="0.5" />
+			<DYNAMIC_FRICTION value="0.5" />
 			<RESTITUTION value="0.5" />
 		</material>
 		
 		<material name="plane" type="STATIC">
-			<FRICTION value="0.8" />
+			<STATIC_FRICTION value="0.8" />
+			<DYNAMIC_FRICTION value="0.8" />
 			<RESTITUTION value="0.95" />
 		</material>
 		
 		
 		<material name="billiardBall" type="RIGID">
 			<MASS value="1.0" />
-			<FRICTION value="0.8" />
+			<STATIC_FRICTION value="0.8" />
+			<DYNAMIC_FRICTION value="0.8" />
 			<RESTITUTION value="0.8" />
 		</material>
 		
 		<material name="poolTablePlane" type="STATIC">
-			<FRICTION value="0.9" />
+			<STATIC_FRICTION value="0.9" />
+			<DYNAMIC_FRICTION value="0.9" />
 			<RESTITUTION value="0.0" />
 		</material>
 		
 		<material name="poolTableBorder" type="STATIC">
-			<FRICTION value="0.8" />
+			<STATIC_FRICTION value="0.8" />
+			<DYNAMIC_FRICTION value="0.8" />
 			<RESTITUTION value="0.8" />
 		</material>
 		
 		
 		
 		<material name="cloth" type="CLOTH">
-			<FRICTION value="0.5" />
-			<RESTITUTION value="0.5" />
+			<!-- <FRICTION value="0.5" /> -->
+			<!-- <RESTITUTION value="0.5" /> -->
 		</material>
 		
 		
@@ -56,7 +62,8 @@
 			<STEP_OFFSET value="0.2" />
 			<DIRECTION x="0.0" y="0.0" z="-0.3" w="1.0" />
 			<MASS value="10.0" />
-			<FRICTION value="0.5" />
+			<STATIC_FRICTION value="0.5" />
+			<DYNAMIC_FRICTION value="0.5" />
 			<RESTITUTION value="0.5" />
 		</material>
 		

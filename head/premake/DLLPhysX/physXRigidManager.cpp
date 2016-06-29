@@ -55,15 +55,18 @@ PhysXRigidManager::getTriangleMeshGeo(PxScene *world, physx::PxCooking* mCooking
 }
 
 void 
-PhysXRigidManager::addStaticBody(physx::PxScene * world, physx::PxCooking* mCooking, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	setExtInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
+PhysXRigidManager::addStaticBody(physx::PxScene * world, physx::PxCooking* mCooking, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, float staticFriction, float dynamicFrction, float restitution) {
+	rigidBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
+	//setExtInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
 
 	PxPhysics *gPhysics = &(world->getPhysics());
+	PxMaterial * material = gPhysics->createMaterial(staticFriction, dynamicFrction, restitution);
+
 	PxRigidStatic* staticActor;
 	if (scene.compare("plane") == 0) {
 		staticActor = PxCreatePlane(*gPhysics,
 			PxPlane(0.0f, 1.0f, 0.0f, 0.0f),
-			*(gPhysics->createMaterial(1.0f, 1.0f, 1.0f))
+			*material
 		);
 
 	}
@@ -71,7 +74,7 @@ PhysXRigidManager::addStaticBody(physx::PxScene * world, physx::PxCooking* mCook
 		staticActor = gPhysics->createRigidStatic(PxTransform(PxMat44(rigidBodies[scene].extInfo.transform)));
 		PxTriangleMeshGeometry triGeom;
 		triGeom.triangleMesh = gPhysics->createTriangleMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo));
-		staticActor->createShape(triGeom, *(gPhysics->createMaterial(1.0f, 1.0f, 1.0f)));
+		staticActor->createShape(triGeom, *material);
 	}
 	staticActor->userData = static_cast<void*> (new std::string(scene));
 	world->addActor(*staticActor);
@@ -80,10 +83,12 @@ PhysXRigidManager::addStaticBody(physx::PxScene * world, physx::PxCooking* mCook
 
 }
 
-void PhysXRigidManager::addDynamicBody(physx::PxScene * world, physx::PxCooking* mCooking, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	setExtInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
+void PhysXRigidManager::addDynamicBody(physx::PxScene * world, physx::PxCooking* mCooking, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, float staticFriction, float dynamicFrction, float restitution) {
+	rigidBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
+	//setExtInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
 
 	PxPhysics *gPhysics = &(world->getPhysics());
+	PxMaterial * material = gPhysics->createMaterial(staticFriction, dynamicFrction, restitution);
 	PxRigidDynamic* dynamic;
 	PxTransform trans = PxTransform(PxMat44(rigidBodies[scene].extInfo.transform));
 
@@ -91,7 +96,7 @@ void PhysXRigidManager::addDynamicBody(physx::PxScene * world, physx::PxCooking*
 		dynamic = PxCreateDynamic(*gPhysics,
 					trans,
 					PxSphereGeometry(1),
-					*(gPhysics->createMaterial(1.0f, 1.0f, 1.0f)),
+					*material,
 					1.0f
 				);
 	}
@@ -99,13 +104,10 @@ void PhysXRigidManager::addDynamicBody(physx::PxScene * world, physx::PxCooking*
 		dynamic = gPhysics->createRigidDynamic(trans);
 
 		PxConvexMesh * convexMesh = gPhysics->createConvexMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo, false));
-		PxShape *shape = dynamic->createShape(PxConvexMeshGeometry(convexMesh), *(gPhysics->createMaterial(1.0f, 1.0f, 1.0f)));
+		PxShape *shape = dynamic->createShape(PxConvexMeshGeometry(convexMesh), *material);
 	}
 	dynamic->userData = static_cast<void*> (new std::string(scene));
 	world->addActor(*dynamic);
-	if (scene.compare("billiardBallWhite") == 0) {
-		dynamic->addForce(PxVec3(500.0, 0, 0), PxForceMode::eIMPULSE);
-	}
 	rigidBodies[scene].actor = dynamic;
 }
 
@@ -118,7 +120,26 @@ void PhysXRigidManager::setMass(std::string name, float value) {
 	}
 }
 
-void PhysXRigidManager::setFriction(std::string name, float value) {
+void PhysXRigidManager::setStaticFriction(std::string name, float value) {
+	if (rigidBodies.find(name) != rigidBodies.end()) {
+		PxRigidActor * actor = rigidBodies[name].actor->is<PxRigidActor>();
+		if (actor) {
+			PxU32 nbShapes = actor->getNbShapes();
+			std::vector<PxShape *> list(nbShapes);
+			actor->getShapes(&list.at(0), nbShapes);
+			for (PxShape* shape : list) {
+				PxU32 nbMat = shape->getNbMaterials();
+				std::vector<PxMaterial *> matList(nbMat);
+				shape->getMaterials(&matList.at(0), nbMat);
+				for (PxMaterial * mat : matList) {
+					mat->setStaticFriction(value);
+				}
+			}
+		}
+	}
+}
+
+void PhysXRigidManager::setDynamicFriction(std::string name, float value) {
 	if (rigidBodies.find(name) != rigidBodies.end()) {
 		PxRigidActor * actor = rigidBodies[name].actor->is<PxRigidActor>();
 		if (actor) {
@@ -131,7 +152,6 @@ void PhysXRigidManager::setFriction(std::string name, float value) {
 				shape->getMaterials(&matList.at(0), nbMat);
 				for (PxMaterial * mat : matList) {
 					mat->setDynamicFriction(value);
-					mat->setStaticFriction(value);
 				}
 			}
 		}
@@ -167,7 +187,17 @@ void PhysXRigidManager::move(std::string scene, float * transform) {
 	}
 }
 
-void
+void PhysXRigidManager::setForce(std::string scene, float * force) {
+	if (rigidBodies.find(scene) != rigidBodies.end()) {
+		PxRigidDynamic * actor = rigidBodies[scene].actor->is<PxRigidDynamic>();
+		if (actor) {
+			actor->addForce(PxVec3(force[0], force[1], force[2]), PxForceMode::eIMPULSE);
+		}
+	}
+	//dynamic->addForce(PxVec3(500.0, 0, 0), PxForceMode::eIMPULSE);
+}
+
+/*void
 PhysXRigidManager::setExtInfo(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
 	rigidBodies[scene].extInfo.nbVertices = nbVertices;
 	rigidBodies[scene].extInfo.vertices = vertices;
@@ -175,4 +205,4 @@ PhysXRigidManager::setExtInfo(const std::string & scene, int nbVertices, float *
 	rigidBodies[scene].extInfo.indices = indices;
 	rigidBodies[scene].extInfo.transform = transform;
 	//rigidBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
-}
+}*/

@@ -66,14 +66,13 @@ namespace nau
 			virtual void applyGlobalFloatProperty(const std::string &property, float value) = 0;
 			virtual void applyGlobalVec4Property(const std::string &property, float *value) = 0;
 
-			virtual void setScene(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform) = 0;
+			virtual void setScene(const std::string &scene, const std::string & material, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform) = 0;
 			
 			virtual float *getSceneTransform(const std::string &scene) = 0;
 			virtual void setSceneTransform(const std::string &scene, float *transform) = 0;
 
-			virtual void setParticleScene(const std::string &scene, float maxParticles, float * nbParticles, float * transform) = 0;
-
-			virtual float * getParticlePositions(const std::string &scene) = 0;
+			//virtual void setParticleScene(const std::string &scene, float maxParticles, float * nbParticles, float * transform) = 0;
+			//virtual float * getParticlePositions(const std::string &scene) = 0;
 
 			virtual std::map<std::string, nau::physics::IPhysics::Prop> &getGlobalProperties() = 0;
 			virtual std::map<std::string, nau::physics::IPhysics::Prop> &getMaterialProperties() = 0;
@@ -82,22 +81,13 @@ namespace nau
 
 		protected:
 
-			typedef union {
-				struct {
-					SceneType sceneType;
-					int nbVertices;
-					float * vertices;
-					int nbIndices;
-					unsigned int * indices;
-					float * transform;
-				};
-				struct {
-					SceneType sceneType;
-					float maxParticles;
-					float * nbParticles;
-					float * particlePos;
-					float * transform;
-				};
+			typedef struct {
+				SceneType sceneType;
+				int nbVertices;
+				float * vertices;
+				int nbIndices;
+				unsigned int * indices;
+				float * transform;
 			} SceneProps;
 
 			std::map<std::string, SceneProps> m_Scenes;

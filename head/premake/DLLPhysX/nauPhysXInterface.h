@@ -19,6 +19,8 @@ public:
 	NauPhysXInterface();
 	~NauPhysXInterface();
 
+	virtual void setPropertyManager(nau::physics::IPhysicsPropertyManager *pm);
+
 	void update();
 	void build();
 
@@ -30,14 +32,13 @@ public:
 	void applyGlobalFloatProperty(const std::string &property, float value);
 	void applyGlobalVec4Property(const std::string &property, float *value);
 
-	void setScene(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
+	void setScene(const std::string &scene, const std::string &material, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
 
 	float *getSceneTransform(const std::string &scene);
 	void setSceneTransform(const std::string &scene, float *transform);
 
-	void setParticleScene(const std::string &scene, float maxParticles, float * nbParticles, float * transform);
-
-	float * getParticlePositions(const std::string &scene);
+	//void setParticleScene(const std::string &scene, float maxParticles, float * nbParticles, float * transform);
+	//float * getParticlePositions(const std::string &scene);
 
 	std::vector<float> * getDebug();
 
@@ -50,6 +51,7 @@ extern "C" {
 	__declspec(dllexport) void *createPhysics();
 	__declspec(dllexport) void init();
 	__declspec(dllexport) char *getClassName();
+	__declspec(dllexport) void deletePhysics();
 }
 
 #endif

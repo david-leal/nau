@@ -175,12 +175,6 @@ PhysicsManager::update() {
 			for (auto &o : so) {
 				o->getRenderable()->getVertexData()->resetCompilationFlag();
 				o->getRenderable()->getVertexData()->compile();
-				//o->getRenderable()->getMaterialGroups().at(0)->getIndexData()->resetCompilationFlag();
-				//o->getRenderable()->getMaterialGroups().at(0)->getIndexData()->compile();
-				/*for (auto &mat : o->getRenderable()->getMaterialGroups()) {
-					mat->getIndexData()->resetCompilationFlag();
-					mat->getIndexData()->compile();
-				}*/
 			}
 			break;
 
@@ -193,7 +187,17 @@ PhysicsManager::update() {
 		{
 			std::string &sceneName = s.first->getName();
 			PhysicsMaterial &pm = getMaterial(s.second);
-			float * partPos = m_PhysInst->getParticlePositions(sceneName);
+
+			int nPart = static_cast<int>(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId()));
+
+			
+			s.first->getAllObjects(&so);
+			for (auto &o : so) {
+				o->getRenderable()->getVertexData()->resetCompilationFlag();
+				o->getRenderable()->getVertexData()->compile();
+			}
+
+			/*float * partPos = m_PhysInst->getParticlePositions(sceneName);
 			if (partPos) {
 				int nPart = static_cast<int>(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId()));
 				std::vector<std::string> * bufferNames = new std::vector<std::string>();
@@ -205,14 +209,12 @@ PhysicsManager::update() {
 				RENDERMANAGER->getCurrentPass()->setPropui(Pass::INSTANCE_COUNT, nPart);
 				IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(bufferNames->at(i));
 				pointsBuffer->setData(nPart * 4 * sizeof(float), partPos);
-				//s.first->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
-				//s.first->getSceneObject(0)->getRenderable()->getVertexData()->compile();
 				s.first->getAllObjects(&so);
 				for (auto &o : so) {
 					o->getRenderable()->getVertexData()->resetCompilationFlag();
 					o->getRenderable()->getVertexData()->compile();
 				}
-			}
+			}*/
 		}
 			break;
 		case IPhysics::DEBUG:
@@ -268,28 +270,55 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 	switch (type) {
 	case IPhysics::PARTICLES: 
 	{
-		float * nbParticles = pm.getPropfPointer((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId());//&(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId()));
-		m_PhysInst->setParticleScene(
-			sn,
-			pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["MAX_PARTICLES"]->getId()),
-			nbParticles,
-			(float *)aScene->getTransform().getMatrix()
-		);
+		std::vector<std::string> * bufferNames = new std::vector<std::string>();
+		RESOURCEMANAGER->getBufferNames(*bufferNames);
+		int i = 0;
+		bool found = false;
+		while (i < bufferNames->size() && !found) {
+			found = bufferNames->at(i).find("ps" + sn) != string::npos;
+			i++;
+		}
+		if (found) {
+			IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(bufferNames->at(i));
+			float * particlePositions;
+			pointsBuffer->getData(0, pointsBuffer->SIZE, particlePositions);
+			m_PhysInst->setScene(
+				sn,
+				matName,
+				static_cast<int>(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId())),
+				particlePositions,
+				0,
+				NULL,
+				(float *)aScene->getTransform().getMatrix()
+			);
+		}
+		//float * nbParticles = pm.getPropfPointer((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId());//&(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId()));
+		//m_PhysInst->setParticleScene(
+		//	sn,
+		//	pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["MAX_PARTICLES"]->getId()),
+		//	nbParticles,
+		//	(float *)aScene->getTransform().getMatrix()
+		//);
 	}
 		break;
 
 	case IPhysics::DEBUG:
-		m_PhysInst->setScene(sn, 0, NULL, 0, NULL, (float *)aScene->getTransform().getMatrix());
+		m_PhysInst->setScene(sn, matName, 0, NULL, 0, NULL, (float *)aScene->getTransform().getMatrix());
 		break;
 
 	default:
 		m_PhysInst->setSceneTransform(sn, (float *)aScene->getTransform().getMatrix());
-
 		std::shared_ptr<IRenderable> &r = aScene->getSceneObject(0)->getRenderable();
 		std::vector<VertexAttrib> *vd = r->getVertexData()->getDataOf(0).get();
-		m_PhysInst->setScene(sn, static_cast<int> (vd->size()),  (float *)&(vd->at(0)),
-			static_cast<int> (r->getIndexData()->getIndexData()->size()), (unsigned int *)&(r->getIndexData()->getIndexData()->at(0)),
-			(float *)aScene->getTransform().getMatrix());
+		m_PhysInst->setScene(
+			sn,
+			matName,
+			static_cast<int> (vd->size()),
+			(float *)&(vd->at(0)),
+			static_cast<int> (r->getIndexData()->getIndexData()->size()),
+			(unsigned int *)&(r->getIndexData()->getIndexData()->at(0)),
+			(float *)aScene->getTransform().getMatrix()
+		);
 		break;
 	}
 

@@ -4,14 +4,17 @@
 
 	<buffers>
 		<buffer name="pswaterfall" >
-			<DIM x=3 y=1 z=1 />
+			<SIZE value=320000 /> 
+		</buffer>
+		<!-- <buffer name="pswaterfall" >
+			<DIM x=20000 y=1 z=1 />
 			<structure>
 				<field value="FLOAT" />
 				<field value="FLOAT" />
 				<field value="FLOAT" />
 				<field value="FLOAT" />
 			</structure>	
-		</buffer>
+		</buffer> -->
 		<!-- <buffer name="instanceNo" >
 			<DIM x=1 y=1 z=1 />
 			<structure>
@@ -76,7 +79,6 @@
 					<TYPE value="SHADER_STORAGE" />
 					<BINDING_POINT value="1" />
 				</buffer>
-				
 			</buffers>	
 
 		</material>
