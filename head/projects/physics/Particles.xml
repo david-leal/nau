@@ -14,11 +14,12 @@
 				<geometry name="plane" type="SQUARE" material="azulejo" />
 			</scene> -->
 			
-			<!-- <scene name="box" physicsMaterial="staticBox">
+			<scene name="box" physicsMaterial="staticBox">
 				<geometry name="box" type="BOX" material="azulejo" />
 				<TRANSLATE x=0 y=-3 z=0 />
 			</scene>
-			<scene name="box2" >
+			
+			<!-- <scene name="box2" >
 				<geometry name="box" type="BOX" material="crate" />
 				<TRANSLATE x=0 y=-3 z=0 />
 			</scene> -->
@@ -76,7 +77,7 @@
 		
 		<materialLibs>
 			<materialLib filename = "materialsParticles.mlib"/>
-			<!-- <materialLib filename = "materials.mlib"/> -->
+			<materialLib filename = "materials.mlib"/>
 		</materialLibs> 
 		
 		<physicsLibs>
@@ -87,7 +88,7 @@
 	
 	<pipelines mode="RUN_ALL" default="fixedfunction" >
 		<pipeline name="fixedfunction" default="true">
-			<!-- <pass class="default" name="axisPass">
+			<pass class="default" name="axisPass">
 				<scenes>
 					<scene name="box" />
 					<scene name="Axis" />
@@ -97,11 +98,11 @@
 					<light name="Sun" />
 				</lights>
 				<materialMaps>
-					<map fromMaterial="particlesMat" toLibrary="Simple" toMaterial="particlesMat" />
+					<!-- <map fromMaterial="particlesMat" toLibrary="Simple" toMaterial="particlesMat" /> -->
 					<map fromMaterial="azulejo" toLibrary="Simple" toMaterial="simpleTexturedAzulejo" />
 					<map fromMaterial="debugMat" toLibrary="Simple" toMaterial="simpleColoredDebug" />
 				</materialMaps>
-			</pass> -->
+			</pass>
 			
 			<pass class="default" name="mainPass">
 				<!-- <scenes instances=4 > -->

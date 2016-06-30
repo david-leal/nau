@@ -71,6 +71,8 @@
 		
 		<material name="waterfall" type="PARTICLES">
 			<MAX_PARTICLES value="20000.0" />
+			<BUFFER name="nau_material_lib::pswaterfall" />
+			<!-- <BUFFER name="pswaterfall" /> -->
 		</material>
 		
 		<material name="debug" type="DEBUG">

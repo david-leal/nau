@@ -19,6 +19,7 @@ PhysicsMaterial::Init() {
 
 	Attribs.add(Attribute(MAX_PARTICLE, "MAX_PARTICLES",  Enums::DataType::FLOAT, false, new NauFloat(0.0f)));
 	Attribs.add(Attribute(NBPARTICLES, "NBPARTICLES", Enums::DataType::FLOAT, false, new NauFloat(0.0f)));
+	Attribs.add(Attribute(BUFFER, "BUFFER", "BUFFER"));
 
 	NAU->registerAttributes("PHYSICS_MATERIAL", &Attribs);
 
@@ -55,4 +56,15 @@ PhysicsMaterial::setPropf4(Float4Property p, vec4 &value) {
 
 	m_Float4Props[p] = value;
 	PhysicsManager::GetInstance()->applyMaterialVec4Property(m_Name, Attribs.getName(p, Enums::VEC4), &value.x);
+}
+
+void nau::physics::PhysicsMaterial::setProps(StringProperty prop, std::string & value) {
+	//AttributeValues::setProps(prop, value);
+	m_StringProps[prop] = "nau_material_lib::" + value;
+	//IBuffer * buff = 
+	RESOURCEMANAGER->createBuffer("nau_material_lib::" + value);
+	//m_StringProps[prop] = value;
+	//IBuffer * buff = 
+	//RESOURCEMANAGER->createBuffer(value);
+	//buff->bind(1);
 }

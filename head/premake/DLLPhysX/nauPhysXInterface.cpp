@@ -69,7 +69,7 @@ void NauPhysXInterface::setPropertyManager(nau::physics::IPhysicsPropertyManager
 void NauPhysXInterface::update() {
 	worldManager->update();
 	for (auto particleMaterial : *worldManager->getMaterialParticleNb()) {
-		m_PropertyManager->setMaterialFloatProperty(particleMaterial.first, "NBPARTICLES", particleMaterial.second);
+		m_PropertyManager->setMaterialFloatProperty(particleMaterial.first, "NBPARTICLES", static_cast<float>(particleMaterial.second));
 	}
 }
 

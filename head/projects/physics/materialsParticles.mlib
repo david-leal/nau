@@ -2,11 +2,12 @@
 <materialLib name="Simple">
 
 
-	<buffers>
+	<!-- <buffers>
 		<buffer name="pswaterfall" >
 			<SIZE value=320000 /> 
-		</buffer>
-		<!-- <buffer name="pswaterfall" >
+		</buffer> -->
+	
+	<!-- <buffer name="pswaterfall" >
 			<DIM x=20000 y=1 z=1 />
 			<structure>
 				<field value="FLOAT" />
@@ -21,7 +22,8 @@
 				<field value="INT" />
 			</structure>	
 		</buffer> -->
-	</buffers>
+	
+	<!-- </buffers> -->
 	
 	<shaders>
 		<shader name="showPositions" vs = "shaders/showPositions.vert" ps = "shaders/showPositions.frag" /> 
@@ -75,7 +77,7 @@
 				</values>										
 			</shader>
 			<buffers>	
-				<buffer name="pswaterfall">
+				<buffer name="nau_material_lib::pswaterfall">
 					<TYPE value="SHADER_STORAGE" />
 					<BINDING_POINT value="1" />
 				</buffer>

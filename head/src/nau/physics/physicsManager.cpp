@@ -187,7 +187,12 @@ PhysicsManager::update() {
 			PhysicsMaterial &pm = getMaterial(s.second);
 
 			int nPart = static_cast<int>(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId()));
+			// TODO: Use next four lines and the material buffer to get buffer for update
+			std::string bufferName = pm.getProps((StringProperty)pm.getAttribSet()->getAttributes()["BUFFER"]->getId());
+			IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(bufferName);
+			pointsBuffer->setData(nPart * 4 * sizeof(float), pm.getBuffer());
 
+			RENDERMANAGER->getCurrentPass()->setPropui(Pass::INSTANCE_COUNT, nPart);
 			
 			s.first->getAllObjects(&so);
 			for (auto &o : so) {
@@ -268,8 +273,8 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 	switch (type) {
 	case IPhysics::PARTICLES: 
 	{
-		std::vector<std::string> * bufferNames = new std::vector<std::string>();
-		RESOURCEMANAGER->getBufferNames(*bufferNames);
+		/*std::vector<std::string> * bufferNames = new std::vector<std::string>();
+		RESOURCEMANAGER->getBufferNames(bufferNames);
 		int i = 0;
 		bool found = false;
 		while (i < bufferNames->size() && !found) {
@@ -277,19 +282,24 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 			i++;
 		}
 		if (found) {
-			IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(bufferNames->at(i));
-			float * particlePositions;
-			pointsBuffer->getData(0, pointsBuffer->SIZE, particlePositions);
-			m_PhysInst->setScene(
-				sn,
-				matName,
-				static_cast<int>(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId())),
-				particlePositions,
-				0,
-				NULL,
-				(float *)aScene->getTransform().getMatrix()
-			);
-		}
+			IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(bufferNames->at(i));*/
+			
+		
+		
+		int maxParticles = static_cast<int>(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["MAX_PARTICLES"]->getId()));
+		pm.setBuffer((float *)malloc(maxParticles * 4 * sizeof(float)));
+		m_PhysInst->setScene(
+			sn,
+			matName,
+			maxParticles,
+			pm.getBuffer(),
+			0,
+			NULL,
+			(float *)aScene->getTransform().getMatrix()
+		);
+		
+		//}
+		
 		//float * nbParticles = pm.getPropfPointer((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId());//&(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId()));
 		//m_PhysInst->setParticleScene(
 		//	sn,

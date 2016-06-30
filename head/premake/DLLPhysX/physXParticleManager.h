@@ -16,7 +16,7 @@ public:
 
 	void update();
 	void addParticleSystem(physx::PxScene * world, const std::string &scene, const std::string &material, float maxParticles, float * positions, float *transform);
-	void createParticles(std::string scene, float n, float randomFactor);
+	void createParticles(std::string scene, int n, float randomFactor);
 	std::map<std::string, int> * getParticleSystemsParticleNb();
 
 
