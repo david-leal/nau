@@ -187,36 +187,22 @@ PhysicsManager::update() {
 			PhysicsMaterial &pm = getMaterial(s.second);
 
 			int nPart = static_cast<int>(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId()));
-			// TODO: Use next four lines and the material buffer to get buffer for update
 			std::string bufferName = pm.getProps((StringProperty)pm.getAttribSet()->getAttributes()["BUFFER"]->getId());
 			IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(bufferName);
-			pointsBuffer->setData(nPart * 4 * sizeof(float), pm.getBuffer());
+			//pointsBuffer->setData(nPart * 4 * sizeof(float), pm.getBuffer());
+			pointsBuffer->setSubData(0, nPart * 4 * sizeof(float), pm.getBuffer());
+			/*pointsBuffer->setSubData(
+				(nPart-100) * 4 * sizeof(float),
+				100 * 4 * sizeof(float),
+				pm.getBuffer()
+			);*/
 
 			RENDERMANAGER->getCurrentPass()->setPropui(Pass::INSTANCE_COUNT, nPart);
 			
-			s.first->getAllObjects(&so);
+			/*s.first->getAllObjects(&so);
 			for (auto &o : so) {
 				o->getRenderable()->getVertexData()->resetCompilationFlag();
 				o->getRenderable()->getVertexData()->compile();
-			}
-
-			/*float * partPos = m_PhysInst->getParticlePositions(sceneName);
-			if (partPos) {
-				int nPart = static_cast<int>(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId()));
-				std::vector<std::string> * bufferNames = new std::vector<std::string>();
-				RESOURCEMANAGER->getBufferNames(*bufferNames);
-				int i = 0;
-				while (i < bufferNames->size() && bufferNames->at(i).find("ps" + sceneName) == string::npos) {
-					i++;
-				}
-				RENDERMANAGER->getCurrentPass()->setPropui(Pass::INSTANCE_COUNT, nPart);
-				IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(bufferNames->at(i));
-				pointsBuffer->setData(nPart * 4 * sizeof(float), partPos);
-				s.first->getAllObjects(&so);
-				for (auto &o : so) {
-					o->getRenderable()->getVertexData()->resetCompilationFlag();
-					o->getRenderable()->getVertexData()->compile();
-				}
 			}*/
 		}
 			break;
@@ -269,25 +255,15 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 	IPhysics::SceneType type = (IPhysics::SceneType)pm.getPrope(PhysicsMaterial::SCENE_TYPE);
 
 	m_PhysInst->setSceneType(sn, type);
+	m_PhysInst->setSceneShape(sn, (IPhysics::SceneShape)pm.getPrope(PhysicsMaterial::SCENE_SHAPE));
 
 	switch (type) {
 	case IPhysics::PARTICLES: 
 	{
-		/*std::vector<std::string> * bufferNames = new std::vector<std::string>();
-		RESOURCEMANAGER->getBufferNames(bufferNames);
-		int i = 0;
-		bool found = false;
-		while (i < bufferNames->size() && !found) {
-			found = bufferNames->at(i).find("ps" + sn) != string::npos;
-			i++;
-		}
-		if (found) {
-			IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(bufferNames->at(i));*/
-			
-		
-		
 		int maxParticles = static_cast<int>(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["MAX_PARTICLES"]->getId()));
 		pm.setBuffer((float *)malloc(maxParticles * 4 * sizeof(float)));
+		IBuffer * buff = RESOURCEMANAGER->getBuffer(pm.getProps((StringProperty)pm.getAttribSet()->getAttributes()["BUFFER"]->getId()));
+		buff->setData(maxParticles * 4 * sizeof(float), pm.getBuffer());
 		m_PhysInst->setScene(
 			sn,
 			matName,
@@ -297,16 +273,6 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 			NULL,
 			(float *)aScene->getTransform().getMatrix()
 		);
-		
-		//}
-		
-		//float * nbParticles = pm.getPropfPointer((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId());//&(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId()));
-		//m_PhysInst->setParticleScene(
-		//	sn,
-		//	pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["MAX_PARTICLES"]->getId()),
-		//	nbParticles,
-		//	(float *)aScene->getTransform().getMatrix()
-		//);
 	}
 		break;
 
@@ -341,7 +307,6 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 	
 		}
 	}
-
 	m_Built = false;
 }
 
@@ -368,7 +333,6 @@ PhysicsManager::updateProps() {
 
 void 
 PhysicsManager::setPropf(FloatProperty p, float value) {
-
 	m_FloatProps[p] = value;
 	applyGlobalFloatProperty(Attribs.getName(p, Enums::FLOAT), value);
 }
@@ -376,7 +340,6 @@ PhysicsManager::setPropf(FloatProperty p, float value) {
 
 void 
 PhysicsManager::setPropf4(Float4Property p, vec4 &value) {
-
 	m_Float4Props[p] = value;
 	applyGlobalVec4Property(Attribs.getName(p, Enums::VEC4), &value.x);
 }
@@ -384,7 +347,6 @@ PhysicsManager::setPropf4(Float4Property p, vec4 &value) {
 
 void
 PhysicsManager::applyGlobalFloatProperty(const std::string &property, float value) {
-
 	if (!m_PhysInst)
 		return;
 	
@@ -394,7 +356,6 @@ PhysicsManager::applyGlobalFloatProperty(const std::string &property, float valu
 
 void
 PhysicsManager::applyGlobalVec4Property(const std::string &property, float *value) {
-
 	if (!m_PhysInst)
 		return;
 
@@ -404,7 +365,6 @@ PhysicsManager::applyGlobalVec4Property(const std::string &property, float *valu
 
 void
 PhysicsManager::applyMaterialFloatProperty(const std::string &matName, const std::string &property, float value) {
-
 	if (!m_PhysInst || m_MatLib.count(matName) == 0)
 		return;
 
@@ -414,16 +374,13 @@ PhysicsManager::applyMaterialFloatProperty(const std::string &matName, const std
 		for (auto &sc : m_Scenes) {
 			if (sc.second == matName)
 				m_PhysInst->applyFloatProperty(sc.first->getName(), property, value);
-		}
-		
+		}	
 	}
-
 }
 
 
 void
 PhysicsManager::applyMaterialVec4Property(const std::string &matName, const std::string &property, float *value) {
-
 	if (!m_PhysInst)
 		return;
 
@@ -440,7 +397,6 @@ PhysicsManager::applyMaterialVec4Property(const std::string &matName, const std:
 
 PhysicsMaterial &
 PhysicsManager::getMaterial(const std::string &name) {
-
 	if (!m_MatLib.count(name))
 		m_MatLib[name] = PhysicsMaterial(name);
 
@@ -450,7 +406,6 @@ PhysicsManager::getMaterial(const std::string &name) {
 
 void
 PhysicsManager::getMaterialNames(std::vector<std::string> *v) {
-
 	for (auto s : m_MatLib) {
 		v->push_back(s.first);
 	}

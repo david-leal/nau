@@ -28,6 +28,13 @@ namespace nau
 			} SceneType;
 
 			typedef enum {
+				CUSTOM,
+				BOX,
+				SPHERE,
+				CAPSULE
+			} SceneShape;
+
+			typedef enum {
 				FLOAT,
 				VEC4
 			} PropTypes;
@@ -60,6 +67,8 @@ namespace nau
 			
 			virtual void setSceneType(const std::string &scene, SceneType type) = 0;
 
+			virtual void setSceneShape(const std::string &scene, SceneShape shape) = 0;
+
 			virtual void applyFloatProperty(const std::string &scene, const std::string &property, float value) = 0;
 			virtual void applyVec4Property(const std::string &scene, const std::string &property, float *value) = 0;
 			
@@ -83,6 +92,7 @@ namespace nau
 
 			typedef struct {
 				SceneType sceneType;
+				SceneShape sceneShape;
 				int nbVertices;
 				float * vertices;
 				int nbIndices;

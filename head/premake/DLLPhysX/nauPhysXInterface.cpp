@@ -81,6 +81,10 @@ void NauPhysXInterface::setSceneType(const std::string & scene, SceneType type) 
 	m_Scenes[scene].sceneType = type;
 }
 
+void NauPhysXInterface::setSceneShape(const std::string & scene, SceneShape shape) {
+	m_Scenes[scene].sceneShape = shape;
+}
+
 void NauPhysXInterface::applyFloatProperty(const std::string & scene, const std::string & property, float value) {
 	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC) {
 		worldManager->setRigidProperty(scene, property, value);

@@ -21,6 +21,12 @@ PhysicsMaterial::Init() {
 	Attribs.add(Attribute(NBPARTICLES, "NBPARTICLES", Enums::DataType::FLOAT, false, new NauFloat(0.0f)));
 	Attribs.add(Attribute(BUFFER, "BUFFER", "BUFFER"));
 
+	Attribs.add(Attribute(SCENE_SHAPE, "SCENE_SHAPE", Enums::DataType::ENUM, false, new NauInt(IPhysics::CUSTOM)));
+	Attribs.listAdd("SCENE_SHAPE", "CUSTOM", IPhysics::CUSTOM);
+	Attribs.listAdd("SCENE_SHAPE", "BOX", IPhysics::BOX);
+	Attribs.listAdd("SCENE_SHAPE", "SPHERE", IPhysics::SPHERE);
+	Attribs.listAdd("SCENE_SHAPE", "CAPSULE", IPhysics::CAPSULE);
+
 	NAU->registerAttributes("PHYSICS_MATERIAL", &Attribs);
 
 	return true;
@@ -59,12 +65,6 @@ PhysicsMaterial::setPropf4(Float4Property p, vec4 &value) {
 }
 
 void nau::physics::PhysicsMaterial::setProps(StringProperty prop, std::string & value) {
-	//AttributeValues::setProps(prop, value);
-	m_StringProps[prop] = "nau_material_lib::" + value;
-	//IBuffer * buff = 
-	RESOURCEMANAGER->createBuffer("nau_material_lib::" + value);
-	//m_StringProps[prop] = value;
-	//IBuffer * buff = 
-	//RESOURCEMANAGER->createBuffer(value);
-	//buff->bind(1);
+	m_StringProps[prop] = value;
+	RESOURCEMANAGER->createBuffer(value);
 }

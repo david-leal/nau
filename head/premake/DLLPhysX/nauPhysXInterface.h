@@ -25,6 +25,7 @@ public:
 	void build();
 
 	void setSceneType(const std::string &scene, SceneType type);
+	void setSceneShape(const std::string &scene, SceneShape shape);
 
 	void applyFloatProperty(const std::string &scene, const std::string &property, float value);
 	void applyVec4Property(const std::string &scene, const std::string &property, float *value);
