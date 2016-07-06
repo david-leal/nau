@@ -22,6 +22,7 @@ private:
 	BulletRigidManager * rigidManager;
 	BulletSoftManager * softManager;
 	BulletDebugger * debugDrawer;
+	float timeStep;
 
 public:
 	BulletWorldManager();
@@ -29,7 +30,7 @@ public:
 
 	void update();
 	void setGravity(float x, float y, float z);
-	void addRigid(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform, bool isStatic = false);
+	void addRigid(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform, nau::physics::IPhysics::BoundingVolume shape, float mass, bool isStatic = false);
 	void setRigidProperty(std::string scene, std::string propName, float value);
 	void moveRigid(std::string scene, float * transform);
 
@@ -41,8 +42,7 @@ public:
 
 	//void addCharacter();
 
-	// TODO: Remove this get
-	//btDynamicsWorld * getWorld() { return world; };
+	void setTimeStep(float tStep) { timeStep = tStep; };
 
 };
 

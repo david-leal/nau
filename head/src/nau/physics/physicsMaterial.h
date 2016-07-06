@@ -17,7 +17,6 @@ namespace nau
 			
 
 		public:
-			//FLOAT_PROP(MASS, 0);
 			ENUM_PROP(SCENE_TYPE, 0);
 			ENUM_PROP(SCENE_SHAPE, 1);
 			FLOAT_PROP(NBPARTICLES, 0);

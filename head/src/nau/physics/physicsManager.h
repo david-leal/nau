@@ -25,6 +25,7 @@ namespace nau
 		public:
 		
 			//FLOAT4_PROP(GRAVITY, 0);
+			FLOAT_PROP(TIME_STEP, 0);
 			
 			static AttribSet Attribs;
 
@@ -37,15 +38,13 @@ namespace nau
 			void clear();
 			
 			void addScene(nau::scene::IScene *aScene, const std::string &matName);
-			
+
 			PhysicsMaterial &getMaterial(const std::string &name);
 			void getMaterialNames(std::vector<std::string> *);
 
 
 			void setPropf(FloatProperty p, float value);
 			void setPropf4(Float4Property p, vec4 &value);
-
-
 			
 			PhysicsManager::~PhysicsManager();
 

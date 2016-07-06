@@ -28,9 +28,8 @@ BulletWorldManager::~BulletWorldManager() {
 }
 
 void BulletWorldManager::update() {
-	//TODO: XML defined step tine
 	if (world) {
-		world->stepSimulation(1 / 60.0f);
+		world->stepSimulation(timeStep);
 		rigidManager->update();
 		softManager->update();
 		if (debugDrawer) {
@@ -44,23 +43,29 @@ void BulletWorldManager::setGravity(float x, float y, float z) {
 	world->setGravity(btVector3(x, y, z));
 }
 
-void BulletWorldManager::addRigid(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, bool isStatic) {
-	if (isStatic) {
-		world->addRigidBody(rigidManager->addStaticBody(scene, nbVertices, vertices, nbIndices, indices, transform));
-	}
-	else {
-		world->addRigidBody(rigidManager->addDynamicBody(scene, nbVertices, vertices, nbIndices, indices, transform));
-	}
+void BulletWorldManager::addRigid(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform, nau::physics::IPhysics::BoundingVolume shape, float mass, bool isStatic) {
+	rigidManager->createInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
+	world->addRigidBody(
+		rigidManager->addRigid(
+			scene,
+			rigidManager->createCollisionShape(scene, shape, isStatic),
+			mass,
+			isStatic
+		)
+	);
 }
 
 void BulletWorldManager::setRigidProperty(std::string scene, std::string propName, float value) {
 	if (propName.compare("MASS") == 0) {
 		rigidManager->setMass(scene, value);
 	}
-	if (propName.compare("FRICTION") == 0) {
-		rigidManager->setFriction(scene, value);
+	else if (propName.compare("DYNAMIC_FRICTION") == 0) {
+		rigidManager->setDynamicFriction(scene, value);
 	}
-	if (propName.compare("RESTITUTION") == 0) {
+	else if (propName.compare("STATIC_FRICTION") == 0) {
+		rigidManager->setStaticFriction(scene, value);
+	}
+	else if (propName.compare("RESTITUTION") == 0) {
 		rigidManager->setRestitution(scene, value);
 	}
 }

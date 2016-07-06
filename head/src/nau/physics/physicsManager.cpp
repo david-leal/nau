@@ -21,6 +21,7 @@ deletePhysicsProc deletePhysics;
 
 bool
 PhysicsManager::Init() {
+	Attribs.add(Attribute(TIME_STEP, "TIME_STEP", Enums::DataType::FLOAT, false, new NauFloat(0.016666666667f)));
 
 	NAU->registerAttributes("PHYSICS_MANAGER", &Attribs);
 
@@ -185,25 +186,11 @@ PhysicsManager::update() {
 		{
 			std::string &sceneName = s.first->getName();
 			PhysicsMaterial &pm = getMaterial(s.second);
-
 			int nPart = static_cast<int>(pm.getPropf((FloatProperty)pm.getAttribSet()->getAttributes()["NBPARTICLES"]->getId()));
 			std::string bufferName = pm.getProps((StringProperty)pm.getAttribSet()->getAttributes()["BUFFER"]->getId());
 			IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(bufferName);
-			//pointsBuffer->setData(nPart * 4 * sizeof(float), pm.getBuffer());
 			pointsBuffer->setSubData(0, nPart * 4 * sizeof(float), pm.getBuffer());
-			/*pointsBuffer->setSubData(
-				(nPart-100) * 4 * sizeof(float),
-				100 * 4 * sizeof(float),
-				pm.getBuffer()
-			);*/
-
 			RENDERMANAGER->getCurrentPass()->setPropui(Pass::INSTANCE_COUNT, nPart);
-			
-			/*s.first->getAllObjects(&so);
-			for (auto &o : so) {
-				o->getRenderable()->getVertexData()->resetCompilationFlag();
-				o->getRenderable()->getVertexData()->compile();
-			}*/
 		}
 			break;
 		case IPhysics::DEBUG:
@@ -253,10 +240,19 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 	std::string sn = aScene->getName();
 	PhysicsMaterial &pm = getMaterial(matName);
 	IPhysics::SceneType type = (IPhysics::SceneType)pm.getPrope(PhysicsMaterial::SCENE_TYPE);
+	IPhysics::SceneShape shape = (IPhysics::SceneShape)pm.getPrope(PhysicsMaterial::SCENE_SHAPE);
 
 	m_PhysInst->setSceneType(sn, type);
-	m_PhysInst->setSceneShape(sn, (IPhysics::SceneShape)pm.getPrope(PhysicsMaterial::SCENE_SHAPE));
 
+	float * max = (float*)malloc(3 * sizeof(float));
+	float * min = (float*)malloc(3 * sizeof(float));
+	vec3 maxVec = aScene->getBoundingVolume().getMax();
+	vec3 minVec = aScene->getBoundingVolume().getMin();
+	max[0] = maxVec.x; max[1] = maxVec.y; max[2] = maxVec.z;
+	min[0] = minVec.x; min[1] = minVec.y; min[2] = minVec.z;
+
+	m_PhysInst->setSceneShape(sn, shape, min, max);
+	
 	switch (type) {
 	case IPhysics::PARTICLES: 
 	{

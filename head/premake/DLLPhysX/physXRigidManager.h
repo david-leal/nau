@@ -3,6 +3,7 @@
 
 #include <map>
 #include <vector>
+#include "nau/physics/iPhysics.h"
 #include "PxPhysicsAPI.h"
 #include "physXScene.h"
 
@@ -13,8 +14,10 @@ public:
 	~PhysXRigidManager();
 
 	void update(const physx::PxActiveTransform* activeTransforms, physx::PxU32 nbActiveTransforms);
-	void addStaticBody(physx::PxScene * world, physx::PxCooking* mCooking, const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform, float staticFriction, float dynamicFrction, float restitution);
-	void addDynamicBody(physx::PxScene * world, physx::PxCooking* mCooking, const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform, float staticFriction, float dynamicFrction, float restitution);
+	void createInfo(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
+	physx::PxMaterial * createMaterial(physx::PxScene * world, float staticFriction, float dynamicFrction, float restitution);
+	void addStaticBody(const std::string & scene, physx::PxScene * world, physx::PxCooking * mCooking, nau::physics::IPhysics::BoundingVolume shape, physx::PxMaterial * material);
+	void addDynamicBody(const std::string & scene, physx::PxScene * world, physx::PxCooking * mCooking, nau::physics::IPhysics::BoundingVolume shape, physx::PxMaterial * material);
 	void setMass(std::string name, float value);
 	void setStaticFriction(std::string name, float value);
 	void setDynamicFriction(std::string name, float value);
@@ -24,8 +27,7 @@ public:
 
 protected:
 	std::map<std::string, PhysXScene> rigidBodies;
-	physx::PxInputStream * getTriangleMeshGeo(physx::PxScene *world, physx::PxCooking* mCooking, ExternalInfo externInfo, bool isStatic = true);
-	//void setExtInfo(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform);
+	physx::PxInputStream * getTriangleMeshGeo(physx::PxScene *world, physx::PxCooking* mCooking, ExternalInfo externInfo, bool isStatic);
 };
 
 #endif

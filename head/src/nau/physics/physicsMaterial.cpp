@@ -19,6 +19,7 @@ PhysicsMaterial::Init() {
 
 	Attribs.add(Attribute(MAX_PARTICLE, "MAX_PARTICLES",  Enums::DataType::FLOAT, false, new NauFloat(0.0f)));
 	Attribs.add(Attribute(NBPARTICLES, "NBPARTICLES", Enums::DataType::FLOAT, false, new NauFloat(0.0f)));
+
 	Attribs.add(Attribute(BUFFER, "BUFFER", "BUFFER"));
 
 	Attribs.add(Attribute(SCENE_SHAPE, "SCENE_SHAPE", Enums::DataType::ENUM, false, new NauInt(IPhysics::CUSTOM)));

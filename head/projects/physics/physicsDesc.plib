@@ -6,7 +6,7 @@
 	</globalProperties>
 
 	<materials>
-		<material name="box" type="RIGID">
+		<material name="box" type="RIGID" shape="BOX">
 			<MASS value="10.0" />
 			<STATIC_FRICTION value="0.1" />
 			<DYNAMIC_FRICTION value="0.1" />

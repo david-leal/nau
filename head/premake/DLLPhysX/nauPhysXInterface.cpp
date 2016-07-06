@@ -8,7 +8,6 @@ static NauPhysXInterface * Instance = NULL;
 __declspec(dllexport)
 void *
 createPhysics() {
-
 	Instance = new NauPhysXInterface();
 	return Instance;
 }
@@ -16,7 +15,6 @@ createPhysics() {
 __declspec(dllexport)
 void
 deletePhysics() {
-
 	delete Instance;
 }
 
@@ -26,11 +24,9 @@ init() {
 
 }
 
-
 __declspec(dllexport)
 char *
 getClassName() {
-
 	return className;
 }
 
@@ -77,14 +73,6 @@ void NauPhysXInterface::build() {
 	
 }
 
-void NauPhysXInterface::setSceneType(const std::string & scene, SceneType type) {
-	m_Scenes[scene].sceneType = type;
-}
-
-void NauPhysXInterface::setSceneShape(const std::string & scene, SceneShape shape) {
-	m_Scenes[scene].sceneShape = shape;
-}
-
 void NauPhysXInterface::applyFloatProperty(const std::string & scene, const std::string & property, float value) {
 	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC) {
 		worldManager->setRigidProperty(scene, property, value);
@@ -104,6 +92,9 @@ void NauPhysXInterface::applyVec4Property(const std::string & scene, const std::
 }
 
 void NauPhysXInterface::applyGlobalFloatProperty(const std::string & property, float value) {
+	if (property.compare("TIME_STEP") == 0) {
+		worldManager->setTimeStep(value);
+	}
 }
 
 void NauPhysXInterface::applyGlobalVec4Property(const std::string & property, float * value) {
@@ -112,10 +103,11 @@ void NauPhysXInterface::applyGlobalVec4Property(const std::string & property, fl
 	}
 }
 
-void NauPhysXInterface::setScene(const std::string &scene, const std::string &material, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform) {
+void NauPhysXInterface::setScene(const std::string &scene, const std::string & material, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
 	m_Scenes[scene].vertices = vertices;
 	m_Scenes[scene].indices = indices;
 	m_Scenes[scene].transform = transform;
+	m_Scenes[scene].material = material;
 	switch (m_Scenes[scene].sceneType)
 	{
 	case IPhysics::STATIC:
@@ -126,9 +118,12 @@ void NauPhysXInterface::setScene(const std::string &scene, const std::string &ma
 			nbIndices,
 			indices,
 			transform,
-			m_PropertyManager->getMaterialFloatProperty(material, "STATIC_FRICTION"),
-			m_PropertyManager->getMaterialFloatProperty(material, "DYNAMIC_FRICTION"),
-			m_PropertyManager->getMaterialFloatProperty(material, "RESTITUTION"),
+			worldManager->createMaterial(
+				m_PropertyManager->getMaterialFloatProperty(material, "DYNAMIC_FRICTION"),
+				m_PropertyManager->getMaterialFloatProperty(material, "STATIC_FRICTION"),
+				m_PropertyManager->getMaterialFloatProperty(material, "RESTITUTION")
+			),
+			m_Scenes[scene].boundingVolume,
 			true
 		);
 		break;
@@ -140,16 +135,33 @@ void NauPhysXInterface::setScene(const std::string &scene, const std::string &ma
 			nbIndices,
 			indices,
 			transform,
-			m_PropertyManager->getMaterialFloatProperty(material, "STATIC_FRICTION"),
-			m_PropertyManager->getMaterialFloatProperty(material, "DYNAMIC_FRICTION"),
-			m_PropertyManager->getMaterialFloatProperty(material, "RESTITUTION")
+			worldManager->createMaterial(
+				m_PropertyManager->getMaterialFloatProperty(material, "DYNAMIC_FRICTION"),
+				m_PropertyManager->getMaterialFloatProperty(material, "STATIC_FRICTION"),
+				m_PropertyManager->getMaterialFloatProperty(material, "RESTITUTION")
+			),
+			m_Scenes[scene].boundingVolume
 		);
 		break;
 	case IPhysics::CLOTH:
-		worldManager->addCloth(scene, nbVertices, vertices, nbIndices, indices, transform);
+		worldManager->addCloth(
+			scene,
+			nbVertices,
+			vertices,
+			nbIndices,
+			indices,
+			transform
+		);
 		break;
 	case IPhysics::CHARACTER:
-		worldManager->addCharacter(scene, nbVertices, vertices, nbIndices, indices, transform);
+		worldManager->addCharacter(
+			scene,
+			nbVertices,
+			vertices,
+			nbIndices,
+			indices,
+			transform
+		);
 	case IPhysics::PARTICLES:
 		worldManager->addParticles(
 			scene,

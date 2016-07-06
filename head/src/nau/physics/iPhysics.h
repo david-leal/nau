@@ -17,7 +17,6 @@ namespace nau
 		{
 		public:
 
-
 			typedef enum {
 				STATIC,
 				RIGID,
@@ -60,14 +59,24 @@ namespace nau
 
 			} Prop;
 
+			typedef struct {
+				SceneShape sceneShape;
+				float * max;
+				float * min;
+			} BoundingVolume;
+
 			virtual void setPropertyManager(IPhysicsPropertyManager *pm) = 0;
 
 			virtual void update() = 0;
 			virtual void build() = 0;
 			
-			virtual void setSceneType(const std::string &scene, SceneType type) = 0;
+			void setSceneType(const std::string &scene, SceneType type) { m_Scenes[scene].sceneType = type; };
 
-			virtual void setSceneShape(const std::string &scene, SceneShape shape) = 0;
+			void setSceneShape(const std::string &scene, SceneShape shape, float * min, float * max) {
+				m_Scenes[scene].boundingVolume.sceneShape = shape;
+				m_Scenes[scene].boundingVolume.min = min;
+				m_Scenes[scene].boundingVolume.max = max;
+			}
 
 			virtual void applyFloatProperty(const std::string &scene, const std::string &property, float value) = 0;
 			virtual void applyVec4Property(const std::string &scene, const std::string &property, float *value) = 0;
@@ -76,7 +85,7 @@ namespace nau
 			virtual void applyGlobalVec4Property(const std::string &property, float *value) = 0;
 
 			virtual void setScene(const std::string &scene, const std::string & material, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform) = 0;
-			
+
 			virtual float *getSceneTransform(const std::string &scene) = 0;
 			virtual void setSceneTransform(const std::string &scene, float *transform) = 0;
 
@@ -92,12 +101,13 @@ namespace nau
 
 			typedef struct {
 				SceneType sceneType;
-				SceneShape sceneShape;
 				int nbVertices;
 				float * vertices;
 				int nbIndices;
 				unsigned int * indices;
 				float * transform;
+				std::string material;
+				BoundingVolume boundingVolume;
 			} SceneProps;
 
 			std::map<std::string, SceneProps> m_Scenes;

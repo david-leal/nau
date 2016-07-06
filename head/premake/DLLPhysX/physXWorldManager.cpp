@@ -42,8 +42,7 @@ PhysXWorldManager::~PhysXWorldManager() {
 void PhysXWorldManager::update() {
 	//TODO: XML defined step tine
 	if (world) {
-		float time = 1 / 60.0f;
-		world->simulate(time);
+		world->simulate(timeStep);
 		world->fetchResults(true);
 
 		//RIGID BODIES UPDATE
@@ -58,7 +57,7 @@ void PhysXWorldManager::update() {
 		particleManager->update();
 
 		//CHARACTER UPDATE
-		characterManager->update(time, world->getGravity());
+		characterManager->update(timeStep, world->getGravity());
 	}
 }
 
@@ -66,12 +65,29 @@ void PhysXWorldManager::setGravity(float x, float y, float z) {
 		world->setGravity(PxVec3(x, y, z));
 }
 
-void PhysXWorldManager::addRigid(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, float dynamicFrction, float staticFriction, float restitution, bool isStatic) {
+physx::PxMaterial * PhysXWorldManager::createMaterial(float dynamicFrction, float staticFriction, float restitution) {
+	return (&(world->getPhysics()))->createMaterial(staticFriction, dynamicFrction, restitution);
+}
+
+void PhysXWorldManager::addRigid(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, physx::PxMaterial * material, nau::physics::IPhysics::BoundingVolume shape, bool isStatic) {
+	rigidManager->createInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
 	if (isStatic) {
-		rigidManager->addStaticBody(world, mCooking, scene, nbVertices, vertices, nbIndices, indices, transform, staticFriction, dynamicFrction, restitution);
+		rigidManager->addStaticBody(
+			scene,
+			world,
+			mCooking,
+			shape,
+			material
+		);
 	}
 	else {
-		   rigidManager->addDynamicBody(world, mCooking, scene, nbVertices, vertices, nbIndices, indices, transform, staticFriction, dynamicFrction, restitution);
+		rigidManager->addDynamicBody(
+			scene,
+			world,
+			mCooking,
+			shape,
+			material
+		);
 	}
 }
 
