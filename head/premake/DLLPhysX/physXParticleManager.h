@@ -7,6 +7,7 @@
 #include <time.h> 
 #include "PxPhysicsAPI.h"
 #include "physXScene.h"
+#include "physXLuaManager.h"
 
 class PhysXParticleManager
 {
@@ -32,6 +33,7 @@ protected:
 	} PhysXParticleSystem;
 
 	std::map<std::string, PhysXParticleSystem> particleSystems;
+	PhysXLuaManager * luaManager;
 
 };
 

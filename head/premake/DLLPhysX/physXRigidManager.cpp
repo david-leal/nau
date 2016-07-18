@@ -26,13 +26,6 @@ PhysXRigidManager::createInfo(const std::string & scene, int nbVertices, float *
 	rigidBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
 }
 
-physx::PxMaterial* 
-PhysXRigidManager::createMaterial(physx::PxScene * world, float staticFriction, float dynamicFrction, float restitution) {
-	PxPhysics *gPhysics = &(world->getPhysics());
-	PxMaterial * material = gPhysics->createMaterial(staticFriction, dynamicFrction, restitution);
-	return material;
-}
-
 void 
 PhysXRigidManager::addStaticBody(const std::string & scene, physx::PxScene * world, physx::PxCooking * mCooking, nau::physics::IPhysics::BoundingVolume shape, physx::PxMaterial * material) {
 	PxPhysics *gPhysics = &(world->getPhysics());

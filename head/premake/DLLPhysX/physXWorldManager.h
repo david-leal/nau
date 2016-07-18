@@ -43,15 +43,13 @@ public:
 	void addParticles(const std::string &scene, const std::string &material, float maxParticles, float * positions, float *transform);
 	std::map<std::string, int> * getMaterialParticleNb();
 	
-	void addCharacter(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
+	void addCharacter(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform, physx::PxMaterial * material, float * up);
 	void setCharacterProperty(std::string scene, std::string propName, float value);
 	void setCharacterProperty(std::string scene, std::string propName, float * value);
 	void moveCharacter(std::string scene, float * transform);
 
 	void setTimeStep(float tStep) { timeStep = tStep; };
 
-	//physx::PxScene * getWorld() { return world; }
-	
 };
 
 #endif

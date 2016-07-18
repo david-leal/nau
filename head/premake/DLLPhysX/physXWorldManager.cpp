@@ -130,8 +130,9 @@ std::map<std::string, int>* PhysXWorldManager::getMaterialParticleNb() {
 	return particleManager->getParticleSystemsParticleNb();
 }
 
-void PhysXWorldManager::addCharacter(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	characterManager->addCharacter(world, scene, nbVertices, vertices, nbIndices, indices, transform);
+void PhysXWorldManager::addCharacter(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, physx::PxMaterial * material, float * up) {
+	characterManager->createInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
+	up ? characterManager->addCharacter(scene, material, PxVec3(up[0], up[1], up[2])) : characterManager->addCharacter(scene, material);
 }
 
 void PhysXWorldManager::setCharacterProperty(std::string scene, std::string propName, float value) {

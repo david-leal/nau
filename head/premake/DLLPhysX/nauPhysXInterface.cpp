@@ -160,7 +160,13 @@ void NauPhysXInterface::setScene(const std::string &scene, const std::string & m
 			vertices,
 			nbIndices,
 			indices,
-			transform
+			transform, 
+			worldManager->createMaterial(
+				m_PropertyManager->getMaterialFloatProperty(material, "DYNAMIC_FRICTION"),
+				m_PropertyManager->getMaterialFloatProperty(material, "STATIC_FRICTION"),
+				m_PropertyManager->getMaterialFloatProperty(material, "RESTITUTION")
+			),
+			m_PropertyManager->getMaterialVec4Property(material, "UP") 
 		);
 	case IPhysics::PARTICLES:
 		worldManager->addParticles(

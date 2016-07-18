@@ -96,7 +96,7 @@
       <Command>copy "$(OutDir)$(TargetName).dll" ..\..\build\samples\nauSettings\plugins_d\physics</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalDependencies>LowLevelClothDEBUGDLL.lib;LowLevelDEBUGDLL.lib;PhysX3CharacterKinematicDEBUGDLL_x64.lib;PhysX3CommonDEBUGDLL_x64.lib;PhysX3CookingDEBUGDLL_x64.lib;PhysX3DEBUGDLL_x64.lib;PhysX3ExtensionsDEBUGDLL.lib;PhysX3VehicleDEBUGDLL.lib;PhysXProfileSDKDEBUGDLL.lib;PhysXVisualDebuggerSDKDEBUGDLL.lib;PvdRuntimeDEBUGDLL.lib;PxTaskDEBUGDLL.lib;SceneQueryDEBUGDLL.lib;SimulationControllerDEBUGDLL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LowLevelClothDEBUGDLL.lib;LowLevelDEBUGDLL.lib;PhysX3CharacterKinematicDEBUGDLL_x64.lib;PhysX3CommonDEBUGDLL_x64.lib;PhysX3CookingDEBUGDLL_x64.lib;PhysX3DEBUGDLL_x64.lib;PhysX3ExtensionsDEBUGDLL.lib;PhysX3VehicleDEBUGDLL.lib;PhysXProfileSDKDEBUGDLL.lib;PhysXVisualDebuggerSDKDEBUGDLL.lib;PvdRuntimeDEBUGDLL.lib;PxTaskDEBUGDLL.lib;SceneQueryDEBUGDLL.lib;SimulationControllerDEBUGDLL.lib;luad.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -127,7 +127,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>LowLevelCHECKEDDLL.lib;LowLevelClothCHECKEDDLL.lib;PhysX3CharacterKinematicCHECKEDDLL_x64.lib;PhysX3CHECKEDDLL_x64.lib;PhysX3CommonCHECKEDDLL_x64.lib;PhysX3CookingCHECKEDDLL_x64.lib;PhysX3ExtensionsCHECKEDDLL.lib;PhysX3VehicleCHECKEDDLL.lib;PhysXProfileSDKCHECKEDDLL.lib;PhysXVisualDebuggerSDKCHECKEDDLL.lib;PvdRuntimeCHECKEDDLL.lib;PxTaskCHECKEDDLL.lib;SceneQueryCHECKEDDLL.lib;SimulationControllerCHECKEDDLL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LowLevelCHECKEDDLL.lib;LowLevelClothCHECKEDDLL.lib;PhysX3CharacterKinematicCHECKEDDLL_x64.lib;PhysX3CHECKEDDLL_x64.lib;PhysX3CommonCHECKEDDLL_x64.lib;PhysX3CookingCHECKEDDLL_x64.lib;PhysX3ExtensionsCHECKEDDLL.lib;PhysX3VehicleCHECKEDDLL.lib;PhysXProfileSDKCHECKEDDLL.lib;PhysXVisualDebuggerSDKCHECKEDDLL.lib;PvdRuntimeCHECKEDDLL.lib;PxTaskCHECKEDDLL.lib;SceneQueryCHECKEDDLL.lib;SimulationControllerCHECKEDDLL.lib;lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>No</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClInclude Include="nauPhysXInterface.h" />
     <ClInclude Include="physXCharacterManager.h" />
+    <ClInclude Include="physXLuaManager.h" />
     <ClInclude Include="physXParticleManager.h" />
     <ClInclude Include="physXRigidManager.h" />
     <ClInclude Include="physXScene.h" />
@@ -146,6 +147,7 @@
   <ItemGroup>
     <ClCompile Include="nauPhysXInterface.cpp" />
     <ClCompile Include="physXCharacterManager.cpp" />
+    <ClCompile Include="physXLuaManager.cpp" />
     <ClCompile Include="physXParticleManager.cpp" />
     <ClCompile Include="physXRigidManager.cpp" />
     <ClCompile Include="physXScene.cpp" />

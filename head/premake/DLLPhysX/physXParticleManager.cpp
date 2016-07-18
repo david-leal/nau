@@ -4,6 +4,7 @@ using namespace physx;
 
 PhysXParticleManager::PhysXParticleManager() {
 	std::srand(static_cast<unsigned int>(time(NULL)));
+	luaManager = new PhysXLuaManager();
 }
 
 
@@ -14,7 +15,7 @@ void PhysXParticleManager::update() {
 	for (auto scene : particleSystems) {
 
 		if ((scene.second.currentNbParticles < scene.second.extInfo.nbVertices) && ((particleSystems[scene.first].iterStep++ % scene.second.maxIterStep) == 0)) {
-			createParticles(scene.first, 100, 0.3f);
+				createParticles(scene.first, 100, 0.3f);
 		}
 
 		PxParticleFluidReadData* rd = scene.second.particleSystem->lockParticleFluidReadData();
@@ -86,6 +87,8 @@ void PhysXParticleManager::addParticleSystem(physx::PxScene * world, const std::
 
 	particleSystems[scene].particleIndexPool = PxParticleExt::createIndexPool(max);
 	//createParticles();
+	luaManager->initLua("C:\\Users\\david\\Development\\physics\\nau\\head\\projects\\physics\\createParticles.lua");
+	//luaManager->initLua("createParticles.lua");
 }
 
 float getRandomNumber(float factor) {
@@ -95,37 +98,46 @@ float getRandomNumber(float factor) {
 void PhysXParticleManager::createParticles(std::string scene, int n, float randomFactor) {
 	PxU32 existingParticles = particleSystems[scene].currentNbParticles;
 	int nb = particleSystems[scene].currentNbParticles;
-	nb += n;
 	std::vector<PxU32> mTmpIndexArray;
-	mTmpIndexArray.resize(nb);
-	PxStrideIterator<PxU32> indexData(&mTmpIndexArray[0]);
-	
+	int newNb;
 	PxTransform trans = PxTransform(PxMat44(const_cast<float*> (particleSystems[scene].extInfo.transform)));
-
-	int newNb = particleSystems[scene].particleIndexPool->allocateIndices((nb - existingParticles), indexData);
 	std::vector<PxVec3> * partPositions = new std::vector<PxVec3>();
-	for (int i = 0; i < newNb; i++) {
-		partPositions->push_back(PxVec3(trans.p.x + getRandomNumber(randomFactor), trans.p.y, trans.p.z + getRandomNumber(randomFactor)));
-	}
 
-	//PxVec3 appParticleVelocities[] = { PxVec3(0.2f, 0.0f, 0.0f)	};
+	if (luaManager->isFileLoaded()) {
+		luaManager->createNewParticles("create");
+		PhysXLuaManager::NewParticles newParts = luaManager->getCurrentNewParticles();
+
+		nb += newParts.nbParticle;
+		mTmpIndexArray.resize(nb);
+		PxStrideIterator<PxU32> indexData(&mTmpIndexArray[0]);
+
+		newNb = particleSystems[scene].particleIndexPool->allocateIndices((nb - existingParticles), indexData);
+		for (int i = 0; i < newNb; i++) {
+			partPositions->push_back(
+				PxVec3(
+					newParts.positions[i * 3],
+					newParts.positions[(i * 3) + 1],
+					newParts.positions[(i * 3) + 2]
+				)
+			);
+		}
+	}
+	else {
+		nb += n;
+		mTmpIndexArray.resize(nb);
+		PxStrideIterator<PxU32> indexData(&mTmpIndexArray[0]);
+
+		newNb = particleSystems[scene].particleIndexPool->allocateIndices((nb - existingParticles), indexData);
+		for (int i = 0; i < newNb; i++) {
+			partPositions->push_back(PxVec3(trans.p.x + getRandomNumber(randomFactor), trans.p.y, trans.p.z + getRandomNumber(randomFactor)));
+		}
+	}
 
 	PxParticleCreationData particleCreationData;
 	particleCreationData.numParticles = newNb;
 	particleCreationData.indexBuffer = PxStrideIterator<const PxU32>(&mTmpIndexArray[0]);
 	particleCreationData.positionBuffer = PxStrideIterator<const PxVec3>(&partPositions->at(0));
-	//particleCreationData.velocityBuffer = PxStrideIterator<const PxVec3>(&partVelocities[0]);
 	bool ok = particleSystems[scene].particleSystem->createParticles(particleCreationData);
-
-	//PxVec3 appParticleForces[] = { PxVec3(0.2f, 0.0f, 0.0f) };
-	//// specify strided iterator to provide update forces
-	//PxStrideIterator<const PxVec3> forceBuffer(&appParticleForces[0]);
-
-	//// specify strided iterator to provide indices of particles that need to be updated
-	//PxStrideIterator<const PxU32> indexBuffer(&mTmpIndexArray[0]);
-
-	//// specify force update on PxParticleSystem ps choosing the "force" unit
-	//particleSystem->addForces(10, indexBuffer, forceBuffer, PxForceMode::eFORCE);
 
 	particleSystems[scene].currentNbParticles += newNb;
 }

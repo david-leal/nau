@@ -21,27 +21,22 @@ void PhysXCharacterManager::update(float time, physx::PxVec3 gravity) {
 	}
 }
 
-void PhysXCharacterManager::addCharacter(physx::PxScene * world, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	PxPhysics * gPhysics = &(world->getPhysics());
+void PhysXCharacterManager::addCharacter(const std::string & scene, physx::PxMaterial * material, physx::PxVec3 up) {
 	PxCapsuleControllerDesc desc;
 	//PxControllerDesc desc;
 	desc.height = 1.0f;
 	desc.radius = 1.0f;
-	PxVec3 pos = PxMat44(transform).getPosition();
+	PxVec3 pos = PxMat44(controllers[scene].extInfo.transform).getPosition();
 	desc.position = PxExtendedVec3( pos.x, pos.y, pos.z);
-	desc.material = gPhysics->createMaterial(1.0f, 1.0f, 1.0f);
+	desc.material = material;
 	desc.reportCallback = this;
 	desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
 	//desc.stepOffset = stepHeight;
-	desc.upDirection = PxVec3(0.0f, 1.0f, 0.0f);
+	desc.upDirection = up;
 	//desc.slopeLimit = cosf(DegToRad(80.0f));
 	desc.userData = static_cast<void*> (new std::string(scene));
 	manager->createController(desc);
-	controllers[scene].extInfo.nbVertices = nbVertices;
-	controllers[scene].extInfo.vertices = vertices;
-	controllers[scene].extInfo.nbIndices = nbIndices;
-	controllers[scene].extInfo.indices = indices;
-	controllers[scene].extInfo.transform = transform;
+	controllers[scene].initialTrans = PxMat44(controllers[scene].extInfo.transform);
 	controllers[scene].index = PhysXCharacterManager::nextControllerIndex++;
 }
 
@@ -49,12 +44,27 @@ void PhysXCharacterManager::move(const std::string & scene, float time, physx::P
 	PxController * controller = manager->getController(controllers[scene].index);
 	if (controllers[scene].direction) {
 		PxVec3 movement = *controllers[scene].direction + gravity;
-		//controller->move(PxVec3(0.0f, -9.81f, -0.3f), 0.2f, 1 / 60.0f, NULL);
 		controller->move(movement, controllers[scene].pace, time, NULL);
-		PxTransform trans = controller->getActor()->getGlobalPose();
-		trans.rotate(*controllers[scene].direction);
+		
+		PxVec3 up = controller->getUpDirection();
+		PxVec3 right = up.cross(*controllers[scene].direction);
+		PxVec3 dir = *(controllers[scene].direction);
+		PxMat44 mat = PxMat44(
+			PxVec3(right.x, up.x, dir.x),
+			PxVec3(right.y, up.y, dir.y),
+			PxVec3(right.z, up.z, dir.z),
+			PxVec3(controller->getPosition().x, controller->getPosition().y, controller->getPosition().z)
+		);
+			
+		PxTransform trans = PxTransform(mat);
+		trans.q += PxTransform(controllers[scene].initialTrans).q;
+		
 		getMatFromPhysXTransform(trans, controllers[scene].extInfo.transform);
 	}
+}
+
+void PhysXCharacterManager::createInfo(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
+	controllers[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
 }
 
 void PhysXCharacterManager::setDirection(std::string scene, physx::PxVec3 dir) {
