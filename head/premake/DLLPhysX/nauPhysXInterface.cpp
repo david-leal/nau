@@ -48,6 +48,10 @@ NauPhysXInterface::NauPhysXInterface() {
 	m_MaterialProps["RADIUS"]			= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["STEP_OFFSET"]		= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["DIRECTION"]		= Prop(IPhysics::VEC4, 0.0f, 0.0f, -1.0f, 1.0f);
+	m_MaterialProps["UP"]				= Prop(IPhysics::VEC4, 0.0f, 1.0f, 0.0f, 1.0f);
+
+	m_MaterialProps["IMPULSE"]			= Prop(IPhysics::VEC4, 0.0f, 0.0f, 0.0f, 1.0f);
+
 	
 	worldManager = new PhysXWorldManager();
 	Prop p = m_GlobalProps["GRAVITY"];
@@ -86,7 +90,10 @@ void NauPhysXInterface::applyFloatProperty(const std::string & scene, const std:
 }
 
 void NauPhysXInterface::applyVec4Property(const std::string & scene, const std::string & property, float * value) {
-	if (m_Scenes[scene].sceneType == SceneType::CHARACTER) {
+	if (m_Scenes[scene].sceneType == SceneType::RIGID) {
+		worldManager->setRigidProperty(scene, property, value);
+	}
+	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER) {
 		worldManager->setCharacterProperty(scene, property, value);
 	}
 }
@@ -166,7 +173,8 @@ void NauPhysXInterface::setScene(const std::string &scene, const std::string & m
 				m_PropertyManager->getMaterialFloatProperty(material, "STATIC_FRICTION"),
 				m_PropertyManager->getMaterialFloatProperty(material, "RESTITUTION")
 			),
-			m_PropertyManager->getMaterialVec4Property(material, "UP") 
+			m_PropertyManager->getMaterialVec4Property(material, "UP"),
+			material.compare("camera") == 0
 		);
 	case IPhysics::PARTICLES:
 		worldManager->addParticles(

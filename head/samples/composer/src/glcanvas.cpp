@@ -195,7 +195,7 @@ void
 GLCanvas::OnEnterWindow (wxMouseEvent &event) {
 
    SetFocus ();
-   event.Skip ();
+   event.Skip();
 }
 
 
@@ -247,7 +247,10 @@ GLCanvas::Render () {
 
 void 
 GLCanvas::OnKeyUp(wxKeyEvent & event) {
-
+	nau::physics::PhysicsManager * physMan = m_pEngine->getPhysicsManager();
+	nau::physics::PhysicsMaterial man = physMan->getMaterial("man");
+	man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.0f);
+	
 	//if (m_pCamera && true == m_pCamera->isDynamic()) {
 	//	vec3 v3;
 	//	v3.set(0.0f, 0.0f, 0.0f);
@@ -258,6 +261,36 @@ GLCanvas::OnKeyUp(wxKeyEvent & event) {
 
 void 
 GLCanvas::OnKeyDown(wxKeyEvent & event) {
+	nau::physics::PhysicsManager * physMan = m_pEngine->getPhysicsManager();
+	//nau::physics::PhysicsMaterial man = physMan->getMaterial("man");
+	if (WXK_UP == event.GetKeyCode()) {
+		/*float manDirection[] = { 0.0f, 0.0f, -0.1f, 1.0f };
+		man.setPropf4((nau::AttributeValues::Float4Property)man.getAttribSet()->getAttributes()["DIRECTION"]->getId(), vec4(manDirection));
+		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.01f);*/
+		
+		float impulse[] = { 5.0f, 0.2f, 0.0f, 1.0f };
+		nau::physics::PhysicsMaterial mat = physMan->getMaterial("whiteBilliardBall" );
+		mat.setPropf4((nau::AttributeValues::Float4Property)mat.getAttribSet()->getAttributes()["IMPULSE"]->getId(), vec4(impulse));
+	}
+
+	/*if (WXK_DOWN == event.GetKeyCode()) {
+		float manDirection[] = { 0.0f, 0.0f, 0.1f, 1.0f };
+		man.setPropf4((nau::AttributeValues::Float4Property)man.getAttribSet()->getAttributes()["DIRECTION"]->getId(), vec4(manDirection));
+		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.01f);
+	}
+
+	if (WXK_LEFT == event.GetKeyCode()) {
+		float manDirection[] = { -0.1f, 0.0f, 0.0f, 1.0f };
+		man.setPropf4((nau::AttributeValues::Float4Property)man.getAttribSet()->getAttributes()["DIRECTION"]->getId(), vec4(manDirection));
+		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.01f);
+	}
+
+	if (WXK_RIGHT == event.GetKeyCode()) {
+		float manDirection[] = { 0.1f, 0.0f, 0.0f, 1.0f };
+		man.setPropf4((nau::AttributeValues::Float4Property)man.getAttribSet()->getAttributes()["DIRECTION"]->getId(), vec4(manDirection));
+		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.01f);
+	}*/
+
 
 	int mod = 0;
 	if (true == event.ShiftDown()) 
@@ -505,6 +538,7 @@ GLCanvas::OnKeyDown(wxKeyEvent & event) {
 		}
 		physics = !physics;
 	}
+
 	event.Skip();
 }
 

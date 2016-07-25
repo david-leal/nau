@@ -21,7 +21,8 @@ namespace nau
 			ENUM_PROP(SCENE_SHAPE, 1);
 			FLOAT_PROP(NBPARTICLES, 0);
 			FLOAT_PROP(MAX_PARTICLE, 1);
-			STRING_PROP(BUFFER, 0);
+			STRING_PROP(BUFF, 0);
+			FLOAT4_PROP(DIRECTION, 0);
 
 			static AttribSet Attribs;
 

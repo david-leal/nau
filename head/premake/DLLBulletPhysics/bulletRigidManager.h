@@ -20,17 +20,15 @@ public:
 	void createInfo(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
 	btCollisionShape * createCollisionShape(const std::string & scene, nau::physics::IPhysics::BoundingVolume shape, bool isStatic = true);
 	btRigidBody * addRigid(const std::string &scene, btCollisionShape * shape, float mass, bool isStatic);
-	//btRigidBody * addStaticBody(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
-	//btRigidBody * addDynamicBody(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
 	void setMass(std::string name, float value);
 	void setDynamicFriction(std::string name, float value);
 	void setStaticFriction(std::string name, float value);
 	void setRestitution(std::string name, float value);
+	void addImpulse(std::string name, float * value);
 	void move(std::string scene, float * transform);
 
 protected:
 	std::map<std::string, BulletScene> rigidBodies;
-	//btCollisionShape* getMeshShape(ExternalInfo externInfo, bool isStatic = true);
 
 };
 

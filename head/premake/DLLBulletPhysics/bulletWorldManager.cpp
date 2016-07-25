@@ -70,6 +70,12 @@ void BulletWorldManager::setRigidProperty(std::string scene, std::string propNam
 	}
 }
 
+void BulletWorldManager::setRigidProperty(std::string scene, std::string propName, float * value) {
+	if (propName.compare("IMPULSE") == 0) {
+		rigidManager->addImpulse(scene, value);
+	}
+}
+
 void BulletWorldManager::moveRigid(std::string scene, float * transform) {
 	rigidManager->move(scene, transform); 
 }

@@ -39,6 +39,8 @@ namespace nau
 			
 			void addScene(nau::scene::IScene *aScene, const std::string &matName);
 
+			void addCamera(nau::scene::Camera * camera);
+
 			PhysicsMaterial &getMaterial(const std::string &name);
 			void getMaterialNames(std::vector<std::string> *);
 
@@ -51,14 +53,14 @@ namespace nau
 		protected:
 		
 			PhysicsManager::PhysicsManager();
-			
+
 			void applyMaterialFloatProperty(const std::string &matName, const std::string &property, float value);
 			void applyMaterialVec4Property(const std::string &matName, const std::string &property, float *value);
 
-			IPhysics *loadPlugin();
-
 			void applyGlobalFloatProperty(const std::string &property, float value);
 			void applyGlobalVec4Property(const std::string &property, float *value);
+
+			IPhysics *loadPlugin();
 
 			static PhysicsManager *PhysManInst;
 
@@ -69,6 +71,7 @@ namespace nau
 			static bool Init();
 			static bool Inited;
 			bool m_Built;
+			bool hasCamera;
 
 			std::map<std::string, PhysicsMaterial> m_MatLib;
 			// map from scenes to material

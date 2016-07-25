@@ -26,22 +26,25 @@
 	<!-- </buffers> -->
 	
 	<shaders>
-		<shader name="showPositions" vs = "shaders/showPositions.vert" ps = "shaders/showPositions.frag" /> 
+		<!-- <shader name="showPositions" vs = "shaders/showPositions.vert" ps = "shaders/showPositions.frag" />  -->
+		<shader name="showPositions" vs = "shaders/test.vert" ps = "shaders/test.frag" /> 
 	</shaders>
 	
 	<materials>
 		<material name ="particlesMat">
+			<state name="blending"/>
 			<color>
-				<AMBIENT r="0.0" g="0.0" b="0.3" a="0.8" />
-				<DIFFUSE r="0.0" g="0.0" b="0.8" a="0.8" />
-				<SPECULAR r="1.0" g="1.0" b="1.0" a="0.4" />
+				<AMBIENT r="0.0" g="0.0" b="0.5" a="0.5" />
+				<DIFFUSE r="0.0" g="0.0" b="0.5" a="0.5" />
+				<SPECULAR r="1.0" g="1.0" b="1.0" a="1.0" />
 				<EMISSION r="0.0" g="0.0" b="0.0" a="1.0" />
-				<SHININESS value="10.0" />
+				<SHININESS value="256.0" />
 			</color>
 			<shader name="showPositions" >
 				<values>			
 					<valueof uniform="PVM" 				type="RENDERER" context="CURRENT"
 														component="PROJECTION_VIEW_MODEL" />
+														
 					<valueof uniform="PV" 				type="RENDERER" context="CURRENT"
 														component="PROJECTION_VIEW" />
 					
@@ -72,8 +75,17 @@
 					<valueof uniform="lightDirection" 	type="LIGHT" context="CURRENT" 
 														id=0 component="DIRECTION" /> 
 														
-					<valueof uniform="lightColor"     	type="LIGHT" context="CURRENT" 
-														id=0 component="COLOR" />
+					<valueof uniform="lightAmbient"     type="LIGHT" context="CURRENT" 
+														id=0 component="AMBIENT" />
+					
+					<!-- <valueof uniform="lightDiffuse"     type="LIGHT" context="CURRENT" 
+														id=0 component="DIFFUSE" />
+														
+					<valueof uniform="lightSpecular"    type="LIGHT" context="CURRENT" 
+														id=0 component="SPECULAR" /> -->
+														
+					<valueof uniform="cameraPosition"   type="CAMERA" context="CURRENT" 
+														id=0 component="POSITION" />
 				</values>										
 			</shader>
 			<buffers>	
@@ -82,8 +94,16 @@
 					<BINDING_POINT value="1" />
 				</buffer>
 			</buffers>	
-
 		</material>
 	</materials>
+	
+	<states>
+		<state name="blending">
+			<BLEND value="TRUE" />
+			<BLEND_SRC value="SRC_ALPHA" />
+			<BLEND_DST value="ONE_MINUS_SRC_COLOR" />
+			<!-- <BLEND_DST value="ONE" /> -->
+		</state>
+	</states>
 
 </materialLib>

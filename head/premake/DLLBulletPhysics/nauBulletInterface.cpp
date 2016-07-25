@@ -49,6 +49,10 @@ NauBulletInterface::NauBulletInterface() {
 	m_MaterialProps["STEP_OFFSET"] = Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["DIRECTION"] = Prop(IPhysics::VEC4, 0.0f, 0.0f, -1.0f, 1.0f);
 
+	m_MaterialProps["UP"] = Prop(IPhysics::VEC4, 0.0f, 1.0f, 0.0f, 1.0f);
+
+	m_MaterialProps["IMPULSE"] = Prop(IPhysics::VEC4, 0.0f, 0.0f, 0.0f, 1.0f);
+
 	worldManager = new BulletWorldManager();
 	Prop p = m_GlobalProps["GRAVITY"];
 	worldManager->setGravity(p.x, p.y, p.z);
@@ -80,6 +84,9 @@ void NauBulletInterface::applyFloatProperty(const std::string & scene, const std
 }
 
 void NauBulletInterface::applyVec4Property(const std::string & scene, const std::string & property, float * value) {
+	if (m_Scenes[scene].sceneType == SceneType::RIGID) {
+		worldManager->setRigidProperty(scene, property, value);
+	}
 }
 
 void NauBulletInterface::applyGlobalFloatProperty(const std::string & property, float value) {

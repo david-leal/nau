@@ -21,7 +21,7 @@ void PhysXCharacterManager::update(float time, physx::PxVec3 gravity) {
 	}
 }
 
-void PhysXCharacterManager::addCharacter(const std::string & scene, physx::PxMaterial * material, physx::PxVec3 up) {
+void PhysXCharacterManager::addCharacter(const std::string & scene, physx::PxMaterial * material, physx::PxVec3 up, bool isCamera) {
 	PxCapsuleControllerDesc desc;
 	//PxControllerDesc desc;
 	desc.height = 1.0f;
@@ -32,34 +32,48 @@ void PhysXCharacterManager::addCharacter(const std::string & scene, physx::PxMat
 	desc.reportCallback = this;
 	desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
 	//desc.stepOffset = stepHeight;
-	desc.upDirection = up;
+	desc.upDirection = up.getNormalized();
 	//desc.slopeLimit = cosf(DegToRad(80.0f));
 	desc.userData = static_cast<void*> (new std::string(scene));
 	manager->createController(desc);
-	controllers[scene].initialTrans = PxMat44(controllers[scene].extInfo.transform);
+	if (!isCamera) {
+		PxMat44 initTrans = PxMat44(controllers[scene].extInfo.transform);
+		initTrans.setPosition(PxVec3(0.0f));
+		controllers[scene].initialTrans = initTrans;
+	}
+	controllers[scene].isCamera = isCamera;
 	controllers[scene].index = PhysXCharacterManager::nextControllerIndex++;
 }
 
 void PhysXCharacterManager::move(const std::string & scene, float time, physx::PxVec3 gravity) {
-	PxController * controller = manager->getController(controllers[scene].index);
-	if (controllers[scene].direction) {
-		PxVec3 movement = *controllers[scene].direction + gravity;
-		controller->move(movement, controllers[scene].pace, time, NULL);
-		
-		PxVec3 up = controller->getUpDirection();
-		PxVec3 right = up.cross(*controllers[scene].direction);
-		PxVec3 dir = *(controllers[scene].direction);
-		PxMat44 mat = PxMat44(
-			PxVec3(right.x, up.x, dir.x),
-			PxVec3(right.y, up.y, dir.y),
-			PxVec3(right.z, up.z, dir.z),
-			PxVec3(controller->getPosition().x, controller->getPosition().y, controller->getPosition().z)
-		);
-			
-		PxTransform trans = PxTransform(mat);
-		trans.q += PxTransform(controllers[scene].initialTrans).q;
-		
-		getMatFromPhysXTransform(trans, controllers[scene].extInfo.transform);
+	if (controllers.find(scene) != controllers.end()) {
+		PxController * controller = manager->getController(controllers[scene].index);
+		if (controllers[scene].pace > 0.0) {
+			PxVec3 movement = *controllers[scene].direction + gravity;
+			controller->move(movement, controllers[scene].pace, time, NULL);
+
+			PxTransform trans;
+			if (controllers[scene].isCamera) {
+				trans = PxTransform(PxMat44(controllers[scene].extInfo.transform));
+				trans.transform(PxVec3((PxReal)controller->getPosition().x, (PxReal)controller->getPosition().y, (PxReal)controller->getPosition().z));
+			}
+			else {
+				PxVec3 up = controller->getUpDirection();
+				PxVec3 dir = controllers[scene].direction->getNormalized();
+				PxVec3 right = up.cross(dir).getNormalized();
+				//PxVec3 right = controller->getUpDirection().cross(dir).getNormalized();
+				//PxVec3 up = right.cross(dir).getNormalized();
+
+				PxMat44 mat = PxMat44(
+					PxVec3(right.x, up.x, dir.x),
+					PxVec3(right.y, up.y, dir.y),
+					PxVec3(right.z, up.z, dir.z),
+					PxVec3((PxReal)controller->getPosition().x, (PxReal)controller->getPosition().y, (PxReal)controller->getPosition().z)
+				);
+				trans = PxTransform(mat * controllers[scene].initialTrans);
+			}
+			getMatFromPhysXTransform(trans, controllers[scene].extInfo.transform);
+		}
 	}
 }
 

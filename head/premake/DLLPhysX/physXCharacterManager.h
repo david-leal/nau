@@ -15,7 +15,7 @@ public:
 	~PhysXCharacterManager();
 
 	void update(float time, physx::PxVec3 gravity = physx::PxVec3(0.0f));
-	void addCharacter(const std::string &scene, physx::PxMaterial * material, physx::PxVec3 up = physx::PxVec3(0.0f, 1.0f, 0.0f));
+	void addCharacter(const std::string &scene, physx::PxMaterial * material, physx::PxVec3 up = physx::PxVec3(0.0f, 1.0f, 0.0f), bool isCamera = false);
 	void move(const std::string & scene, float time, physx::PxVec3 gravity = physx::PxVec3(0.0f));
 
 	void createInfo(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
@@ -34,6 +34,7 @@ protected:
 	
 
 	typedef struct {
+		bool isCamera;
 		externalInfo extInfo;
 		int index;
 		physx::PxVec3 * direction;

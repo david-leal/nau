@@ -44,7 +44,7 @@ PhysicsManager::GetInstance() {
 }
 
 
-PhysicsManager::PhysicsManager() : m_PhysInst(NULL), m_Built(false) {
+PhysicsManager::PhysicsManager() : m_PhysInst(NULL), m_Built(false), hasCamera(false) {
 
 	registerAndInitArrays(Attribs);
 	m_PhysInst = loadPlugin();
@@ -207,6 +207,10 @@ PhysicsManager::update() {
 			break;
 		}
 	}
+	if (hasCamera) {
+		t = m_PhysInst->getSceneTransform("camera");
+		NAU->getActiveCamera()->setTransform(math::mat4(t));
+	}
 }
 
 
@@ -306,6 +310,46 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 	m_Built = false;
 }
 
+void nau::physics::PhysicsManager::addCamera(nau::scene::Camera * camera) {
+	std::string name = "camera";
+
+	PhysicsMaterial &pm = getMaterial(name);
+	IPhysics::SceneType type = (IPhysics::SceneType)pm.getPrope(PhysicsMaterial::SCENE_TYPE);
+	IPhysics::SceneShape shape = (IPhysics::SceneShape)pm.getPrope(PhysicsMaterial::SCENE_SHAPE);
+
+	m_PhysInst->setSceneType(name, IPhysics::CHARACTER);
+
+	m_PhysInst->setSceneShape(name, shape, 0, 0);
+
+	std::vector<VertexAttrib> *vd = camera->getRenderable()->getVertexData()->getDataOf(0).get();
+
+	m_PhysInst->setScene(
+		name,
+		name,
+		0,
+		NULL,
+		0,
+		NULL,
+		(float *)camera->getTransform().getMatrix()
+	);
+
+	std::map<std::string, std::unique_ptr<Attribute>> &attrs = pm.getAttribSet()->getAttributes();
+
+	for (auto &a : attrs) {
+		switch (a.second->getType()) {
+		case Enums::FLOAT:
+			m_PhysInst->applyFloatProperty(name, a.second->getName(), pm.getPropf((FloatProperty)a.second->getId())); break;
+		case Enums::VEC4:
+			m_PhysInst->applyVec4Property(name, a.second->getName(), &(pm.getPropf4((Float4Property)a.second->getId()).x)); break;
+
+		}
+	}
+
+	hasCamera = true;
+
+
+}
+
 
 void
 PhysicsManager::updateProps() {
@@ -380,7 +424,7 @@ PhysicsManager::applyMaterialVec4Property(const std::string &matName, const std:
 	if (!m_PhysInst)
 		return;
 
-	int id = Attribs.getID(property);
+	int id = PhysicsMaterial::Attribs.getID(property);
 
 	if (id != -1) {
 		for (auto &sc : m_Scenes) {

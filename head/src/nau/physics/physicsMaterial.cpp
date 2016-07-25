@@ -20,13 +20,15 @@ PhysicsMaterial::Init() {
 	Attribs.add(Attribute(MAX_PARTICLE, "MAX_PARTICLES",  Enums::DataType::FLOAT, false, new NauFloat(0.0f)));
 	Attribs.add(Attribute(NBPARTICLES, "NBPARTICLES", Enums::DataType::FLOAT, false, new NauFloat(0.0f)));
 
-	Attribs.add(Attribute(BUFFER, "BUFFER", "BUFFER"));
+	Attribs.add(Attribute(BUFF, "BUFF", "BUFFER"));
 
 	Attribs.add(Attribute(SCENE_SHAPE, "SCENE_SHAPE", Enums::DataType::ENUM, false, new NauInt(IPhysics::CUSTOM)));
 	Attribs.listAdd("SCENE_SHAPE", "CUSTOM", IPhysics::CUSTOM);
 	Attribs.listAdd("SCENE_SHAPE", "BOX", IPhysics::BOX);
 	Attribs.listAdd("SCENE_SHAPE", "SPHERE", IPhysics::SPHERE);
 	Attribs.listAdd("SCENE_SHAPE", "CAPSULE", IPhysics::CAPSULE);
+
+	Attribs.add(Attribute(DIRECTION, "DIRECTION", Enums::DataType::VEC4, true, new vec4(0.0f, 0.0f, 0.0f, 1.0f)));
 
 	NAU->registerAttributes("PHYSICS_MATERIAL", &Attribs);
 

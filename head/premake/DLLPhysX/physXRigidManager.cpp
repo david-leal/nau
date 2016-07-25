@@ -48,7 +48,7 @@ PhysXRigidManager::addStaticBody(const std::string & scene, physx::PxScene * wor
 		staticActor = PxCreateStatic(
 			world->getPhysics(),
 			trans,
-			PxSphereGeometry(PxVec3(shape.max[0], shape.max[1], shape.max[2]).magnitude()),
+			PxSphereGeometry(shape.max[0]),
 			*material
 		);
 	}
@@ -59,7 +59,7 @@ PhysXRigidManager::addStaticBody(const std::string & scene, physx::PxScene * wor
 			world->getPhysics(),
 			trans,
 			PxCapsuleGeometry(
-				PxVec3(shape.max[0], shape.max[1], shape.max[2]).magnitude(),
+				shape.max[0],
 				shape.max[1]
 			),
 			*material
@@ -105,19 +105,13 @@ PhysXRigidManager::addDynamicBody(const std::string & scene, physx::PxScene * wo
 	case nau::physics::IPhysics::SPHERE:
 	{
 		dynamic = gPhysics->createRigidDynamic(trans);
-		dynamic->createShape(PxSphereGeometry(PxVec3(shape.max[0], shape.max[1], shape.max[2]).magnitude()), *material);
+		dynamic->createShape(PxSphereGeometry(shape.max[0]), *material);
 	}
 	break;
 	case nau::physics::IPhysics::CAPSULE:
 	{
 		dynamic = gPhysics->createRigidDynamic(trans);
-		dynamic->createShape(
-			PxCapsuleGeometry(
-				PxVec3(shape.max[0], shape.max[1], shape.max[2]).magnitude(),
-				shape.max[1]
-			),
-			*material
-		);
+		dynamic->createShape(PxCapsuleGeometry(shape.max[0], shape.max[1]), *material);
 	}
 	break;
 	default:
@@ -167,62 +161,6 @@ PhysXRigidManager::getTriangleMeshGeo(PxScene *world, physx::PxCooking* mCooking
 	}
 	return new PxDefaultMemoryInputData(writeBuffer->getData(), writeBuffer->getSize());
 }
-
-//void 
-//PhysXRigidManager::addStaticBody(physx::PxScene * world, physx::PxCooking* mCooking, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, float staticFriction, float dynamicFrction, float restitution) {
-//	rigidBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
-//	//setExtInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
-//
-//	PxPhysics *gPhysics = &(world->getPhysics());
-//	PxMaterial * material = gPhysics->createMaterial(staticFriction, dynamicFrction, restitution);
-//
-//	PxRigidStatic* staticActor;
-//	if (scene.compare("plane") == 0) {
-//		staticActor = PxCreatePlane(*gPhysics,
-//			PxPlane(0.0f, 1.0f, 0.0f, 0.0f),
-//			*material
-//		);
-//
-//	}
-//	else {
-//		staticActor = gPhysics->createRigidStatic(PxTransform(PxMat44(rigidBodies[scene].extInfo.transform)));
-//		PxTriangleMeshGeometry triGeom;
-//		triGeom.triangleMesh = gPhysics->createTriangleMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo));
-//		staticActor->createShape(triGeom, *material);
-//	}
-//	staticActor->userData = static_cast<void*> (new std::string(scene));
-//	world->addActor(*staticActor);
-//	
-//	rigidBodies[scene].actor = staticActor;
-//
-//}
-//
-//void PhysXRigidManager::addDynamicBody(physx::PxScene * world, physx::PxCooking* mCooking, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, float staticFriction, float dynamicFrction, float restitution) {
-//	rigidBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
-//	//setExtInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
-//
-//	PxPhysics *gPhysics = &(world->getPhysics());
-//	PxMaterial * material = gPhysics->createMaterial(staticFriction, dynamicFrction, restitution);
-//	PxRigidDynamic* dynamic;
-//	PxTransform trans = PxTransform(PxMat44(rigidBodies[scene].extInfo.transform));
-//
-//	if (scene.find("billiardBall") != std::string::npos) {
-//		dynamic = PxCreateDynamic(*gPhysics,
-//					trans,
-//					PxSphereGeometry(1),
-//					*material,
-//					1.0f
-//				);
-//	}
-//	else {
-//		dynamic = gPhysics->createRigidDynamic(trans);
-//		PxConvexMesh * convexMesh = gPhysics->createConvexMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo, false));
-//		PxShape *shape = dynamic->createShape(PxConvexMeshGeometry(convexMesh), *material);
-//	}
-//	dynamic->userData = static_cast<void*> (new std::string(scene));
-//	world->addActor(*dynamic);
-//	rigidBodies[scene].actor = dynamic;
-//}
 
 void 
 PhysXRigidManager::setMass(std::string name, float value) {
@@ -314,6 +252,15 @@ PhysXRigidManager::setForce(std::string scene, float * force) {
 		}
 	}
 	//dynamic->addForce(PxVec3(500.0, 0, 0), PxForceMode::eIMPULSE);
+}
+
+void PhysXRigidManager::setImpulse(std::string scene, float * impulse) {
+	if (rigidBodies.find(scene) != rigidBodies.end()) {
+		PxRigidDynamic * actor = rigidBodies[scene].actor->is<PxRigidDynamic>();
+		if (actor) {
+			actor->addForce(PxVec3(impulse[0], impulse[1], impulse[2]), PxForceMode::eIMPULSE);
+		}
+	}
 }
 
 /*void

@@ -2,49 +2,49 @@
 <materialLib name="Simple">
 
 	<textures>
-		<texture name="poolball01" filename="../../models/MyPoolTable/Texturas/poolball01.TIF" >
+		<texture name="poolball01" filename="../../models/MyPoolTable/textures/poolball01.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball02" filename="../../models/MyPoolTable/Texturas/poolball02.TIF" >
+		<texture name="poolball02" filename="../../models/MyPoolTable/textures/poolball02.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball03" filename="../../models/MyPoolTable/Texturas/poolball03.TIF" >
+		<texture name="poolball03" filename="../../models/MyPoolTable/textures/poolball03.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball04" filename="../../models/MyPoolTable/Texturas/poolball04.TIF" >
+		<texture name="poolball04" filename="../../models/MyPoolTable/textures/poolball04.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball05" filename="../../models/MyPoolTable/Texturas/poolball05.TIF" >
+		<texture name="poolball05" filename="../../models/MyPoolTable/textures/poolball05.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball06" filename="../../models/MyPoolTable/Texturas/poolball06.TIF" >
+		<texture name="poolball06" filename="../../models/MyPoolTable/textures/poolball06.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball07" filename="../../models/MyPoolTable/Texturas/poolball07.TIF" >
+		<texture name="poolball07" filename="../../models/MyPoolTable/textures/poolball07.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball08" filename="../../models/MyPoolTable/Texturas/poolball08.TIF" >
+		<texture name="poolball08" filename="../../models/MyPoolTable/textures/poolball08.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball09" filename="../../models/MyPoolTable/Texturas/poolball09.TIF" >
+		<texture name="poolball09" filename="../../models/MyPoolTable/textures/poolball09.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball10" filename="../../models/MyPoolTable/Texturas/poolball10.TIF" >
+		<texture name="poolball10" filename="../../models/MyPoolTable/textures/poolball10.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball11" filename="../../models/MyPoolTable/Texturas/poolball11.TIF" >
+		<texture name="poolball11" filename="../../models/MyPoolTable/textures/poolball11.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball12" filename="../../models/MyPoolTable/Texturas/poolball12.TIF" >
+		<texture name="poolball12" filename="../../models/MyPoolTable/textures/poolball12.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball13" filename="../../models/MyPoolTable/Texturas/poolball13.TIF" >
+		<texture name="poolball13" filename="../../models/MyPoolTable/textures/poolball13.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball14" filename="../../models/MyPoolTable/Texturas/poolball14.TIF" >
+		<texture name="poolball14" filename="../../models/MyPoolTable/textures/poolball14.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
-		<texture name="poolball15" filename="../../models/MyPoolTable/Texturas/poolball15.TIF" >
+		<texture name="poolball15" filename="../../models/MyPoolTable/textures/poolball15.TIF" >
 			<SIZE width=300 height=300 />
 		</texture>
 	</textures>
@@ -304,18 +304,7 @@
 				</texture> 
 			</textures>
 		</material>
-		
 
-		<material name="simpleColored">
-			<color>
-				<AMBIENT r="0.8" g="0.0" b="0.0" a="1.0" />
-				<DIFFUSE r="0.8" g="0.0" b="0.0" a="1.0" />
-				<SPECULAR r="1.0" g="1.0" b="1.0" a="1.0" />
-				<EMISSION r="0.0" g="0.0" b="0.0" a="1.0" />
-				<SHININESS value="0.0" />
-			</color>
-		</material>
-		
 	</materials>
 	
 </materialLib>

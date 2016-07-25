@@ -95,14 +95,23 @@ void PhysXWorldManager::setRigidProperty(std::string scene, std::string propName
 	if (propName.compare("MASS") == 0) {
 		rigidManager->setMass(scene, value);
 	}
-	if (propName.compare("STATIC_FRICTION") == 0) {
+	else if (propName.compare("STATIC_FRICTION") == 0) {
 		rigidManager->setStaticFriction(scene, value);
 	}
-	if (propName.compare("DYNAMIC_FRICTION") == 0) {
+	else if (propName.compare("DYNAMIC_FRICTION") == 0) {
 		rigidManager->setDynamicFriction(scene, value);
 	}
-	if (propName.compare("RESTITUTION") == 0) {
+	else if (propName.compare("RESTITUTION") == 0) {
 		rigidManager->setRestitution(scene, value);
+	}
+}
+
+void PhysXWorldManager::setRigidProperty(std::string scene, std::string propName, float * value) {
+	if (propName.compare("FORCE") == 0) {
+		rigidManager->setForce(scene, value);
+	}
+	else if (propName.compare("IMPULSE") == 0) {
+		rigidManager->setImpulse(scene, value);
 	}
 }
 
@@ -130,9 +139,9 @@ std::map<std::string, int>* PhysXWorldManager::getMaterialParticleNb() {
 	return particleManager->getParticleSystemsParticleNb();
 }
 
-void PhysXWorldManager::addCharacter(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, physx::PxMaterial * material, float * up) {
+void PhysXWorldManager::addCharacter(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, physx::PxMaterial * material, float * up, bool isCamera) {
 	characterManager->createInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
-	up ? characterManager->addCharacter(scene, material, PxVec3(up[0], up[1], up[2])) : characterManager->addCharacter(scene, material);
+	characterManager->addCharacter(scene, material, PxVec3(up[0], up[1], up[2]), isCamera);
 }
 
 void PhysXWorldManager::setCharacterProperty(std::string scene, std::string propName, float value) {

@@ -744,7 +744,6 @@ ProjectLoader::load (std::string file, int *width, int *height)
 		loadAssets (hRoot, matLibs);
 		loadPipelines (hRoot);
 		loadInterface(hRoot);
-
 	}
 	catch(std::string &s) {
 		throw(s);

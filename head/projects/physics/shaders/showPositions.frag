@@ -22,6 +22,8 @@ void main()
 		spec = specular * pow(intSpec, shininess);
 	}
 	vec4 aux = max(intensity * diffuse + spec, ambient);
-	outColor = vec4(aux.xyz, 0.4);
+	//vec4 temp = vec4(0.0, 1.0, 0.0, 0.4);
+	//outColor = temp;
+	outColor = vec4(aux.xyz, 0.3);
 	//outColor = vec4(1.0, 0.0, 0.0, 1.0);
 }

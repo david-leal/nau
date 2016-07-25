@@ -23,6 +23,7 @@ public:
 	void setRestitution(std::string name, float value);
 	void move(std::string scene, float * transform);
 	void setForce(std::string scene, float * force);
+	void setImpulse(std::string scene, float * impulse);
 
 protected:
 	std::map<std::string, PhysXScene> rigidBodies;
