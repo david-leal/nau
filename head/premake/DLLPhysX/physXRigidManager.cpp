@@ -9,13 +9,27 @@ PhysXRigidManager::PhysXRigidManager() {
 PhysXRigidManager::~PhysXRigidManager() {
 }
 
+float getScalingFactor(float * trans) {
+	float m00 = trans[0];
+	float m01 = trans[4];
+	float m02 = trans[8];
+	return (sqrt(m00 * m00 + m01 * m01 + m02 * m02));
+}
+
 void 
 PhysXRigidManager::update(const physx::PxActiveTransform * activeTransforms, physx::PxU32 nbActiveTransforms) {
 	for (PxU32 i = 0; i < nbActiveTransforms; ++i) {
 		if (activeTransforms[i].userData != NULL) {
 			std::string *n = static_cast<std::string*>(activeTransforms[i].userData);
 			if (rigidBodies.find(*n) != rigidBodies.end()) {
-				getMatFromPhysXTransform(activeTransforms[i].actor2World, rigidBodies[*n].extInfo.transform);
+				PxMat44 previous(rigidBodies[*n].extInfo.transform);
+				PxMat44 mat(activeTransforms[i].actor2World);
+				mat.scale(PxVec4(PxVec3(rigidBodies[*n].extInfo.scalingFactor), 1.0f));
+				//getMatFromPhysXTransform(activeTransforms[i].actor2World, rigidBodies[*n].extInfo.transform);
+				PxTransform trans(mat);
+				getMatFromPhysXTransform(mat, rigidBodies[*n].extInfo.transform);
+				PxMat44 newMat(rigidBodies[*n].extInfo.transform);
+				PxVec4 cenas = newMat.column0;
 			}
 		}
 	}
@@ -77,8 +91,8 @@ PhysXRigidManager::addStaticBody(const std::string & scene, physx::PxScene * wor
 		}
 		else {
 			staticActor = gPhysics->createRigidStatic(trans);
-			PxTriangleMeshGeometry triGeom;
-			triGeom.triangleMesh = gPhysics->createTriangleMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo, true));
+			PxTriangleMeshGeometry triGeom(gPhysics->createTriangleMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo, true)));
+			//triGeom.triangleMesh = gPhysics->createTriangleMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo, true));
 			staticActor->createShape(triGeom, *material);
 		}
 	}
@@ -93,32 +107,56 @@ void
 PhysXRigidManager::addDynamicBody(const std::string & scene, physx::PxScene * world, physx::PxCooking * mCooking, nau::physics::IPhysics::BoundingVolume shape, physx::PxMaterial * material) {
 	PxPhysics *gPhysics = &(world->getPhysics());
 	PxRigidDynamic * dynamic;
-	PxTransform trans = PxTransform(PxMat44(rigidBodies[scene].extInfo.transform));
+
+	rigidBodies[scene].extInfo.scalingFactor = getScalingFactor(rigidBodies[scene].extInfo.transform);
+	PxMeshScale scale = PxMeshScale(rigidBodies[scene].extInfo.scalingFactor);
+	PxMat44 aux(rigidBodies[scene].extInfo.transform);
+	PxVec3 pos(aux.getPosition());
+	aux *= (1.0f / rigidBodies[scene].extInfo.scalingFactor);
+	PxMat44 mat(
+		PxVec3(aux.column0.x, aux.column0.y, aux.column0.z),
+		PxVec3(aux.column1.x, aux.column1.y, aux.column1.z),
+		PxVec3(aux.column2.x, aux.column2.y, aux.column2.z),
+		pos
+	);
+
+	//PxTransform trans = PxTransform(PxMat44(rigidBodies[scene].extInfo.transform));
+	PxTransform trans = PxTransform(mat);
+
 	switch (shape.sceneShape)
 	{
 	case nau::physics::IPhysics::BOX:
 	{
 		dynamic = gPhysics->createRigidDynamic(trans);
-		dynamic->createShape(PxBoxGeometry(shape.max[0], shape.max[1], shape.max[2]), *material);
+		dynamic->createShape(
+			PxBoxGeometry(
+				shape.max[0] * rigidBodies[scene].extInfo.scalingFactor,
+				shape.max[1] * rigidBodies[scene].extInfo.scalingFactor,
+				shape.max[2] * rigidBodies[scene].extInfo.scalingFactor),
+			*material);
 	}
 	break;
 	case nau::physics::IPhysics::SPHERE:
 	{
 		dynamic = gPhysics->createRigidDynamic(trans);
-		dynamic->createShape(PxSphereGeometry(shape.max[0]), *material);
+		dynamic->createShape(PxSphereGeometry(shape.max[0] * rigidBodies[scene].extInfo.scalingFactor), *material);
 	}
 	break;
 	case nau::physics::IPhysics::CAPSULE:
 	{
 		dynamic = gPhysics->createRigidDynamic(trans);
-		dynamic->createShape(PxCapsuleGeometry(shape.max[0], shape.max[1]), *material);
+		dynamic->createShape(
+			PxCapsuleGeometry(
+				shape.max[0] * rigidBodies[scene].extInfo.scalingFactor,
+				shape.max[1] * rigidBodies[scene].extInfo.scalingFactor),
+			*material);
 	}
 	break;
 	default:
 	{
 		dynamic = gPhysics->createRigidDynamic(trans);
 		PxConvexMesh * convexMesh = gPhysics->createConvexMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo, false));
-		dynamic->createShape(PxConvexMeshGeometry(convexMesh), *material);
+		dynamic->createShape(PxConvexMeshGeometry(convexMesh, scale), *material);
 	}
 	break;
 	}
@@ -131,7 +169,6 @@ PhysXRigidManager::addDynamicBody(const std::string & scene, physx::PxScene * wo
 physx::PxInputStream*
 PhysXRigidManager::getTriangleMeshGeo(PxScene *world, physx::PxCooking* mCooking, ExternalInfo externInfo, bool isStatic) {
 	PxPhysics *gPhysics = &(world->getPhysics());
-
 	PxDefaultMemoryOutputStream *writeBuffer = new PxDefaultMemoryOutputStream();
 
 	bool status;

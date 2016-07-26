@@ -12,21 +12,27 @@ typedef struct ExternalInfo {
 	int nbIndices;
 	unsigned int * indices;
 	float * transform;
+	float rollingFriction;
+	float scalingFactor;
 
 	ExternalInfo() {
-		nbVertices	= 0;
-		vertices	= 0;
-		nbIndices	= 0;
-		indices		= 0;
-		transform	= 0;
+		nbVertices		= 0;
+		vertices		= 0;
+		nbIndices		= 0;
+		indices			= 0;
+		transform		= 0;
+		rollingFriction = 0.0f;
+		scalingFactor	= 1.0f;
 	};
 
 	ExternalInfo(int nbVert, float * vert, int nbInd, unsigned int * ind, float * transf) {
-		nbVertices	= nbVert;
-		vertices	= vert;
-		nbIndices	= nbInd;
-		indices		= ind;
-		transform	= transf;
+		nbVertices		= nbVert;
+		vertices		= vert;
+		nbIndices		= nbInd;
+		indices			= ind;
+		transform		= transf;
+		rollingFriction = 0.0f;
+		scalingFactor = 1.0f;
 	};
 } externalInfo;
 
@@ -66,5 +72,6 @@ typedef struct {
 
 
 void getMatFromPhysXTransform(physx::PxTransform transform, float* matrix);
+void getMatFromPhysXTransform(physx::PxMat44 transform, float* matrix);
 
 #endif

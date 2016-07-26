@@ -13,6 +13,13 @@
 			<RESTITUTION value="0.5" />
 		</material>
 		
+		<material name="boxNoShape" type="RIGID" >
+			<MASS value="10.0" />
+			<STATIC_FRICTION value="0.1" />
+			<DYNAMIC_FRICTION value="0.1" />
+			<RESTITUTION value="0.5" />
+		</material>
+		
 		<material name="staticBox" type="STATIC">
 			<MASS value="10.0" />
 			<STATIC_FRICTION value="0.5" />
