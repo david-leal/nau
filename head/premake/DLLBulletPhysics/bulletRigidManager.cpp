@@ -119,7 +119,10 @@ void BulletRigidManager::addImpulse(std::string name, float * value) {
 	if (rigidBodies.find(name) != rigidBodies.end()) {
 		btRigidBody * body = btRigidBody::upcast(rigidBodies[name].object);
 		if (body) {
-			body->applyCentralImpulse(btVector3(value[0], value[1], value[2]));
+			if (!body->isActive())
+				body->activate();
+			btVector3 impulse = btVector3(value[0], value[1], value[2]);
+			body->applyCentralImpulse(impulse);
 		}
 	}
 }
