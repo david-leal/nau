@@ -26,7 +26,20 @@ public:
 	void setImpulse(std::string scene, float * impulse);
 
 protected:
-	std::map<std::string, PhysXScene> rigidBodies;
+	
+	std::vector<physx::PxShape*> getShapes(physx::PxRigidActor * actor);
+	std::vector<physx::PxMaterial*> getMaterials(physx::PxShape * shape);
+	float getScalingFactor(float * trans);
+
+	typedef struct {
+		PhysXScene info;
+		float rollingFriction;
+		float scalingFactor;
+		int timeStamp;
+		physx::PxGeometryType::Enum geometry;
+	} RigidObject;
+
+	std::map<std::string, RigidObject> rigidBodies;
 	physx::PxInputStream * getTriangleMeshGeo(physx::PxScene *world, physx::PxCooking* mCooking, ExternalInfo externInfo, bool isStatic);
 };
 

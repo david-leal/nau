@@ -20,6 +20,7 @@ PhysXWorldManager::PhysXWorldManager() {
 	sceneDesc.cpuDispatcher = gDispatcher;
 	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
 	sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVETRANSFORMS;
+	//sceneDesc.frictionType = PxFrictionType::eTWO_DIRECTIONAL;
 	world = gPhysics->createScene(sceneDesc);
 	//m_pDynamicsWorld->setFlag(PxSceneFlag::eENABLE_ACTIVETRANSFORMS, true);
 

@@ -12,8 +12,6 @@ typedef struct ExternalInfo {
 	int nbIndices;
 	unsigned int * indices;
 	float * transform;
-	float rollingFriction;
-	float scalingFactor;
 
 	ExternalInfo() {
 		nbVertices		= 0;
@@ -21,8 +19,6 @@ typedef struct ExternalInfo {
 		nbIndices		= 0;
 		indices			= 0;
 		transform		= 0;
-		rollingFriction = 0.0f;
-		scalingFactor	= 1.0f;
 	};
 
 	ExternalInfo(int nbVert, float * vert, int nbInd, unsigned int * ind, float * transf) {
@@ -31,8 +27,6 @@ typedef struct ExternalInfo {
 		nbIndices		= nbInd;
 		indices			= ind;
 		transform		= transf;
-		rollingFriction = 0.0f;
-		scalingFactor = 1.0f;
 	};
 } externalInfo;
 

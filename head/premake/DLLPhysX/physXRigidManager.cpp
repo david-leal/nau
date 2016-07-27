@@ -9,27 +9,39 @@ PhysXRigidManager::PhysXRigidManager() {
 PhysXRigidManager::~PhysXRigidManager() {
 }
 
-float getScalingFactor(float * trans) {
-	float m00 = trans[0];
-	float m01 = trans[4];
-	float m02 = trans[8];
-	return (sqrt(m00 * m00 + m01 * m01 + m02 * m02));
-}
-
 void 
 PhysXRigidManager::update(const physx::PxActiveTransform * activeTransforms, physx::PxU32 nbActiveTransforms) {
 	for (PxU32 i = 0; i < nbActiveTransforms; ++i) {
 		if (activeTransforms[i].userData != NULL) {
 			std::string *n = static_cast<std::string*>(activeTransforms[i].userData);
 			if (rigidBodies.find(*n) != rigidBodies.end()) {
-				PxMat44 previous(rigidBodies[*n].extInfo.transform);
+				PxRigidDynamic * actor = rigidBodies[*n].info.actor->is<PxRigidDynamic>();
+				if (rigidBodies[*n].geometry == PxGeometryType::Enum::eSPHERE) {
+					float mass = actor->getMass();
+					float force = mass * 9.81f * 0.015f;
+					float magnitude = actor->getLinearVelocity().magnitude();
+					float actorMotion = (mass * magnitude) / ((float)rigidBodies[*n].timeStamp * 0.0166666667f);
+					
+					if (force <= actorMotion) {
+						rigidBodies[*n].timeStamp++;
+						PxVec3 forceVec = -(actor->getLinearVelocity().getNormalized() * force);
+						//PxVec3 forcePos(activeTransforms[i].actor2World.p);
+						//forcePos.y -= 1.0f;
+						//PxRigidBodyExt::addForceAtPos(*actor, forceVec, forcePos);
+						actor->addForce(forceVec);
+					}
+					else {
+						rigidBodies[*n].timeStamp = 1;
+						//actor->setLinearVelocity(actor->getLinearVelocity() / 1.5f);
+						//actor->setAngularVelocity(actor->getAngularVelocity() / 1.5f);
+						//actor->setLinearVelocity(PxVec3(0.0f));
+						//actor->setAngularVelocity(PxVec3(0.0f));
+					}
+				}
 				PxMat44 mat(activeTransforms[i].actor2World);
-				mat.scale(PxVec4(PxVec3(rigidBodies[*n].extInfo.scalingFactor), 1.0f));
+				mat.scale(PxVec4(PxVec3(rigidBodies[*n].scalingFactor), 1.0f));
 				//getMatFromPhysXTransform(activeTransforms[i].actor2World, rigidBodies[*n].extInfo.transform);
-				PxTransform trans(mat);
-				getMatFromPhysXTransform(mat, rigidBodies[*n].extInfo.transform);
-				PxMat44 newMat(rigidBodies[*n].extInfo.transform);
-				PxVec4 cenas = newMat.column0;
+				getMatFromPhysXTransform(mat, rigidBodies[*n].info.extInfo.transform);
 			}
 		}
 	}
@@ -37,14 +49,14 @@ PhysXRigidManager::update(const physx::PxActiveTransform * activeTransforms, phy
 
 void 
 PhysXRigidManager::createInfo(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	rigidBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
+	rigidBodies[scene].info.extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
 }
 
 void 
 PhysXRigidManager::addStaticBody(const std::string & scene, physx::PxScene * world, physx::PxCooking * mCooking, nau::physics::IPhysics::BoundingVolume shape, physx::PxMaterial * material) {
 	PxPhysics *gPhysics = &(world->getPhysics());
 	PxRigidStatic * staticActor;
-	PxTransform trans = PxTransform(PxMat44(rigidBodies[scene].extInfo.transform));
+	PxTransform trans = PxTransform(PxMat44(rigidBodies[scene].info.extInfo.transform));
 	switch (shape.sceneShape)
 	{
 	case nau::physics::IPhysics::BOX:
@@ -91,7 +103,7 @@ PhysXRigidManager::addStaticBody(const std::string & scene, physx::PxScene * wor
 		}
 		else {
 			staticActor = gPhysics->createRigidStatic(trans);
-			PxTriangleMeshGeometry triGeom(gPhysics->createTriangleMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo, true)));
+			PxTriangleMeshGeometry triGeom(gPhysics->createTriangleMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].info.extInfo, true)));
 			//triGeom.triangleMesh = gPhysics->createTriangleMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo, true));
 			staticActor->createShape(triGeom, *material);
 		}
@@ -100,7 +112,7 @@ PhysXRigidManager::addStaticBody(const std::string & scene, physx::PxScene * wor
 	}
 	staticActor->userData = static_cast<void*> (new std::string(scene));
 	world->addActor(*staticActor);
-	rigidBodies[scene].actor = staticActor;
+	rigidBodies[scene].info.actor = staticActor;
 }
 
 void
@@ -108,11 +120,11 @@ PhysXRigidManager::addDynamicBody(const std::string & scene, physx::PxScene * wo
 	PxPhysics *gPhysics = &(world->getPhysics());
 	PxRigidDynamic * dynamic;
 
-	rigidBodies[scene].extInfo.scalingFactor = getScalingFactor(rigidBodies[scene].extInfo.transform);
-	PxMeshScale scale = PxMeshScale(rigidBodies[scene].extInfo.scalingFactor);
-	PxMat44 aux(rigidBodies[scene].extInfo.transform);
+	rigidBodies[scene].scalingFactor = getScalingFactor(rigidBodies[scene].info.extInfo.transform);
+	PxMeshScale scale = PxMeshScale(rigidBodies[scene].scalingFactor);
+	PxMat44 aux(rigidBodies[scene].info.extInfo.transform);
 	PxVec3 pos(aux.getPosition());
-	aux *= (1.0f / rigidBodies[scene].extInfo.scalingFactor);
+	aux *= (1.0f / rigidBodies[scene].scalingFactor);
 	PxMat44 mat(
 		PxVec3(aux.column0.x, aux.column0.y, aux.column0.z),
 		PxVec3(aux.column1.x, aux.column1.y, aux.column1.z),
@@ -130,16 +142,18 @@ PhysXRigidManager::addDynamicBody(const std::string & scene, physx::PxScene * wo
 		dynamic = gPhysics->createRigidDynamic(trans);
 		dynamic->createShape(
 			PxBoxGeometry(
-				shape.max[0] * rigidBodies[scene].extInfo.scalingFactor,
-				shape.max[1] * rigidBodies[scene].extInfo.scalingFactor,
-				shape.max[2] * rigidBodies[scene].extInfo.scalingFactor),
+				shape.max[0] * rigidBodies[scene].scalingFactor,
+				shape.max[1] * rigidBodies[scene].scalingFactor,
+				shape.max[2] * rigidBodies[scene].scalingFactor),
 			*material);
+		rigidBodies[scene].geometry = PxGeometryType::eBOX;
 	}
 	break;
 	case nau::physics::IPhysics::SPHERE:
 	{
 		dynamic = gPhysics->createRigidDynamic(trans);
-		dynamic->createShape(PxSphereGeometry(shape.max[0] * rigidBodies[scene].extInfo.scalingFactor), *material);
+		dynamic->createShape(PxSphereGeometry(shape.max[0] * rigidBodies[scene].scalingFactor), *material);
+		rigidBodies[scene].geometry = PxGeometryType::eSPHERE;
 	}
 	break;
 	case nau::physics::IPhysics::CAPSULE:
@@ -147,23 +161,32 @@ PhysXRigidManager::addDynamicBody(const std::string & scene, physx::PxScene * wo
 		dynamic = gPhysics->createRigidDynamic(trans);
 		dynamic->createShape(
 			PxCapsuleGeometry(
-				shape.max[0] * rigidBodies[scene].extInfo.scalingFactor,
-				shape.max[1] * rigidBodies[scene].extInfo.scalingFactor),
+				shape.max[0] * rigidBodies[scene].scalingFactor,
+				shape.max[1] * rigidBodies[scene].scalingFactor),
 			*material);
+		rigidBodies[scene].geometry = PxGeometryType::eCAPSULE;
 	}
 	break;
 	default:
 	{
 		dynamic = gPhysics->createRigidDynamic(trans);
-		PxConvexMesh * convexMesh = gPhysics->createConvexMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].extInfo, false));
+		PxConvexMesh * convexMesh = gPhysics->createConvexMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].info.extInfo, false));
 		dynamic->createShape(PxConvexMeshGeometry(convexMesh, scale), *material);
+		rigidBodies[scene].geometry = PxGeometryType::eCONVEXMESH;
 	}
 	break;
 	}
 
 	dynamic->userData = static_cast<void*> (new std::string(scene));
+	//dynamic->setLinearDamping(2.0f);
+	//dynamic->setAngularDamping(0.0f);
+	//dynamic->setSolverIterationCounts(4, 4);
+	//dynamic->setMaxAngularVelocity(PX_MAX_F32);
+	dynamic->setMassSpaceInertiaTensor(PxVec3(0.068f));
+	rigidBodies[scene].rollingFriction = 0.015f;
+	rigidBodies[scene].timeStamp = 1;
 	world->addActor(*dynamic);
-	rigidBodies[scene].actor = dynamic;
+	rigidBodies[scene].info.actor = dynamic;
 }
 
 physx::PxInputStream*
@@ -202,7 +225,7 @@ PhysXRigidManager::getTriangleMeshGeo(PxScene *world, physx::PxCooking* mCooking
 void 
 PhysXRigidManager::setMass(std::string name, float value) {
 	if (rigidBodies.find(name) != rigidBodies.end()) {
-		PxRigidDynamic * dyn = rigidBodies[name].actor->is<PxRigidDynamic>();
+		PxRigidDynamic * dyn = rigidBodies[name].info.actor->is<PxRigidDynamic>();
 		if (dyn) {
 			dyn->setMass(value);
 		}
@@ -212,16 +235,10 @@ PhysXRigidManager::setMass(std::string name, float value) {
 void 
 PhysXRigidManager::setStaticFriction(std::string name, float value) {
 	if (rigidBodies.find(name) != rigidBodies.end()) {
-		PxRigidActor * actor = rigidBodies[name].actor->is<PxRigidActor>();
+		PxRigidActor * actor = rigidBodies[name].info.actor->is<PxRigidActor>();
 		if (actor) {
-			PxU32 nbShapes = actor->getNbShapes();
-			std::vector<PxShape *> list(nbShapes);
-			actor->getShapes(&list.at(0), nbShapes);
-			for (PxShape* shape : list) {
-				PxU32 nbMat = shape->getNbMaterials();
-				std::vector<PxMaterial *> matList(nbMat);
-				shape->getMaterials(&matList.at(0), nbMat);
-				for (PxMaterial * mat : matList) {
+			for (PxShape* shape : getShapes(actor)) {
+				for (PxMaterial * mat : getMaterials(shape)) {
 					mat->setStaticFriction(value);
 				}
 			}
@@ -232,16 +249,10 @@ PhysXRigidManager::setStaticFriction(std::string name, float value) {
 void 
 PhysXRigidManager::setDynamicFriction(std::string name, float value) {
 	if (rigidBodies.find(name) != rigidBodies.end()) {
-		PxRigidActor * actor = rigidBodies[name].actor->is<PxRigidActor>();
+		PxRigidActor * actor = rigidBodies[name].info.actor->is<PxRigidActor>();
 		if (actor) {
-			PxU32 nbShapes = actor->getNbShapes();
-			std::vector<PxShape *> list(nbShapes);
-			actor->getShapes(&list.at(0), nbShapes);
-			for (PxShape* shape : list) {
-				PxU32 nbMat = shape->getNbMaterials();
-				std::vector<PxMaterial *> matList(nbMat);
-				shape->getMaterials(&matList.at(0), nbMat);
-				for (PxMaterial * mat : matList) {
+			for (PxShape* shape : getShapes(actor)) {
+				for (PxMaterial * mat : getMaterials(shape)) {
 					mat->setDynamicFriction(value);
 				}
 			}
@@ -252,16 +263,10 @@ PhysXRigidManager::setDynamicFriction(std::string name, float value) {
 void 
 PhysXRigidManager::setRestitution(std::string name, float value) {
 	if (rigidBodies.find(name) != rigidBodies.end()) {
-		PxRigidActor * actor = rigidBodies[name].actor->is<PxRigidActor>();
+		PxRigidActor * actor = rigidBodies[name].info.actor->is<PxRigidActor>();
 		if (actor) {
-			PxU32 nbShapes = actor->getNbShapes();
-			std::vector<PxShape *> list(nbShapes);
-			actor->getShapes(&list.at(0), nbShapes);
-			for (PxShape* shape : list) {
-				PxU32 nbMat = shape->getNbMaterials();
-				std::vector<PxMaterial *> matList(nbMat);
-				shape->getMaterials(&matList.at(0), nbMat);
-				for (PxMaterial * mat : matList) {
+			for (PxShape* shape : getShapes(actor)) {
+				for (PxMaterial * mat : getMaterials(shape)) {
 					mat->setRestitution(value);
 				}
 			}
@@ -272,9 +277,9 @@ PhysXRigidManager::setRestitution(std::string name, float value) {
 void 
 PhysXRigidManager::move(std::string scene, float * transform) {
 	if (rigidBodies.find(scene) != rigidBodies.end()) {
-		PxRigidActor * actor = rigidBodies[scene].actor->is<PxRigidActor>();
+		PxRigidActor * actor = rigidBodies[scene].info.actor->is<PxRigidActor>();
 		if (actor) {
-			rigidBodies[scene].extInfo.transform = transform;
+			rigidBodies[scene].info.extInfo.transform = transform;
 			actor->setGlobalPose(PxTransform(PxMat44(transform)));
 		}
 	}
@@ -283,29 +288,48 @@ PhysXRigidManager::move(std::string scene, float * transform) {
 void 
 PhysXRigidManager::setForce(std::string scene, float * force) {
 	if (rigidBodies.find(scene) != rigidBodies.end()) {
-		PxRigidDynamic * actor = rigidBodies[scene].actor->is<PxRigidDynamic>();
+		PxRigidDynamic * actor = rigidBodies[scene].info.actor->is<PxRigidDynamic>();
 		if (actor) {
 			actor->addForce(PxVec3(force[0], force[1], force[2]), PxForceMode::eIMPULSE);
 		}
 	}
-	//dynamic->addForce(PxVec3(500.0, 0, 0), PxForceMode::eIMPULSE);
 }
 
 void PhysXRigidManager::setImpulse(std::string scene, float * impulse) {
 	if (rigidBodies.find(scene) != rigidBodies.end()) {
-		PxRigidDynamic * actor = rigidBodies[scene].actor->is<PxRigidDynamic>();
+		PxRigidDynamic * actor = rigidBodies[scene].info.actor->is<PxRigidDynamic>();
 		if (actor) {
 			actor->addForce(PxVec3(impulse[0], impulse[1], impulse[2]), PxForceMode::eIMPULSE);
+			//actor->setAngularVelocity(PxVec3(impulse[0], impulse[1], impulse[2]));
+			//actor->setLinearVelocity(PxVec3(impulse[0], impulse[1], impulse[2]));
+			/*PxVec3 impulse(impulse[0], impulse[1], impulse[2]);
+			PxVec3 impulseDir = impulse.getNormalized();
+			PxVec3 forcePos(actor->getGlobalPose().p - impulseDir);
+			PxRigidBodyExt::addForceAtPos(*actor, PxVec3(impulse[0], impulse[1], impulse[2]), forcePos, PxForceMode::eIMPULSE);*/
 		}
 	}
 }
 
-/*void
-PhysXRigidManager::setExtInfo(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	rigidBodies[scene].extInfo.nbVertices = nbVertices;
-	rigidBodies[scene].extInfo.vertices = vertices;
-	rigidBodies[scene].extInfo.nbIndices = nbIndices;
-	rigidBodies[scene].extInfo.indices = indices;
-	rigidBodies[scene].extInfo.transform = transform;
-	//rigidBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
-}*/
+std::vector<physx::PxShape*> 
+PhysXRigidManager::getShapes(physx::PxRigidActor * actor) {
+	PxU32 nbShapes = actor->getNbShapes();
+	std::vector<PxShape *> list(nbShapes);
+	actor->getShapes(&list.at(0), nbShapes);
+	return list;
+}
+
+std::vector<physx::PxMaterial*>
+PhysXRigidManager::getMaterials(physx::PxShape * shape) {
+	PxU32 nbMat = shape->getNbMaterials();
+	std::vector<PxMaterial *> matList(nbMat);
+	shape->getMaterials(&matList.at(0), nbMat);
+	return matList;
+}
+
+float 
+PhysXRigidManager::getScalingFactor(float * trans) {
+	float m00 = trans[0];
+	float m01 = trans[4];
+	float m02 = trans[8];
+	return (sqrt(m00 * m00 + m01 * m01 + m02 * m02));
+}
