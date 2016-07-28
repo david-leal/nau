@@ -38,20 +38,24 @@ NauPhysXInterface::NauPhysXInterface() {
 	//INFO: Declare Physics Properties reflected in XML file
 	m_GlobalProps["GRAVITY"] = Prop(IPhysics::VEC4, 0.0f, -9.8f, 0.0f, 0.0f);
 
-	m_MaterialProps["MASS"]				= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["MASS"]		= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["INERTIA"]	= Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
+
 	m_MaterialProps["STATIC_FRICTION"]	= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["DYNAMIC_FRICTION"]	= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["ROLLING_FRICTION"] = Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["RESTITUTION"]		= Prop(IPhysics::FLOAT, 1.0f);
+	
 	m_MaterialProps["PACE"]				= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["HIT_MAGNITUDE"]	= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["HEIGHT"]			= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["RADIUS"]			= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["STEP_OFFSET"]		= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["DIRECTION"]		= Prop(IPhysics::VEC4, 0.0f, 0.0f, -1.0f, 1.0f);
-	m_MaterialProps["UP"]				= Prop(IPhysics::VEC4, 0.0f, 1.0f, 0.0f, 1.0f);
+	
+	m_MaterialProps["UP"] = Prop(IPhysics::VEC4, 0.0f, 1.0f, 0.0f, 1.0f);
 
-	m_MaterialProps["IMPULSE"]			= Prop(IPhysics::VEC4, 0.0f, 0.0f, 0.0f, 1.0f);
-
+	m_MaterialProps["IMPULSE"] = Prop(IPhysics::VEC4, 0.0f, 0.0f, 0.0f, 1.0f);
 	
 	worldManager = new PhysXWorldManager();
 	Prop p = m_GlobalProps["GRAVITY"];

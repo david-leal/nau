@@ -11,7 +11,6 @@ BulletRigidManager::~BulletRigidManager() {
 }
 
 void BulletRigidManager::update() {
-
 }
 
 void BulletRigidManager::createInfo(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
@@ -84,24 +83,36 @@ void BulletRigidManager::setMass(std::string name, float value) {
 		btRigidBody * body = btRigidBody::upcast(rigidBodies[name].object);
 		if (body) {
 			btVector3 localInertia = body->getLocalInertia();
+			body->setMassProps(value, localInertia);
 		}
 	}
 }
 
-void BulletRigidManager::setDynamicFriction(std::string name, float value) {
+void BulletRigidManager::setLocalInertia(std::string name, float * value) {
 	if (rigidBodies.find(name) != rigidBodies.end()) {
 		btRigidBody * body = btRigidBody::upcast(rigidBodies[name].object);
 		if (body) {
-			body->setRollingFriction(value);
+			float mass = 1.0f / body->getInvMass();
+			body->setMassProps(mass, btVector3(value[0], value[1], value[2]));
+			body->updateInertiaTensor();
 		}
 	}
 }
 
-void BulletRigidManager::setStaticFriction(std::string name, float value) {
+void BulletRigidManager::setFriction(std::string name, float value) {
 	if (rigidBodies.find(name) != rigidBodies.end()) {
 		btRigidBody * body = btRigidBody::upcast(rigidBodies[name].object);
 		if (body) {
 			body->setFriction(value);
+		}
+	}
+}
+
+void BulletRigidManager::setRollingFriction(std::string name, float value) {
+	if (rigidBodies.find(name) != rigidBodies.end()) {
+		btRigidBody * body = btRigidBody::upcast(rigidBodies[name].object);
+		if (body) {
+			body->setRollingFriction(value);
 		}
 	}
 }

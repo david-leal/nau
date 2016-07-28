@@ -49,7 +49,7 @@ void PhysXWorldManager::update() {
 		//RIGID BODIES UPDATE
 		PxU32 nbActiveTransforms;
 		const PxActiveTransform* activeTransforms = world->getActiveTransforms(nbActiveTransforms);
-		rigidManager->update(activeTransforms, nbActiveTransforms);
+		rigidManager->update(activeTransforms, nbActiveTransforms, timeStep, world->getGravity());
 		
 		//SOFT BODIES UPDATE
 		softManager->update();
@@ -102,6 +102,9 @@ void PhysXWorldManager::setRigidProperty(std::string scene, std::string propName
 	else if (propName.compare("DYNAMIC_FRICTION") == 0) {
 		rigidManager->setDynamicFriction(scene, value);
 	}
+	else if (propName.compare("ROLLING_FRICTION") == 0) {
+		rigidManager->setRollingFriction(scene, value);
+	}
 	else if (propName.compare("RESTITUTION") == 0) {
 		rigidManager->setRestitution(scene, value);
 	}
@@ -113,6 +116,9 @@ void PhysXWorldManager::setRigidProperty(std::string scene, std::string propName
 	}
 	else if (propName.compare("IMPULSE") == 0) {
 		rigidManager->setImpulse(scene, value);
+	}
+	else if (propName.compare("INERTIA") == 0) {
+		rigidManager->setInertiaTensor(scene, value);
 	}
 }
 

@@ -13,13 +13,15 @@ public:
 	PhysXRigidManager();
 	~PhysXRigidManager();
 
-	void update(const physx::PxActiveTransform* activeTransforms, physx::PxU32 nbActiveTransforms);
+	void update(const physx::PxActiveTransform * activeTransforms, physx::PxU32 nbActiveTransforms, float timeStep, physx::PxVec3 gravity);
 	void createInfo(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
 	void addStaticBody(const std::string & scene, physx::PxScene * world, physx::PxCooking * mCooking, nau::physics::IPhysics::BoundingVolume shape, physx::PxMaterial * material);
 	void addDynamicBody(const std::string & scene, physx::PxScene * world, physx::PxCooking * mCooking, nau::physics::IPhysics::BoundingVolume shape, physx::PxMaterial * material);
 	void setMass(std::string name, float value);
+	void setInertiaTensor(std::string name, float * value);
 	void setStaticFriction(std::string name, float value);
 	void setDynamicFriction(std::string name, float value);
+	void setRollingFriction(std::string name, float value);
 	void setRestitution(std::string name, float value);
 	void move(std::string scene, float * transform);
 	void setForce(std::string scene, float * force);
@@ -35,8 +37,7 @@ protected:
 		PhysXScene info;
 		float rollingFriction;
 		float scalingFactor;
-		int timeStamp;
-		physx::PxGeometryType::Enum geometry;
+		int rollingFrictionTimeStamp;
 	} RigidObject;
 
 	std::map<std::string, RigidObject> rigidBodies;

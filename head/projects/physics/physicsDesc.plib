@@ -36,16 +36,19 @@
 		
 		<material name="billiardBall" type="RIGID" shape="SPHERE" >
 			<MASS value="0.17" />
-			<STATIC_FRICTION value="0.3" />
-			<!-- <DYNAMIC_FRICTION value="0.015" /> -->
-			<DYNAMIC_FRICTION value="0.3" />
+			<INERTIA x=0.068 y=0.068 z=0.068 w=1.0 />
+			<STATIC_FRICTION value="0.4" />
+			<DYNAMIC_FRICTION value="0.4" />
+			<ROLLING_FRICTION value="0.020" />
 			<RESTITUTION value="0.92" />
 		</material>
 		
 		<material name="whiteBilliardBall" type="RIGID" shape="SPHERE" >
 			<MASS value="0.17" />
-			<STATIC_FRICTION value="0.3" />
-			<DYNAMIC_FRICTION value="0.3" />
+			<INERTIA x=0.068 y=0.068 z=0.068 w=1.0 />
+			<STATIC_FRICTION value="0.4" />
+			<DYNAMIC_FRICTION value="0.4" />
+			<ROLLING_FRICTION value="0.020" />
 			<RESTITUTION value="0.92" />
 			<IMPULSE x=0.0 y=0.0 z=0.0 w=1.0 />
 		</material>

@@ -2,29 +2,7 @@
 <project name="Simple" width="1024" height="768">
 	<assets> 
 		<scenes>
-			<!-- <scene name="poolTable">
-				<file name="..\..\models\BilliardTable\PoolTable.obj" />
-			</scene>
-			<scene name="poolTableBorders" physicsMaterial="poolTableBorder" >
-				<file name="..\..\models\BilliardTable\PoolBorders.obj" />
-			</scene>
-			<scene name="poolTableHardBorders" physicsMaterial="poolTableBorder" >
-				<file name="..\..\models\BilliardTable\PoolHardBorder.obj" />
-			</scene>
-			<scene name="poolTablePlane" physicsMaterial="poolTablePlane" >
-				<file name="..\..\models\BilliardTable\PoolPlane.obj" />
-			</scene> -->
-			
-			<!-- <scene name="poolTable">
-				<file name="..\..\models\MyPoolTable\borders.3ds" />
-			</scene>
-			<scene name="poolTableBorders" physicsMaterial="poolTableBorder" >
-				<file name="..\..\models\MyPoolTable\borders.3ds" />
-			</scene>
-			<scene name="poolTablePlane" physicsMaterial="poolTablePlane" >
-				<file name="..\..\models\MyPoolTable\plane.3ds" />
-			</scene> -->
-			
+				
 			<scene name="poolTable">
 				<file name="..\..\models\MyPoolTable\poolTable.obj" />
 			</scene>
@@ -39,7 +17,7 @@
 			</scene>
 			
 			<scene name="billiardBallWhite" physicsMaterial="whiteBilliardBall" >
-				<geometry name="billiardBallWhite" type="SPHERE" material="colorMat" SLICES=20 STACKS=20 />
+				<geometry name="billiardBallWhite" type="SPHERE" material="billiardBallMatCue" SLICES=20 STACKS=20 />
 				<TRANSLATE x=-4 y=9.85 z=0 />
 			</scene>
 			
@@ -118,7 +96,6 @@
 				<TRANSLATE x=12 y=9.85 z=4 />
 			</scene>
 			
-			
 			<scene name="Axis">
 				<geometry name = "axis" type = "AXIS"  >
 					<SCALE x=5 y=5 z=5 />
@@ -140,24 +117,10 @@
 		
 		<cameras>
 			<camera name="MainCamera" >
-				<!--viewport name="MainViewport">
-					<SIZE width="1" height= "750" />
-				</viewport-->
 				<viewport name="MainViewport"/>
 				<projection TYPE="PERSPECTIVE" FOV=60.0 NEAR=1 FAR=1000.0 />
-				<!--
-				<TYPE value="PERSPECTIVE"/>
-				<FOV value=60/>
-				<NEAR value= 1/>
-				<FAR value= 100/>
-				-->
 				<POSITION x=0.0 y=40.0 z=20.0 />
-				<!--<VIEW x=0.0 y=0.0 z=0.1 />-->
 				<LOOK_AT_POINT x=0 y=0 z=0/>
-				<!--
-				<ZX_ANGLE value = 0.877/>
-				<ELEVATION_ANGLE value=-0.27548/>
-				-->
 				<UP x=0.0 y=1.0 z=0.0 />
 			</camera>
 		</cameras>
@@ -228,6 +191,7 @@
 					<map fromMaterial="billiardBallMat13" toLibrary="Simple" toMaterial="poolBallTextured13" />
 					<map fromMaterial="billiardBallMat14" toLibrary="Simple" toMaterial="poolBallTextured14" />
 					<map fromMaterial="billiardBallMat15" toLibrary="Simple" toMaterial="poolBallTextured15" />
+					<map fromMaterial="billiardBallMatCue" toLibrary="Simple" toMaterial="poolBallTexturedCue" />
 					<map fromMaterial="colorMat" toLibrary="Simple" toMaterial="simpleWhite" />
 					<map fromMaterial="debugMat" toLibrary="Simple" toMaterial="simpleColoredDebug" />
 				</materialMaps>

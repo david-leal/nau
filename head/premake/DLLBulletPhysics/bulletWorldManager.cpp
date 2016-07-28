@@ -59,11 +59,11 @@ void BulletWorldManager::setRigidProperty(std::string scene, std::string propNam
 	if (propName.compare("MASS") == 0) {
 		rigidManager->setMass(scene, value);
 	}
-	else if (propName.compare("DYNAMIC_FRICTION") == 0) {
-		rigidManager->setDynamicFriction(scene, value);
+	else if (propName.compare("FRICTION") == 0 || propName.compare("DYNAMIC_FRICTION") == 0 || propName.compare("STATIC_FRICTION") == 0) {
+		rigidManager->setFriction(scene, value);
 	}
-	else if (propName.compare("STATIC_FRICTION") == 0) {
-		rigidManager->setStaticFriction(scene, value);
+	else if (propName.compare("ROLLING_FRICTION") == 0) {
+		rigidManager->setRollingFriction(scene, value);
 	}
 	else if (propName.compare("RESTITUTION") == 0) {
 		rigidManager->setRestitution(scene, value);
@@ -73,6 +73,9 @@ void BulletWorldManager::setRigidProperty(std::string scene, std::string propNam
 void BulletWorldManager::setRigidProperty(std::string scene, std::string propName, float * value) {
 	if (propName.compare("IMPULSE") == 0) {
 		rigidManager->addImpulse(scene, value);
+	}
+	else if (propName.compare("INERTIA") == 0) {
+		rigidManager->setLocalInertia(scene, value);
 	}
 }
 

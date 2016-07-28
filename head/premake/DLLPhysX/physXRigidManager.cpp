@@ -10,28 +10,23 @@ PhysXRigidManager::~PhysXRigidManager() {
 }
 
 void 
-PhysXRigidManager::update(const physx::PxActiveTransform * activeTransforms, physx::PxU32 nbActiveTransforms) {
+PhysXRigidManager::update(const physx::PxActiveTransform * activeTransforms, physx::PxU32 nbActiveTransforms, float timeStep, physx::PxVec3 gravity) {
 	for (PxU32 i = 0; i < nbActiveTransforms; ++i) {
 		if (activeTransforms[i].userData != NULL) {
 			std::string *n = static_cast<std::string*>(activeTransforms[i].userData);
 			if (rigidBodies.find(*n) != rigidBodies.end()) {
 				PxRigidDynamic * actor = rigidBodies[*n].info.actor->is<PxRigidDynamic>();
-				if (rigidBodies[*n].geometry == PxGeometryType::Enum::eSPHERE) {
+				if (rigidBodies[*n].rollingFriction >= 0.0f) {
 					float mass = actor->getMass();
-					float force = mass * 9.81f * 0.015f;
-					float magnitude = actor->getLinearVelocity().magnitude();
-					float actorMotion = (mass * magnitude) / ((float)rigidBodies[*n].timeStamp * 0.0166666667f);
-					
+					float force = mass * gravity.magnitude() * rigidBodies[*n].rollingFriction;
+					float actorMotion = (mass * actor->getLinearVelocity().magnitude()) / ((float)rigidBodies[*n].rollingFrictionTimeStamp * timeStep);
 					if (force <= actorMotion) {
-						rigidBodies[*n].timeStamp++;
+						rigidBodies[*n].rollingFrictionTimeStamp++;
 						PxVec3 forceVec = -(actor->getLinearVelocity().getNormalized() * force);
-						//PxVec3 forcePos(activeTransforms[i].actor2World.p);
-						//forcePos.y -= 1.0f;
-						//PxRigidBodyExt::addForceAtPos(*actor, forceVec, forcePos);
 						actor->addForce(forceVec);
 					}
 					else {
-						rigidBodies[*n].timeStamp = 1;
+						rigidBodies[*n].rollingFrictionTimeStamp = 1;
 						//actor->setLinearVelocity(actor->getLinearVelocity() / 1.5f);
 						//actor->setAngularVelocity(actor->getAngularVelocity() / 1.5f);
 						//actor->setLinearVelocity(PxVec3(0.0f));
@@ -146,14 +141,12 @@ PhysXRigidManager::addDynamicBody(const std::string & scene, physx::PxScene * wo
 				shape.max[1] * rigidBodies[scene].scalingFactor,
 				shape.max[2] * rigidBodies[scene].scalingFactor),
 			*material);
-		rigidBodies[scene].geometry = PxGeometryType::eBOX;
 	}
 	break;
 	case nau::physics::IPhysics::SPHERE:
 	{
 		dynamic = gPhysics->createRigidDynamic(trans);
 		dynamic->createShape(PxSphereGeometry(shape.max[0] * rigidBodies[scene].scalingFactor), *material);
-		rigidBodies[scene].geometry = PxGeometryType::eSPHERE;
 	}
 	break;
 	case nau::physics::IPhysics::CAPSULE:
@@ -164,7 +157,6 @@ PhysXRigidManager::addDynamicBody(const std::string & scene, physx::PxScene * wo
 				shape.max[0] * rigidBodies[scene].scalingFactor,
 				shape.max[1] * rigidBodies[scene].scalingFactor),
 			*material);
-		rigidBodies[scene].geometry = PxGeometryType::eCAPSULE;
 	}
 	break;
 	default:
@@ -172,19 +164,13 @@ PhysXRigidManager::addDynamicBody(const std::string & scene, physx::PxScene * wo
 		dynamic = gPhysics->createRigidDynamic(trans);
 		PxConvexMesh * convexMesh = gPhysics->createConvexMesh(*getTriangleMeshGeo(world, mCooking, rigidBodies[scene].info.extInfo, false));
 		dynamic->createShape(PxConvexMeshGeometry(convexMesh, scale), *material);
-		rigidBodies[scene].geometry = PxGeometryType::eCONVEXMESH;
 	}
 	break;
 	}
 
 	dynamic->userData = static_cast<void*> (new std::string(scene));
-	//dynamic->setLinearDamping(2.0f);
-	//dynamic->setAngularDamping(0.0f);
-	//dynamic->setSolverIterationCounts(4, 4);
-	//dynamic->setMaxAngularVelocity(PX_MAX_F32);
-	dynamic->setMassSpaceInertiaTensor(PxVec3(0.068f));
-	rigidBodies[scene].rollingFriction = 0.015f;
-	rigidBodies[scene].timeStamp = 1;
+	rigidBodies[scene].rollingFriction = -1.0f;
+	rigidBodies[scene].rollingFrictionTimeStamp = 1;
 	world->addActor(*dynamic);
 	rigidBodies[scene].info.actor = dynamic;
 }
@@ -232,6 +218,15 @@ PhysXRigidManager::setMass(std::string name, float value) {
 	}
 }
 
+void PhysXRigidManager::setInertiaTensor(std::string name, float * value) {
+	if (rigidBodies.find(name) != rigidBodies.end()) {
+		PxRigidDynamic * dyn = rigidBodies[name].info.actor->is<PxRigidDynamic>();
+		if (dyn) {
+			dyn->setMassSpaceInertiaTensor(PxVec3(value[0], value[1], value[2]));
+		}
+	}
+}
+
 void 
 PhysXRigidManager::setStaticFriction(std::string name, float value) {
 	if (rigidBodies.find(name) != rigidBodies.end()) {
@@ -260,6 +255,16 @@ PhysXRigidManager::setDynamicFriction(std::string name, float value) {
 	}
 }
 
+void PhysXRigidManager::setRollingFriction(std::string name, float value) {
+	if (rigidBodies.find(name) != rigidBodies.end()) {
+		PxRigidDynamic * dyn = rigidBodies[name].info.actor->is<PxRigidDynamic>();
+		if (dyn) {
+			rigidBodies[name].rollingFriction = value;
+			rigidBodies[name].rollingFrictionTimeStamp = 1;
+		}
+	}
+}
+
 void 
 PhysXRigidManager::setRestitution(std::string name, float value) {
 	if (rigidBodies.find(name) != rigidBodies.end()) {
@@ -273,6 +278,7 @@ PhysXRigidManager::setRestitution(std::string name, float value) {
 		}
 	}
 }
+
 
 void 
 PhysXRigidManager::move(std::string scene, float * transform) {
@@ -290,7 +296,7 @@ PhysXRigidManager::setForce(std::string scene, float * force) {
 	if (rigidBodies.find(scene) != rigidBodies.end()) {
 		PxRigidDynamic * actor = rigidBodies[scene].info.actor->is<PxRigidDynamic>();
 		if (actor) {
-			actor->addForce(PxVec3(force[0], force[1], force[2]), PxForceMode::eIMPULSE);
+			actor->addForce(PxVec3(force[0], force[1], force[2]));
 		}
 	}
 }
@@ -300,12 +306,6 @@ void PhysXRigidManager::setImpulse(std::string scene, float * impulse) {
 		PxRigidDynamic * actor = rigidBodies[scene].info.actor->is<PxRigidDynamic>();
 		if (actor) {
 			actor->addForce(PxVec3(impulse[0], impulse[1], impulse[2]), PxForceMode::eIMPULSE);
-			//actor->setAngularVelocity(PxVec3(impulse[0], impulse[1], impulse[2]));
-			//actor->setLinearVelocity(PxVec3(impulse[0], impulse[1], impulse[2]));
-			/*PxVec3 impulse(impulse[0], impulse[1], impulse[2]);
-			PxVec3 impulseDir = impulse.getNormalized();
-			PxVec3 forcePos(actor->getGlobalPose().p - impulseDir);
-			PxRigidBodyExt::addForceAtPos(*actor, PxVec3(impulse[0], impulse[1], impulse[2]), forcePos, PxForceMode::eIMPULSE);*/
 		}
 	}
 }
