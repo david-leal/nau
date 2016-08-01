@@ -37,10 +37,10 @@ NauBulletInterface * NauBulletInterface::Create() {
 NauBulletInterface::NauBulletInterface() {
 	//INFO: Declare Physics Properties reflected in XML file
 	m_GlobalProps["GRAVITY"]	= Prop(IPhysics::VEC4, 0.0f, -9.8f, 0.0f, 0.0f);
-	m_GlobalProps["TIME_STEP"]	= Prop(IPhysics::FLOAT, 0.016666666667f);
+	//m_GlobalProps["TIME_STEP"]	= Prop(IPhysics::FLOAT, 0.016666666667f);
 
 	m_MaterialProps["MASS"]		= Prop(IPhysics::FLOAT, 0.0f);
-	m_MaterialProps["INERTIA"]	= Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
+	m_MaterialProps["INERTIA"]	= Prop(IPhysics::VEC4, 0.0f, 0.0f, 0.0f, 1.0f);
 
 	m_MaterialProps["STATIC_FRICTION"]	= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["DYNAMIC_FRICTION"] = Prop(IPhysics::FLOAT, 1.0f);

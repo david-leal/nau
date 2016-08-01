@@ -73,6 +73,7 @@ btRigidBody * BulletRigidManager::addRigid(const std::string & scene, btCollisio
 	else {
 		shape->calculateLocalInertia(mass, localInertia);
 		btRigidBody * body = new btRigidBody(mass, motionState, shape, localInertia);
+		//btRigidBody * body = new btRigidBody(mass, motionState, new btBoxShape(btVector3(1.0f, 1.0f, 1.0f)), localInertia);
 		rigidBodies[scene].object = body;
 		return body;
 	}
