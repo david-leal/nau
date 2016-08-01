@@ -24,9 +24,14 @@ namespace nau
 			friend class PhysicsMaterial;
 		public:
 		
-			//FLOAT4_PROP(GRAVITY, 0);
 			FLOAT_PROP(TIME_STEP, 0);
-			
+			STRING_PROP(CAMERA_NAME, 0);
+			FLOAT4_PROP(CAMERA_POSITION, 0);
+			FLOAT4_PROP(CAMERA_DIRECTION, 1); 
+			FLOAT4_PROP(CAMERA_UP, 2);
+			FLOAT_PROP(CAMERA_RADIUS, 1);
+			FLOAT_PROP(CAMERA_HEIGHT, 2);
+
 			static AttribSet Attribs;
 
 			static PhysicsManager* GetInstance();
@@ -39,7 +44,7 @@ namespace nau
 			
 			void addScene(nau::scene::IScene *aScene, const std::string &matName);
 
-			void addCamera(nau::scene::Camera * camera);
+			void addCamera();
 
 			PhysicsMaterial &getMaterial(const std::string &name);
 			void getMaterialNames(std::vector<std::string> *);
@@ -47,6 +52,7 @@ namespace nau
 
 			void setPropf(FloatProperty p, float value);
 			void setPropf4(Float4Property p, vec4 &value);
+			void setProps(StringProperty prop, std::string &value);
 			
 			PhysicsManager::~PhysicsManager();
 

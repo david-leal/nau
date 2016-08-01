@@ -22,6 +22,12 @@ deletePhysicsProc deletePhysics;
 bool
 PhysicsManager::Init() {
 	Attribs.add(Attribute(TIME_STEP, "TIME_STEP", Enums::DataType::FLOAT, false, new NauFloat(0.016666666667f)));
+	Attribs.add(Attribute(CAMERA_NAME, "CAMERA_NAME", "CAMERA"));
+	Attribs.add(Attribute(CAMERA_POSITION, "CAMERA_POSITION", Enums::DataType::VEC4, true, new vec4(0.0f, 0.0f, -5.0f, 1.0f)));
+	Attribs.add(Attribute(CAMERA_DIRECTION, "CAMERA_DIRECTION", Enums::DataType::VEC4, true, new vec4(0.0f, 0.0f, 0.0f, 1.0f)));
+	Attribs.add(Attribute(CAMERA_UP, "CAMERA_UP", Enums::DataType::VEC4, true, new vec4(0.0f, 1.0f, 0.0f, 1.0f)));
+	Attribs.add(Attribute(CAMERA_RADIUS, "CAMERA_RADIUS", Enums::DataType::FLOAT, true, new NauFloat(1.0f)));
+	Attribs.add(Attribute(CAMERA_HEIGHT, "CAMERA_HEIGHT", Enums::DataType::FLOAT, true, new NauFloat(1.0f)));
 
 	NAU->registerAttributes("PHYSICS_MANAGER", &Attribs);
 
@@ -57,12 +63,14 @@ PhysicsManager::PhysicsManager() : m_PhysInst(NULL), m_Built(false), hasCamera(f
 	std::map < std::string, IPhysics::Prop> &props = m_PhysInst->getGlobalProperties();
 
 	int k = 0;
+	int floatCount = Attribs.getDataTypeCount(Enums::FLOAT);
+	int vecCount = Attribs.getDataTypeCount(Enums::VEC4);
 	for (auto &p : props) {
 		Enums::DataType dt = p.second.propType == IPhysics::FLOAT ? Enums::FLOAT : Enums::VEC4;
 		if (p.second.propType == IPhysics::FLOAT) 
-			Attribs.add(Attribute(k++, p.first, Enums::FLOAT, false, new NauFloat(p.second.x)));
+			Attribs.add(Attribute(++floatCount, p.first, Enums::FLOAT, false, new NauFloat(p.second.x)));
 		else
-			Attribs.add(Attribute(k++, p.first, Enums::VEC4, false, new vec4(p.second.x, p.second.y, p.second.z, p.second.w)));
+			Attribs.add(Attribute(++vecCount, p.first, Enums::VEC4, false, new vec4(p.second.x, p.second.y, p.second.z, p.second.w)));
 	}
 
 	
@@ -207,9 +215,14 @@ PhysicsManager::update() {
 			break;
 		}
 	}
+
 	if (hasCamera) {
-		t = m_PhysInst->getSceneTransform("camera");
-		NAU->getActiveCamera()->setTransform(math::mat4(t));
+		std::string cameraName = getProps((StringProperty)getAttribSet()->getAttributes()["CAMERA_NAME"]->getId());
+		Camera * camera = RENDERMANAGER->getCamera(cameraName).get();
+		camera->setPropf4(
+			Camera::POSITION,
+			getPropf4((Float4Property)getAttribSet()->getAttributes()["CAMERA_POSITION"]->getId())
+		);
 	}
 }
 
@@ -310,44 +323,46 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 	m_Built = false;
 }
 
-void nau::physics::PhysicsManager::addCamera(nau::scene::Camera * camera) {
-	std::string name = "camera";
+void
+PhysicsManager::addCamera() {
+	std::string cameraName = getProps((StringProperty)getAttribSet()->getAttributes()["CAMERA_NAME"]->getId());
+	if (cameraName.compare("") != 0) {
+		Camera * camera = RENDERMANAGER->getCamera(cameraName).get();
 
-	PhysicsMaterial &pm = getMaterial(name);
-	IPhysics::SceneType type = (IPhysics::SceneType)pm.getPrope(PhysicsMaterial::SCENE_TYPE);
-	IPhysics::SceneShape shape = (IPhysics::SceneShape)pm.getPrope(PhysicsMaterial::SCENE_SHAPE);
+		m_PhysInst->setSceneType(cameraName, IPhysics::CHARACTER);
 
-	m_PhysInst->setSceneType(name, IPhysics::CHARACTER);
+		float * max = (float*)malloc(3 * sizeof(float));
+		float * min = (float*)malloc(3 * sizeof(float));
+		//max[0] = camera->getPropf(Camera::NEARP);
+		max[0] = 1.0f;
+		//max[1] = camera->getPropf(Camera::TOP);
+		max[1] = 1.0f;
+		max[2] = 0.0f;
+		min[0] = 0.0f; min[1] = 0.0f; min[2] = 0.0f;
 
-	m_PhysInst->setSceneShape(name, shape, 0, 0);
+		m_PhysInst->setSceneShape(cameraName, IPhysics::CAPSULE, min, max);
 
-	std::vector<VertexAttrib> *vd = camera->getRenderable()->getVertexData()->getDataOf(0).get();
+		float * cameraUp = (float*)malloc(3 * sizeof(float));
+		vec4 nauCameraUp = camera->getPropf4(Camera::UP_VEC);
+		cameraUp[0] = nauCameraUp.x;
+		cameraUp[1] = nauCameraUp.y;
+		cameraUp[2] = nauCameraUp.z;
+		cameraUp[3] = nauCameraUp.w;
+		setPropf4((Float4Property)getAttribSet()->getAttributes()["CAMERA_UP"]->getId(), nauCameraUp);
 
-	m_PhysInst->setScene(
-		name,
-		name,
-		0,
-		NULL,
-		0,
-		NULL,
-		(float *)camera->getTransform().getMatrix()
-	);
+		float * cameraPosition = (float*)malloc(3 * sizeof(float));
+		vec4 nauCameraPosition = camera->getPropf4(Camera::POSITION);
+		cameraPosition[0] = nauCameraPosition.x;
+		cameraPosition[1] = nauCameraPosition.y;
+		cameraPosition[2] = nauCameraPosition.z;
+		cameraPosition[3] = nauCameraPosition.w;
+		setPropf4((Float4Property)getAttribSet()->getAttributes()["CAMERA_POSITION"]->getId(), nauCameraPosition);
 
-	std::map<std::string, std::unique_ptr<Attribute>> &attrs = pm.getAttribSet()->getAttributes();
-
-	for (auto &a : attrs) {
-		switch (a.second->getType()) {
-		case Enums::FLOAT:
-			m_PhysInst->applyFloatProperty(name, a.second->getName(), pm.getPropf((FloatProperty)a.second->getId())); break;
-		case Enums::VEC4:
-			m_PhysInst->applyVec4Property(name, a.second->getName(), &(pm.getPropf4((Float4Property)a.second->getId()).x)); break;
-
-		}
+		m_PhysInst->setCamera(cameraName, cameraPosition, cameraUp);
+		hasCamera = true;
+		
+		updateProps();
 	}
-
-	hasCamera = true;
-
-
 }
 
 
@@ -382,6 +397,14 @@ void
 PhysicsManager::setPropf4(Float4Property p, vec4 &value) {
 	m_Float4Props[p] = value;
 	applyGlobalVec4Property(Attribs.getName(p, Enums::VEC4), &value.x);
+}
+
+void
+PhysicsManager::setProps(StringProperty prop, std::string & value) {
+	if (value.compare("") != 0) {
+		m_StringProps[prop] = value;
+		//RENDERMANAGER->getCamera(value);
+	}
 }
 
 

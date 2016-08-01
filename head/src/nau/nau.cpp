@@ -1240,7 +1240,6 @@ Nau::readProjectFile(std::string file, int *width, int *height) {
 	}
 
 	setActiveCameraName(RENDERMANAGER->getDefaultCameraName());
-	getPhysicsManager()->addCamera(getActiveCamera());
 }
 
 

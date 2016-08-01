@@ -1549,6 +1549,7 @@ ProjectLoader::loadAssets (TiXmlHandle &hRoot, std::vector<std::string>  &matLib
 	loadScenes(handle);
 	loadViewports(handle);
 	loadCameras(handle);
+	NAU->getPhysicsManager()->addCamera();
 	loadLights(handle);	
 	loadEvents(handle);
 	if (APISupport->apiSupport(IAPISupport::BUFFER_ATOMICS))

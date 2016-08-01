@@ -6,6 +6,8 @@ using namespace physx;
 
 PhysXCharacterManager::PhysXCharacterManager(physx::PxScene * world) {
 	manager = PxCreateControllerManager(*world);
+	cameraPosition = NULL;
+	hasCamera = false;
 }
 
 
@@ -15,19 +17,19 @@ PhysXCharacterManager::~PhysXCharacterManager() {
 	delete &controllers;
 }
 
-void PhysXCharacterManager::update(float time, physx::PxVec3 gravity) {
+void PhysXCharacterManager::update(physx::PxVec3 gravity) {
 	for (auto scene : controllers) {
-		move(scene.first, time, gravity);
+		move(scene.first, gravity);
 	}
 }
 
-void PhysXCharacterManager::addCharacter(const std::string & scene, physx::PxMaterial * material, physx::PxVec3 up, bool isCamera) {
+void
+PhysXCharacterManager::createCharacter(const std::string & scene, physx::PxVec3 position, physx::PxVec3 up, physx::PxMaterial * material, bool isCamera) {
 	PxCapsuleControllerDesc desc;
-	//PxControllerDesc desc;
 	desc.height = 1.0f;
 	desc.radius = 1.0f;
-	PxVec3 pos = PxMat44(controllers[scene].extInfo.transform).getPosition();
-	desc.position = PxExtendedVec3( pos.x, pos.y, pos.z);
+	PxVec3 pos = position;
+	desc.position = PxExtendedVec3(pos.x, pos.y, pos.z);
 	desc.material = material;
 	desc.reportCallback = this;
 	desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
@@ -36,26 +38,44 @@ void PhysXCharacterManager::addCharacter(const std::string & scene, physx::PxMat
 	//desc.slopeLimit = cosf(DegToRad(80.0f));
 	desc.userData = static_cast<void*> (new std::string(scene));
 	manager->createController(desc);
-	if (!isCamera) {
-		PxMat44 initTrans = PxMat44(controllers[scene].extInfo.transform);
-		initTrans.setPosition(PxVec3(0.0f));
-		controllers[scene].initialTrans = initTrans;
-	}
 	controllers[scene].isCamera = isCamera;
 	controllers[scene].index = PhysXCharacterManager::nextControllerIndex++;
 }
 
-void PhysXCharacterManager::move(const std::string & scene, float time, physx::PxVec3 gravity) {
+
+void PhysXCharacterManager::addCharacter(const std::string & scene, physx::PxMaterial * material, physx::PxVec3 up) {
+	createCharacter(
+		scene,
+		PxMat44(controllers[scene].extInfo.transform).getPosition(),
+		up,
+		material
+	);
+	PxMat44 initTrans = PxMat44(controllers[scene].extInfo.transform);
+	initTrans.setPosition(PxVec3(0.0f));
+	controllers[scene].initialTrans = initTrans;
+}
+
+void PhysXCharacterManager::addCamera(const std::string & scene, physx::PxVec3 position, physx::PxVec3 up, physx::PxMaterial * material) {
+	cameraName = scene;
+	hasCamera = true;
+	createCharacter(scene, position, up, material, true);
+}
+
+void PhysXCharacterManager::move(const std::string & scene, physx::PxVec3 gravity) {
 	if (controllers.find(scene) != controllers.end()) {
 		PxController * controller = manager->getController(controllers[scene].index);
 		if (controllers[scene].pace > 0.0) {
-			PxVec3 movement = *controllers[scene].direction + gravity;
-			controller->move(movement, controllers[scene].pace, time, NULL);
-
-			PxTransform trans;
+			PxVec3 movement = (*controllers[scene].direction * controllers[scene].pace) + gravity;
+			controller->move(movement, controllers[scene].minPace, controllers[scene].timeStep, NULL);
 			if (controllers[scene].isCamera) {
-				trans = PxTransform(PxMat44(controllers[scene].extInfo.transform));
-				trans.transform(PxVec3((PxReal)controller->getPosition().x, (PxReal)controller->getPosition().y, (PxReal)controller->getPosition().z));
+				if (cameraPosition) {
+					cameraPosition->x = (PxReal)controller->getPosition().x;
+					cameraPosition->y = (PxReal)controller->getPosition().y;
+					cameraPosition->z = (PxReal)controller->getPosition().z;
+				}
+				else {
+					cameraPosition = new PxVec3((PxReal)controller->getPosition().x, (PxReal)controller->getPosition().y, (PxReal)controller->getPosition().z);
+				}
 			}
 			else {
 				PxVec3 up = controller->getUpDirection();
@@ -70,10 +90,22 @@ void PhysXCharacterManager::move(const std::string & scene, float time, physx::P
 					PxVec3(right.z, up.z, dir.z),
 					PxVec3((PxReal)controller->getPosition().x, (PxReal)controller->getPosition().y, (PxReal)controller->getPosition().z)
 				);
-				trans = PxTransform(mat * controllers[scene].initialTrans);
+				PxTransform trans = PxTransform(mat * controllers[scene].initialTrans);
+				getMatFromPhysXTransform(trans, controllers[scene].extInfo.transform);
 			}
-			getMatFromPhysXTransform(trans, controllers[scene].extInfo.transform);
 		}
+	}
+}
+
+void PhysXCharacterManager::move(const std::string & scene, float * transform, physx::PxVec3 gravity) {
+	if (controllers.find(scene) != controllers.end()) {
+		PxController * controller = manager->getController(controllers[scene].index);
+		controllers[scene].extInfo.transform = transform;
+		PxMat44 initTrans = PxMat44(controllers[scene].extInfo.transform);
+		PxVec3 pos = PxMat44(controllers[scene].extInfo.transform).getPosition();
+		initTrans.setPosition(PxVec3(0.0f));
+		controllers[scene].initialTrans = initTrans;
+		controller->setPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
 	}
 }
 
@@ -87,6 +119,10 @@ void PhysXCharacterManager::setDirection(std::string scene, physx::PxVec3 dir) {
 
 void PhysXCharacterManager::setPace(std::string scene, float pace) {
 	controllers[scene].pace = pace;
+}
+
+void PhysXCharacterManager::setMinPace(std::string scene, float minPace) {
+	controllers[scene].minPace = minPace;
 }
 
 void PhysXCharacterManager::setHitMagnitude(std::string scene, float hitMagnitude) {
@@ -138,6 +174,10 @@ void PhysXCharacterManager::setRadius(std::string scene, float value) {
 
 void PhysXCharacterManager::setStepOffset(std::string scene, float value) {
 	manager->getController(controllers[scene].index)->setStepOffset(value);
+}
+
+void PhysXCharacterManager::setTimeStep(std::string scene, float value) {
+	controllers[scene].timeStep = value;
 }
 
 void PhysXCharacterManager::onShapeHit(const physx::PxControllerShapeHit & hit) {

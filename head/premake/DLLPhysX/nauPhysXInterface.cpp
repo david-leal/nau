@@ -36,14 +36,24 @@ NauPhysXInterface * NauPhysXInterface::Create() {
 
 NauPhysXInterface::NauPhysXInterface() {
 	//INFO: Declare Physics Properties reflected in XML file
-	m_GlobalProps["GRAVITY"] = Prop(IPhysics::VEC4, 0.0f, -9.8f, 0.0f, 0.0f);
+	m_GlobalProps["GRAVITY"]	= Prop(IPhysics::VEC4, 0.0f, -9.8f, 0.0f, 0.0f);
+	
+	m_GlobalProps["CAMERA_TIME"]				= Prop(IPhysics::FLOAT, 0.016666666667f);
+	m_GlobalProps["CAMERA_PACE"]				= Prop(IPhysics::FLOAT, 0.2f);
+	m_GlobalProps["CAMERA_MIN_PACE"]			= Prop(IPhysics::FLOAT, 0.05f);
+	m_GlobalProps["CAMERA_HIT_MAGNITUDE"]		= Prop(IPhysics::FLOAT, 100.0f);
+	m_GlobalProps["CAMERA_STEP_OFFSET"]			= Prop(IPhysics::FLOAT, 0.2f);
+	m_GlobalProps["CAMERA_MASS"]				= Prop(IPhysics::FLOAT, 10.0f);
+	m_GlobalProps["CAMERA_STATIC_FRICTION"]		= Prop(IPhysics::FLOAT, 0.5f);
+	m_GlobalProps["CAMERA_DYNAMIC_FRICTION"]	= Prop(IPhysics::FLOAT, 0.5f);
+	m_GlobalProps["CAMERA_RESTITUTION"]			= Prop(IPhysics::FLOAT, 0.5f);
 
 	m_MaterialProps["MASS"]		= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["INERTIA"]	= Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
 
 	m_MaterialProps["STATIC_FRICTION"]	= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["DYNAMIC_FRICTION"]	= Prop(IPhysics::FLOAT, 1.0f);
-	m_MaterialProps["ROLLING_FRICTION"] = Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["ROLLING_FRICTION"] = Prop(IPhysics::FLOAT, -1.0f);
 	m_MaterialProps["RESTITUTION"]		= Prop(IPhysics::FLOAT, 1.0f);
 	
 	m_MaterialProps["PACE"]				= Prop(IPhysics::FLOAT, 1.0f);
@@ -56,10 +66,12 @@ NauPhysXInterface::NauPhysXInterface() {
 	m_MaterialProps["UP"] = Prop(IPhysics::VEC4, 0.0f, 1.0f, 0.0f, 1.0f);
 
 	m_MaterialProps["IMPULSE"] = Prop(IPhysics::VEC4, 0.0f, 0.0f, 0.0f, 1.0f);
+
+
 	
 	worldManager = new PhysXWorldManager();
-	Prop p = m_GlobalProps["GRAVITY"];
-	worldManager->setGravity(p.x, p.y, p.z);
+	/*Prop p = m_GlobalProps["GRAVITY"];
+	worldManager->setGravity(p.x, p.y, p.z);*/
 }
 
 
@@ -74,6 +86,10 @@ void NauPhysXInterface::update() {
 	worldManager->update();
 	for (auto particleMaterial : *worldManager->getMaterialParticleNb()) {
 		m_PropertyManager->setMaterialFloatProperty(particleMaterial.first, "NBPARTICLES", static_cast<float>(particleMaterial.second));
+	}
+	float * camPosition = worldManager->getCameraPosition();
+	if (camPosition) {
+		m_PropertyManager->setGlobalVec4Property("CAMERA_POSITION", camPosition);
 	}
 }
 
@@ -106,11 +122,17 @@ void NauPhysXInterface::applyGlobalFloatProperty(const std::string & property, f
 	if (property.compare("TIME_STEP") == 0) {
 		worldManager->setTimeStep(value);
 	}
+	else if (property.find("CAMERA_") != std::string::npos) {
+		worldManager->setCameraProperty(property, value);
+	}
 }
 
 void NauPhysXInterface::applyGlobalVec4Property(const std::string & property, float * value) {
 	if (property.compare("GRAVITY") == 0) {
 		worldManager->setGravity(value[0], value[1], value[2]);
+	}
+	else if (property.find("CAMERA_") != std::string::npos) {
+		worldManager->setCameraProperty(property, value);
 	}
 }
 
@@ -177,8 +199,7 @@ void NauPhysXInterface::setScene(const std::string &scene, const std::string & m
 				m_PropertyManager->getMaterialFloatProperty(material, "STATIC_FRICTION"),
 				m_PropertyManager->getMaterialFloatProperty(material, "RESTITUTION")
 			),
-			m_PropertyManager->getMaterialVec4Property(material, "UP"),
-			material.compare("camera") == 0
+			m_PropertyManager->getMaterialVec4Property(material, "UP")
 		);
 	case IPhysics::PARTICLES:
 		worldManager->addParticles(
@@ -191,6 +212,20 @@ void NauPhysXInterface::setScene(const std::string &scene, const std::string & m
 	default:
 		break;
 	}
+}
+
+void NauPhysXInterface::setCamera(const std::string & scene, float * position, float * up) {
+	worldManager->addCamera(
+		scene,
+		position,
+		up,
+		worldManager->createMaterial(
+			m_PropertyManager->getGlobalFloatProperty("CAMERA_DYNAMIC_FRICTION"),
+			m_PropertyManager->getGlobalFloatProperty("CAMERA_STATIC_FRICTION"),
+			m_PropertyManager->getGlobalFloatProperty("CAMERA_RESTITUTION")
+		)
+	);
+
 }
 
 float * NauPhysXInterface::getSceneTransform(const std::string & scene) {

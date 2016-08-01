@@ -4,16 +4,15 @@
 	<globalProperties>
 		<GRAVITY x="0.0" y="-9.81" z="0.0" />
 		
-		<!-- <CAMERA_NAME value="" /> -->
+		<CAMERA_NAME name="MainCamera" />
 		<!-- <CAMERA_TIME value="0.016666666667" /> -->
-		<!-- <CAMERA_UP x=0.0 y=1.0 z=0.0 w=1.0 /> -->
-		<!-- <CAMERA_PACE value="0.2" />
+		<CAMERA_PACE value="0.0" />
 		<CAMERA_MIN_PACE value="0.05" />
 		<CAMERA_HIT_MAGNITUDE value="100.0" />
 		<CAMERA_MASS value="10.0" />
 		<CAMERA_STATIC_FRICTION value="0.5" />
 		<CAMERA_DYNAMIC_FRICTION value="0.5" />
-		<CAMERA_RESTITUTION value="0.5" /> -->
+		<CAMERA_RESTITUTION value="0.5" />
 	</globalProperties>
 
 	<materials>

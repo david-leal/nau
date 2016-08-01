@@ -34,6 +34,7 @@ public:
 
 	float *getSceneTransform(const std::string &scene);
 	void setSceneTransform(const std::string &scene, float *transform);
+	void setCamera(const std::string & scene, float * position, float * up);
 
 	//void setParticleScene(const std::string &scene, float maxParticles, float * nbParticles, float * transform);
 	//float * getParticlePositions(const std::string &scene);

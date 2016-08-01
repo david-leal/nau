@@ -1,30 +1,24 @@
 <?xml version="1.0" ?>
-<project name="Simple" width="1024" height="768">
+<project name="Simple" width="1024" height="576">
 	<assets> 
-		<scenes>			
-			<!-- <scene name="box">
-				<geometry name="box" type="SPHERE" material="ballMat" SLICES=20 STACKS=20/>
-				<TRANSLATE x=0 y=2 z=0 />
-			</scene> -->
-			<scene name="box" physicsMaterial="box">
-				<geometry name="box" type="BOX" material="crate" />
-				<TRANSLATE x=0 y=7 z=0 />
-				<!-- <ROTATE x=0 y=0 z=1 w=45 /> -->
-				<!-- <SCALE x=2 y=2 z=2 /> -->
+		<scenes>
+			<scene name="box1" physicsMaterial="box">
+				<geometry name="box1" type="BOX" material="crate"/>
+				<TRANSLATE x=0 y=1 z=-3 />
 			</scene>
 			
-			<scene name="plane" physicsMaterial="plane" >
-				<geometry name="plane" type="SQUARE" material="azulejo" />
+			<scene name="plane" physicsMaterial="plane">
+				<geometry name="plane" type="SQUARE" material="azulejo"/>
 				<!-- <SCALE x=5 y=5 z=5 /> -->
 			</scene>
-			<!-- <scene name="plane">
+			<!--scene name="plane">
 				<geometry name="plane" type="BOX" material="azulejo"/>
 				<TRANSLATE x =0 y=-1 z =0 />
-			</scene> -->
-			
+			</scene-->
+
 			<scene name="Axis">
 				<geometry name = "axis" type = "AXIS"  >
-					<SCALE x=5 y=5 z=5 />
+					<SCALE x=5 y=5 z =5 />
 				</geometry>
 			</scene>
 		</scenes>
@@ -36,24 +30,10 @@
 		
 		<cameras>
 			<camera name="MainCamera" >
-				<!--viewport name="MainViewport">
-					<SIZE width="1" height= "750" />
-				</viewport-->
 				<viewport name="MainViewport"/>
 				<projection TYPE="PERSPECTIVE" FOV=60.0 NEAR=1 FAR=1000.0 />
-				<!--
-				<TYPE value="PERSPECTIVE"/>
-				<FOV value=60/>
-				<NEAR value= 1/>
-				<FAR value= 100/>
-				-->
 				<POSITION x=0.0 y=4.0 z=10.0 />
-				<!--<VIEW x=0.0 y=0.0 z=0.1 />-->
 				<LOOK_AT_POINT x=0 y=0 z=0/>
-				<!--
-				<ZX_ANGLE value = 0.877/>
-				<ELEVATION_ANGLE value=-0.27548/>
-				-->
 				<UP x=0.0 y=1.0 z=0.0 />
 			</camera>
 		</cameras>
@@ -67,11 +47,11 @@
 		</lights>
 		
 		<materialLibs>
-			<materialLib filename = "materials.mlib" />
+			<materialLib filename = "materials.mlib"/>
 		</materialLibs> 
 		
 		<physicsLibs>
-			<physicsLib filename = "physicsDesc.plib" />
+			<physicsLib filename = "physicsDescCamera.plib" />
 		</physicsLibs>
 		
 	</assets>
@@ -80,8 +60,7 @@
 		<pipeline name="fixedfunction" default="true">
 			<pass class="default" name="pass1">
 				<scenes>
-					<!-- <scene name="ball" /> -->
-					<scene name="box" />
+					<scene name="box1" />
 					<scene name="plane" />
 					<scene name="Axis" />
 				</scenes>
