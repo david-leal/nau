@@ -65,6 +65,8 @@ namespace nau
 
 			STRING_PROP(VIEWPORT, 0);
 
+			BOOL_PROP(DYNAMIC, 0);
+
 			static AttribSet Attribs;
 
 			virtual ~Camera (void);

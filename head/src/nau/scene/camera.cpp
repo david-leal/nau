@@ -60,6 +60,8 @@ Camera::Init() {
 	Attribs.listAdd("TYPE", "ORTHO", ORTHO);
 	// STRING
 	Attribs.add(Attribute(VIEWPORT, "viewport", "VIEWPORT"));
+	//BOOL
+	Attribs.add(Attribute(DYNAMIC, "DYNAMIC", Enums::DataType::BOOL, false, false));
 
 #ifndef _WINDLL
 	NAU->registerAttributes("CAMERA", &Attribs);
@@ -98,6 +100,7 @@ Camera::Camera (const std::string &name) :
 	registerAndInitArrays(Attribs);
 	m_Id = 0;
 	m_Name = name;
+	m_IsDynamic = m_BoolProps[DYNAMIC];
 	m_pViewport = NAU->getDefaultViewport();
 
 	buildViewMatrix();

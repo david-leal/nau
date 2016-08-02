@@ -28,12 +28,12 @@
 				</geometry>
 			</scene>
 			
-			<scene name="dbScene" physicsMaterial="debug">
+			<!-- <scene name="dbScene" physicsMaterial="debug">
 				<buffers name="dbBuffer" primitive="LINES" material="debugMat">
 					<index name="dbIndex" fromLibrary="Simple" />
 					<position name="dbPosition" fromLibrary="Simple" /> 
 				</buffers>
-			</scene>
+			</scene> -->
 			
 		</scenes>
 		<viewports>
@@ -89,10 +89,10 @@
 			<pass class="default" name="pass1">
 				<scenes>
 					<!-- <scene name="ball" /> -->
-					<!-- <scene name="box" />
-					<scene name="plane" /> -->
+					<scene name="box" />
+					<scene name="plane" />
 					<scene name="Axis" />
-					<scene name="dbScene" />
+					<!-- <scene name="dbScene" /> -->
 				</scenes>
 				<camera name="MainCamera" />
 				<lights>

@@ -19,7 +19,7 @@ namespace nau
 	{
 		class PhysicsPropertyManager;
 
-		class PhysicsManager: public AttributeValues
+		class PhysicsManager: public AttributeValues, public nau::event_::IListener
 		{
 			friend class PhysicsMaterial;
 		public:
@@ -54,6 +54,9 @@ namespace nau
 			void setPropf4(Float4Property p, vec4 &value);
 			void setProps(StringProperty prop, std::string &value);
 			
+			void eventReceived(const std::string &sender, const std::string &eventType,	const std::shared_ptr<IEventData> &evt);
+			std::string& getName();
+
 			PhysicsManager::~PhysicsManager();
 
 		protected:

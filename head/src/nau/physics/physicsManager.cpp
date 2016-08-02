@@ -306,6 +306,7 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 			(unsigned int *)&(r->getIndexData()->getIndexData()->at(0)),
 			(float *)aScene->getTransform().getMatrix()
 		);
+		EVENTMANAGER->addListener("SCENE_TRANSFORM", this);
 		break;
 	}
 
@@ -405,6 +406,19 @@ PhysicsManager::setProps(StringProperty prop, std::string & value) {
 		m_StringProps[prop] = value;
 		//RENDERMANAGER->getCamera(value);
 	}
+}
+
+void 
+PhysicsManager::eventReceived(const std::string & sender, const std::string & eventType, const std::shared_ptr<IEventData>& evt) {
+	if (m_PhysInst && eventType == "SCENE_TRANSFORM") {
+		std::string * strEvt = (std::string*) evt->getData();
+		IScene * scene = RENDERMANAGER->getScene(*strEvt).get();
+		m_PhysInst->setSceneTransform(scene->getName(), (float *)scene->getTransform().getMatrix());
+	}
+}
+
+std::string & nau::physics::PhysicsManager::getName() {
+	return *(new std::string("PHYSICS_MANAGER"));
 }
 
 
