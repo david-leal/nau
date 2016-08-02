@@ -22,10 +22,9 @@ deletePhysicsProc deletePhysics;
 bool
 PhysicsManager::Init() {
 	Attribs.add(Attribute(TIME_STEP, "TIME_STEP", Enums::DataType::FLOAT, false, new NauFloat(0.016666666667f)));
-	Attribs.add(Attribute(CAMERA_NAME, "CAMERA_NAME", "CAMERA"));
 	Attribs.add(Attribute(CAMERA_POSITION, "CAMERA_POSITION", Enums::DataType::VEC4, true, new vec4(0.0f, 0.0f, -5.0f, 1.0f)));
 	Attribs.add(Attribute(CAMERA_DIRECTION, "CAMERA_DIRECTION", Enums::DataType::VEC4, true, new vec4(0.0f, 0.0f, 0.0f, 1.0f)));
-	Attribs.add(Attribute(CAMERA_UP, "CAMERA_UP", Enums::DataType::VEC4, true, new vec4(0.0f, 1.0f, 0.0f, 1.0f)));
+	Attribs.add(Attribute(CAMERA_UP, "CAMERA_UP", Enums::DataType::VEC4, false, new vec4(0.0f, 1.0f, 0.0f, 1.0f)));
 	Attribs.add(Attribute(CAMERA_RADIUS, "CAMERA_RADIUS", Enums::DataType::FLOAT, true, new NauFloat(1.0f)));
 	Attribs.add(Attribute(CAMERA_HEIGHT, "CAMERA_HEIGHT", Enums::DataType::FLOAT, true, new NauFloat(1.0f)));
 
@@ -400,13 +399,13 @@ PhysicsManager::setPropf4(Float4Property p, vec4 &value) {
 	applyGlobalVec4Property(Attribs.getName(p, Enums::VEC4), &value.x);
 }
 
-void
-PhysicsManager::setProps(StringProperty prop, std::string & value) {
-	if (value.compare("") != 0) {
-		m_StringProps[prop] = value;
-		//RENDERMANAGER->getCamera(value);
-	}
-}
+//void
+//PhysicsManager::setProps(StringProperty prop, std::string & value) {
+//	if (value.compare("") != 0) {
+//		m_StringProps[prop] = value;
+//		//RENDERMANAGER->getCamera(value);
+//	}
+//}
 
 void 
 PhysicsManager::eventReceived(const std::string & sender, const std::string & eventType, const std::shared_ptr<IEventData>& evt) {

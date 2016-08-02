@@ -29,10 +29,12 @@ public:
 	void applyGlobalVec4Property(const std::string &property, float *value);
 
 	void setScene(const std::string &scene, const std::string & material, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform);
-	void setCamera(const std::string &scene, float * position, float * up);
 
 	float *getSceneTransform(const std::string &scene);
 	void setSceneTransform(const std::string &scene, float *transform);
+
+	void setCameraAction(const std::string &scene, const std::string &action, float * value);
+	std::map<std::string, float*> getCameraPositions() { worldManager->getCameraPositions(); };
 
 	std::vector<float> * getDebug();
 

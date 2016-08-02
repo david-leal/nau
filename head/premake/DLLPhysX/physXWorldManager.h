@@ -45,13 +45,13 @@ public:
 	std::map<std::string, int> * getMaterialParticleNb();
 	
 	void addCharacter(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform, physx::PxMaterial * material, float * up);
-	void addCamera(const std::string & scene, float * position, float * up, physx::PxMaterial * material);
-	void setCharacterProperty(std::string scene, std::string propName, float value);
 	void setCharacterProperty(std::string scene, std::string propName, float * value);
-	void setCameraProperty(std::string propName, float value);
-	void setCameraProperty(std::string propName, float * value);
 	void moveCharacter(std::string scene, float * transform);
-	float * getCameraPosition();
+
+	void addCamera(const std::string & scene, float * position, float * up, float pace, float minPace, float hitMagnitude, float timeStep, float stepOffset, float mass, float radius, float height, physx::PxMaterial * material);
+	//void cameraAction(std::string cameraName, std::string cameraAction, float * value);
+	bool hasCamera(std::string cameraName) { return characterManager->hasCamera(cameraName); };
+	std::map<std::string, float *> getCameraPositions();
 
 	void setTimeStep(float tStep) { timeStep = tStep; };
 

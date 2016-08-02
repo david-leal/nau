@@ -87,10 +87,6 @@ void NauPhysXInterface::update() {
 	for (auto particleMaterial : *worldManager->getMaterialParticleNb()) {
 		m_PropertyManager->setMaterialFloatProperty(particleMaterial.first, "NBPARTICLES", static_cast<float>(particleMaterial.second));
 	}
-	float * camPosition = worldManager->getCameraPosition();
-	if (camPosition) {
-		m_PropertyManager->setGlobalVec4Property("CAMERA_POSITION", camPosition);
-	}
 }
 
 void NauPhysXInterface::build() {
@@ -105,7 +101,7 @@ void NauPhysXInterface::applyFloatProperty(const std::string & scene, const std:
 		worldManager->setSoftProperty(scene, property, value);
 	}
 	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER) {
-		worldManager->setCharacterProperty(scene, property, value);
+		worldManager->setCharacterProperty(scene, property, &value);
 	}
 }
 
@@ -119,21 +115,13 @@ void NauPhysXInterface::applyVec4Property(const std::string & scene, const std::
 }
 
 void NauPhysXInterface::applyGlobalFloatProperty(const std::string & property, float value) {
-	if (property.compare("TIME_STEP") == 0) {
+	if (property.compare("TIME_STEP") == 0)
 		worldManager->setTimeStep(value);
-	}
-	else if (property.find("CAMERA_") != std::string::npos) {
-		worldManager->setCameraProperty(property, value);
-	}
 }
 
 void NauPhysXInterface::applyGlobalVec4Property(const std::string & property, float * value) {
-	if (property.compare("GRAVITY") == 0) {
+	if (property.compare("GRAVITY") == 0)
 		worldManager->setGravity(value[0], value[1], value[2]);
-	}
-	else if (property.find("CAMERA_") != std::string::npos) {
-		worldManager->setCameraProperty(property, value);
-	}
 }
 
 void NauPhysXInterface::setScene(const std::string &scene, const std::string & material, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
@@ -214,19 +202,19 @@ void NauPhysXInterface::setScene(const std::string &scene, const std::string & m
 	}
 }
 
-void NauPhysXInterface::setCamera(const std::string & scene, float * position, float * up) {
-	worldManager->addCamera(
-		scene,
-		position,
-		up,
-		worldManager->createMaterial(
-			m_PropertyManager->getGlobalFloatProperty("CAMERA_DYNAMIC_FRICTION"),
-			m_PropertyManager->getGlobalFloatProperty("CAMERA_STATIC_FRICTION"),
-			m_PropertyManager->getGlobalFloatProperty("CAMERA_RESTITUTION")
-		)
-	);
-
-}
+//void NauPhysXInterface::setCamera(const std::string & scene, float * position, float * up) {
+//	worldManager->addCamera(
+//		scene,
+//		position,
+//		up,
+//		worldManager->createMaterial(
+//			m_PropertyManager->getGlobalFloatProperty("CAMERA_DYNAMIC_FRICTION"),
+//			m_PropertyManager->getGlobalFloatProperty("CAMERA_STATIC_FRICTION"),
+//			m_PropertyManager->getGlobalFloatProperty("CAMERA_RESTITUTION")
+//		)
+//	);
+//
+//}
 
 float * NauPhysXInterface::getSceneTransform(const std::string & scene) {
 	return m_Scenes[scene].transform;
@@ -242,6 +230,36 @@ void NauPhysXInterface::setSceneTransform(const std::string & scene, float * tra
 	}
 	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER) {
 		worldManager->moveCharacter(scene, transform);
+	}
+}
+
+void NauPhysXInterface::setCameraAction(const std::string & scene, const std::string & action, float * value) {
+	if (!worldManager->hasCamera(scene)) {
+		if (action.compare("POSITION") == 0) {
+			worldManager->addCamera(
+				scene,
+				value,
+				m_PropertyManager->getGlobalVec4Property("CAMERA_UP"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_PACE"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_MIN_PACE"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_HIT_MAGNITUDE"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_TIME"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_STEP_OFFSET"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_MASS"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_RADIUS"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_HEIGHT"),
+				worldManager->createMaterial(
+					m_PropertyManager->getGlobalFloatProperty("CAMERA_DYNAMIC_FRICTION"),
+					m_PropertyManager->getGlobalFloatProperty("CAMERA_STATIC_FRICTION"),
+					m_PropertyManager->getGlobalFloatProperty("CAMERA_RESTITUTION")
+				)
+			);
+		}
+	}
+	else {
+		//TODO: Move camera
+		//if (action.compare("POSITION") == 0) {}
+		worldManager->setCharacterProperty(scene, action, value);
 	}
 }
 

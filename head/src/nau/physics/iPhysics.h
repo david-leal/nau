@@ -85,13 +85,12 @@ namespace nau
 			virtual void applyGlobalVec4Property(const std::string &property, float *value) = 0;
 
 			virtual void setScene(const std::string &scene, const std::string & material, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform) = 0;
-			virtual void setCamera(const std::string &scene, float * position, float * up) = 0;
 
 			virtual float *getSceneTransform(const std::string &scene) = 0;
 			virtual void setSceneTransform(const std::string &scene, float *transform) = 0;
-
-			//virtual void setParticleScene(const std::string &scene, float maxParticles, float * nbParticles, float * transform) = 0;
-			//virtual float * getParticlePositions(const std::string &scene) = 0;
+			
+			virtual void setCameraAction(const std::string &scene, const std::string &action, float * value) = 0;
+			virtual std::map<std::string, float*> getCameraPositions() = 0;
 
 			virtual std::map<std::string, nau::physics::IPhysics::Prop> &getGlobalProperties() = 0;
 			virtual std::map<std::string, nau::physics::IPhysics::Prop> &getMaterialProperties() = 0;

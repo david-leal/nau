@@ -25,7 +25,6 @@ namespace nau
 		public:
 		
 			FLOAT_PROP(TIME_STEP, 0);
-			STRING_PROP(CAMERA_NAME, 0);
 			FLOAT4_PROP(CAMERA_POSITION, 0);
 			FLOAT4_PROP(CAMERA_DIRECTION, 1); 
 			FLOAT4_PROP(CAMERA_UP, 2);
@@ -52,7 +51,7 @@ namespace nau
 
 			void setPropf(FloatProperty p, float value);
 			void setPropf4(Float4Property p, vec4 &value);
-			void setProps(StringProperty prop, std::string &value);
+			//void setProps(StringProperty prop, std::string &value);
 			
 			void eventReceived(const std::string &sender, const std::string &eventType,	const std::shared_ptr<IEventData> &evt);
 			std::string& getName();

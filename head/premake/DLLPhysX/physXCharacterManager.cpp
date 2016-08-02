@@ -6,8 +6,6 @@ using namespace physx;
 
 PhysXCharacterManager::PhysXCharacterManager(physx::PxScene * world) {
 	manager = PxCreateControllerManager(*world);
-	cameraPosition = NULL;
-	hasCamera = false;
 }
 
 
@@ -24,12 +22,11 @@ void PhysXCharacterManager::update(physx::PxVec3 gravity) {
 }
 
 void
-PhysXCharacterManager::createCharacter(const std::string & scene, physx::PxVec3 position, physx::PxVec3 up, physx::PxMaterial * material, bool isCamera) {
+PhysXCharacterManager::createCharacter(const std::string & scene, physx::PxVec3 position, physx::PxVec3 up, physx::PxMaterial * material, bool isCamera, float radius, float height) {
 	PxCapsuleControllerDesc desc;
-	desc.height = 1.0f;
-	desc.radius = 1.0f;
-	PxVec3 pos = position;
-	desc.position = PxExtendedVec3(pos.x, pos.y, pos.z);
+	desc.height = height;
+	desc.radius = radius;
+	desc.position = PxExtendedVec3(position.x, position.y, position.z);
 	desc.material = material;
 	desc.reportCallback = this;
 	desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
@@ -40,6 +37,15 @@ PhysXCharacterManager::createCharacter(const std::string & scene, physx::PxVec3 
 	manager->createController(desc);
 	controllers[scene].isCamera = isCamera;
 	controllers[scene].index = PhysXCharacterManager::nextControllerIndex++;
+}
+
+void PhysXCharacterManager::updateCameraPosition(std::string cameraName, physx::PxVec3 position) {
+	if (!cameraPositions[cameraName])
+		cameraPositions[cameraName] = new float[3]();
+
+	cameraPositions[cameraName][0] = position.x;
+	cameraPositions[cameraName][1] = position.y;
+	cameraPositions[cameraName][2] = position.z;
 }
 
 
@@ -55,42 +61,50 @@ void PhysXCharacterManager::addCharacter(const std::string & scene, physx::PxMat
 	controllers[scene].initialTrans = initTrans;
 }
 
-void PhysXCharacterManager::addCamera(const std::string & scene, physx::PxVec3 position, physx::PxVec3 up, physx::PxMaterial * material) {
-	cameraName = scene;
-	hasCamera = true;
-	createCharacter(scene, position, up, material, true);
+void PhysXCharacterManager::addCamera(const std::string & scene, physx::PxVec3 position, physx::PxVec3 up, float pace, float minPace, float hitMagnitude, float timeStep, float stepOffset, float mass, float radius, float height, physx::PxMaterial * material) {
+	createCharacter(scene, position, up, material, true, radius, height);
+	updateCameraPosition(scene, position);
+	setDirection	(scene, PxVec3(0.0f));
+	setPace			(scene, pace);
+	setMinPace		(scene, minPace);
+	setHitMagnitude	(scene, hitMagnitude);
+	setTimeStep		(scene, timeStep);
+	setMass			(scene, mass);
 }
 
 void PhysXCharacterManager::move(const std::string & scene, physx::PxVec3 gravity) {
 	if (controllers.find(scene) != controllers.end()) {
 		PxController * controller = manager->getController(controllers[scene].index);
-		if (controllers[scene].pace > 0.0) {
-			PxVec3 movement = (*controllers[scene].direction * controllers[scene].pace) + gravity;
-			controller->move(movement, controllers[scene].minPace, controllers[scene].timeStep, NULL);
-			if (controllers[scene].isCamera) {
-				if (cameraPosition) {
-					cameraPosition->x = (PxReal)controller->getPosition().x;
-					cameraPosition->y = (PxReal)controller->getPosition().y;
-					cameraPosition->z = (PxReal)controller->getPosition().z;
+		PxExtendedVec3 auxPosition = controller->getPosition();
+		PxVec3 previousPosition = PxVec3((PxReal)auxPosition.x, (PxReal)auxPosition.y, (PxReal)auxPosition.z);
+		PxVec3 movement = (*controllers[scene].direction * controllers[scene].pace);
+		PxVec3 movementAndGravity = movement + gravity;
+		controller->move(movementAndGravity, controllers[scene].minPace, controllers[scene].timeStep, NULL);
+		auxPosition = controller->getPosition();
+		PxVec3 actualPosition = PxVec3((PxReal)auxPosition.x, (PxReal)auxPosition.y, (PxReal)auxPosition.z);
+		if (previousPosition == actualPosition) {
+			if (controllers[scene].isCamera)
+				updateCameraPosition(scene, actualPosition);
+			else {
+				PxTransform trans;
+				if (movement.magnitude() > 0.0f) {
+					PxVec3 up = controller->getUpDirection();
+					PxVec3 dir = controllers[scene].direction->getNormalized();
+					PxVec3 right = up.cross(dir).getNormalized();
+					PxMat44 mat = PxMat44(
+						PxVec3(right.x, up.x, dir.x),
+						PxVec3(right.y, up.y, dir.y),
+						PxVec3(right.z, up.z, dir.z),
+						PxVec3((PxReal)controller->getPosition().x, (PxReal)controller->getPosition().y, (PxReal)controller->getPosition().z)
+					);
+					trans = PxTransform(mat * controllers[scene].initialTrans);
+					
 				}
 				else {
-					cameraPosition = new PxVec3((PxReal)controller->getPosition().x, (PxReal)controller->getPosition().y, (PxReal)controller->getPosition().z);
+					PxMat44 mat(controllers[scene].extInfo.transform);
+					mat.setPosition(actualPosition);
+					trans = PxTransform(mat);
 				}
-			}
-			else {
-				PxVec3 up = controller->getUpDirection();
-				PxVec3 dir = controllers[scene].direction->getNormalized();
-				PxVec3 right = up.cross(dir).getNormalized();
-				//PxVec3 right = controller->getUpDirection().cross(dir).getNormalized();
-				//PxVec3 up = right.cross(dir).getNormalized();
-
-				PxMat44 mat = PxMat44(
-					PxVec3(right.x, up.x, dir.x),
-					PxVec3(right.y, up.y, dir.y),
-					PxVec3(right.z, up.z, dir.z),
-					PxVec3((PxReal)controller->getPosition().x, (PxReal)controller->getPosition().y, (PxReal)controller->getPosition().z)
-				);
-				PxTransform trans = PxTransform(mat * controllers[scene].initialTrans);
 				getMatFromPhysXTransform(trans, controllers[scene].extInfo.transform);
 			}
 		}
@@ -114,7 +128,13 @@ void PhysXCharacterManager::createInfo(const std::string & scene, int nbVertices
 }
 
 void PhysXCharacterManager::setDirection(std::string scene, physx::PxVec3 dir) {
-	controllers[scene].direction = new PxVec3(dir);
+	if (controllers[scene].direction) {
+		controllers[scene].direction->x = dir.x;
+		controllers[scene].direction->y = dir.y;
+		controllers[scene].direction->z = dir.z;
+	}
+	else 
+		controllers[scene].direction = new PxVec3(dir);
 }
 
 void PhysXCharacterManager::setPace(std::string scene, float pace) {

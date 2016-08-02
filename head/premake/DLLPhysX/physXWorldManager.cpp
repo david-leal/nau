@@ -151,90 +151,92 @@ void PhysXWorldManager::addCharacter(const std::string & scene, int nbVertices, 
 	characterManager->addCharacter(scene, material, PxVec3(up[0], up[1], up[2]));
 }
 
-void PhysXWorldManager::addCamera(const std::string & scene, float * position, float * up , physx::PxMaterial * material) {
-	characterManager->addCamera(scene, PxVec3(position[0], position[1], position[2]), PxVec3(up[0], up[1], up[2]), material);
-
-}
-
-void PhysXWorldManager::setCharacterProperty(std::string scene, std::string propName, float value) {
-	if (propName.compare("PACE") == 0) {
-		characterManager->setPace(scene, value);
-	}
-	else if (propName.compare("HIT_MAGNITUDE") == 0) {
-		characterManager->setHitMagnitude(scene, value);
-	}
-	else if (propName.compare("HEIGHT") == 0) {
-		characterManager->setHeight(scene, value);
-	}
-	else if (propName.compare("RADIUS") == 0) {
-		characterManager->setRadius(scene, value);
-	}
-	else if (propName.compare("STEP_OFFSET") == 0) {
-		characterManager->setStepOffset(scene, value);
-	}
-	else if (propName.compare("MASS") == 0) {
-		characterManager->setMass(scene, value);
-	}
-	else if (propName.compare("FRICTION") == 0) {
-		characterManager->setFriction(scene, value);
-	}
-	else if (propName.compare("RESTITUTION") == 0) {
-		characterManager->setRestitution(scene, value);
-	}
+void PhysXWorldManager::addCamera(const std::string & scene, float * position, float * up, float pace, float minPace, float hitMagnitude, float timeStep, float stepOffset, float mass, float radius, float height, physx::PxMaterial * material) {
+	characterManager->addCamera(
+		scene,
+		PxVec3(position[0], position[1], position[2]),
+		PxVec3(up[0], up[1], up[2]),
+		pace,
+		minPace,
+		hitMagnitude,
+		timeStep,
+		stepOffset,
+		mass,
+		radius,
+		height,
+		material
+	);
 }
 
 void PhysXWorldManager::setCharacterProperty(std::string scene, std::string propName, float * value) {
-	if (propName.compare("DIRECTION") == 0) {
+	if (propName.compare("DIRECTION") == 0)
 		characterManager->setDirection(scene, PxVec3(value[0], value[1], value[2]));
-	}
+	else if (propName.compare("PACE") == 0)
+		characterManager->setPace(scene, *value);
+	else if (propName.compare("HIT_MAGNITUDE") == 0)
+		characterManager->setHitMagnitude(scene, *value);
+	else if (propName.compare("HEIGHT") == 0)
+		characterManager->setHeight(scene, *value);
+	else if (propName.compare("RADIUS") == 0)
+		characterManager->setRadius(scene, *value);
+	else if (propName.compare("STEP_OFFSET") == 0)
+		characterManager->setStepOffset(scene, *value);
+	else if (propName.compare("MASS") == 0)
+		characterManager->setMass(scene, *value);
+	else if (propName.compare("FRICTION") == 0)
+		characterManager->setFriction(scene, *value);
+	else if (propName.compare("RESTITUTION") == 0)
+		characterManager->setRestitution(scene, *value);
 }
 
-void PhysXWorldManager::setCameraProperty(std::string propName, float value) {
-	if (characterManager->hasCam()) {
-		std::string scene = characterManager->getCameraName();
-		if (propName.compare("CAMERA_PACE") == 0) {
-			characterManager->setPace(scene, value);
-		}
-		else if (propName.compare("CAMERA_HIT_MAGNITUDE") == 0) {
-			characterManager->setHitMagnitude(scene, value);
-		}
-		else if (propName.compare("CAMERA_HEIGHT") == 0) {
-			characterManager->setHeight(scene, value);
-		}
-		else if (propName.compare("CAMERA_RADIUS") == 0) {
-			characterManager->setRadius(scene, value);
-		}
-		else if (propName.compare("CAMERA_STEP_OFFSET") == 0) {
-			characterManager->setStepOffset(scene, value);
-		}
-		else if (propName.compare("CAMERA_MASS") == 0) {
-			characterManager->setMass(scene, value);
-		}
-		else if (propName.compare("CAMERA_FRICTION") == 0) {
-			characterManager->setFriction(scene, value);
-		}
-		else if (propName.compare("CAMERA_RESTITUTION") == 0) {
-			characterManager->setRestitution(scene, value);
-		}
-	}
-
-}
-
-void PhysXWorldManager::setCameraProperty(std::string propName, float * value) {
-	if (characterManager->hasCam()) {
-		std::string scene = characterManager->getCameraName();
-		if (propName.compare("CAMERA_DIRECTION") == 0) {
-			characterManager->setDirection(scene, PxVec3(value[0], value[1], value[2]));
-		}
-	}
-}
+//void PhysXWorldManager::setCameraProperty(std::string propName, float value) {
+//	if (characterManager->hasCam()) {
+//		std::string scene = characterManager->getCameraName();
+//		if (propName.compare("CAMERA_PACE") == 0) {
+//			characterManager->setPace(scene, value);
+//		}
+//		else if (propName.compare("CAMERA_HIT_MAGNITUDE") == 0) {
+//			characterManager->setHitMagnitude(scene, value);
+//		}
+//		else if (propName.compare("CAMERA_HEIGHT") == 0) {
+//			characterManager->setHeight(scene, value);
+//		}
+//		else if (propName.compare("CAMERA_RADIUS") == 0) {
+//			characterManager->setRadius(scene, value);
+//		}
+//		else if (propName.compare("CAMERA_STEP_OFFSET") == 0) {
+//			characterManager->setStepOffset(scene, value);
+//		}
+//		else if (propName.compare("CAMERA_MASS") == 0) {
+//			characterManager->setMass(scene, value);
+//		}
+//		else if (propName.compare("CAMERA_FRICTION") == 0) {
+//			characterManager->setFriction(scene, value);
+//		}
+//		else if (propName.compare("CAMERA_RESTITUTION") == 0) {
+//			characterManager->setRestitution(scene, value);
+//		}
+//	}
+//
+//}
+//
+//void PhysXWorldManager::setCameraProperty(std::string propName, float * value) {
+//	if (characterManager->hasCam()) {
+//		std::string scene = characterManager->getCameraName();
+//		if (propName.compare("CAMERA_DIRECTION") == 0) {
+//			characterManager->setDirection(scene, PxVec3(value[0], value[1], value[2]));
+//		}
+//	}
+//}
 
 void PhysXWorldManager::moveCharacter(std::string scene, float * transform) {
 	characterManager->move(scene, transform, world->getGravity());
 }
 
-float * PhysXWorldManager::getCameraPosition() {
-	float * position = (float *)malloc(4 * sizeof(float));
+std::map<std::string, float *> PhysXWorldManager::getCameraPositions() {
+	return characterManager->getCameraPositions();
+
+	/*float * position = (float *)malloc(4 * sizeof(float));
 	PxVec3 * camPosition = characterManager->getCameraPosition();
 	if (!camPosition)
 		return NULL;
@@ -242,5 +244,5 @@ float * PhysXWorldManager::getCameraPosition() {
 	position[1] = camPosition->y;
 	position[2] = camPosition->z;
 	position[3] = 1.0f;
-	return position;
+	return position;*/
 }
