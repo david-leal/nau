@@ -6,6 +6,7 @@ using namespace physx;
 
 PhysXCharacterManager::PhysXCharacterManager(physx::PxScene * world) {
 	manager = PxCreateControllerManager(*world);
+	cameraPositions = new std::map<std::string, float*>();
 }
 
 
@@ -13,6 +14,7 @@ PhysXCharacterManager::~PhysXCharacterManager() {
 	manager->release();
 	delete &manager;
 	delete &controllers;
+	delete &cameraPositions;
 }
 
 void PhysXCharacterManager::update(physx::PxVec3 gravity) {
@@ -40,12 +42,13 @@ PhysXCharacterManager::createCharacter(const std::string & scene, physx::PxVec3 
 }
 
 void PhysXCharacterManager::updateCameraPosition(std::string cameraName, physx::PxVec3 position) {
-	if (!cameraPositions[cameraName])
-		cameraPositions[cameraName] = new float[3]();
+	if (!hasCamera(cameraName))
+		(*cameraPositions)[cameraName] = new float[4]();
 
-	cameraPositions[cameraName][0] = position.x;
-	cameraPositions[cameraName][1] = position.y;
-	cameraPositions[cameraName][2] = position.z;
+	(*cameraPositions)[cameraName][0] = position.x;
+	(*cameraPositions)[cameraName][1] = position.y;
+	(*cameraPositions)[cameraName][2] = position.z;
+	(*cameraPositions)[cameraName][3] = 1.0f;
 }
 
 
@@ -82,9 +85,11 @@ void PhysXCharacterManager::move(const std::string & scene, physx::PxVec3 gravit
 		controller->move(movementAndGravity, controllers[scene].minPace, controllers[scene].timeStep, NULL);
 		auxPosition = controller->getPosition();
 		PxVec3 actualPosition = PxVec3((PxReal)auxPosition.x, (PxReal)auxPosition.y, (PxReal)auxPosition.z);
-		if (previousPosition == actualPosition) {
-			if (controllers[scene].isCamera)
+		if (previousPosition != actualPosition) {
+			if (controllers[scene].isCamera) {
 				updateCameraPosition(scene, actualPosition);
+				controllers[scene].pace *= 0.9f;
+			}
 			else {
 				PxTransform trans;
 				if (movement.magnitude() > 0.0f) {

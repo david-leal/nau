@@ -215,13 +215,12 @@ PhysicsManager::update() {
 		}
 	}
 
-	if (hasCamera) {
-		std::string cameraName = getProps((StringProperty)getAttribSet()->getAttributes()["CAMERA_NAME"]->getId());
-		Camera * camera = RENDERMANAGER->getCamera(cameraName).get();
-		camera->setPropf4(
-			Camera::POSITION,
-			getPropf4((Float4Property)getAttribSet()->getAttributes()["CAMERA_POSITION"]->getId())
-		);
+	for (auto cam : *(m_PhysInst->getCameraPositions())) {
+		Camera * camera = RENDERMANAGER->getCamera(cam.first).get();
+		vec4 previous = camera->getPropf4(Camera::POSITION);
+		vec4 actual = vec4(cam.second[0], cam.second[1], cam.second[2], 1.0f);
+		if (actual != previous)
+			camera->setPropf4(Camera::POSITION, actual);
 	}
 }
 
@@ -323,47 +322,61 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 	m_Built = false;
 }
 
-void
-PhysicsManager::addCamera() {
-	std::string cameraName = getProps((StringProperty)getAttribSet()->getAttributes()["CAMERA_NAME"]->getId());
-	if (cameraName.compare("") != 0) {
-		Camera * camera = RENDERMANAGER->getCamera(cameraName).get();
+//void
+//PhysicsManager::addCamera() {
+//	std::string cameraName = getProps((StringProperty)getAttribSet()->getAttributes()["CAMERA_NAME"]->getId());
+//	if (cameraName.compare("") != 0) {
+//		Camera * camera = RENDERMANAGER->getCamera(cameraName).get();
+//
+//		m_PhysInst->setSceneType(cameraName, IPhysics::CHARACTER);
+//
+//		float * max = (float*)malloc(3 * sizeof(float));
+//		float * min = (float*)malloc(3 * sizeof(float));
+//		//max[0] = camera->getPropf(Camera::NEARP);
+//		max[0] = 1.0f;
+//		//max[1] = camera->getPropf(Camera::TOP);
+//		max[1] = 1.0f;
+//		max[2] = 0.0f;
+//		min[0] = 0.0f; min[1] = 0.0f; min[2] = 0.0f;
+//
+//		m_PhysInst->setSceneShape(cameraName, IPhysics::CAPSULE, min, max);
+//
+//		float * cameraUp = (float*)malloc(3 * sizeof(float));
+//		vec4 nauCameraUp = camera->getPropf4(Camera::UP_VEC);
+//		cameraUp[0] = nauCameraUp.x;
+//		cameraUp[1] = nauCameraUp.y;
+//		cameraUp[2] = nauCameraUp.z;
+//		cameraUp[3] = nauCameraUp.w;
+//		setPropf4((Float4Property)getAttribSet()->getAttributes()["CAMERA_UP"]->getId(), nauCameraUp);
+//
+//		float * cameraPosition = (float*)malloc(3 * sizeof(float));
+//		vec4 nauCameraPosition = camera->getPropf4(Camera::POSITION);
+//		cameraPosition[0] = nauCameraPosition.x;
+//		cameraPosition[1] = nauCameraPosition.y;
+//		cameraPosition[2] = nauCameraPosition.z;
+//		cameraPosition[3] = nauCameraPosition.w;
+//		setPropf4((Float4Property)getAttribSet()->getAttributes()["CAMERA_POSITION"]->getId(), nauCameraPosition);
+//
+//		m_PhysInst->setCamera(cameraName, cameraPosition, cameraUp);
+//		hasCamera = true;
+//		
+//		updateProps();
+//	}
+//}
 
-		m_PhysInst->setSceneType(cameraName, IPhysics::CHARACTER);
-
-		float * max = (float*)malloc(3 * sizeof(float));
-		float * min = (float*)malloc(3 * sizeof(float));
-		//max[0] = camera->getPropf(Camera::NEARP);
-		max[0] = 1.0f;
-		//max[1] = camera->getPropf(Camera::TOP);
-		max[1] = 1.0f;
-		max[2] = 0.0f;
-		min[0] = 0.0f; min[1] = 0.0f; min[2] = 0.0f;
-
-		m_PhysInst->setSceneShape(cameraName, IPhysics::CAPSULE, min, max);
-
-		float * cameraUp = (float*)malloc(3 * sizeof(float));
-		vec4 nauCameraUp = camera->getPropf4(Camera::UP_VEC);
-		cameraUp[0] = nauCameraUp.x;
-		cameraUp[1] = nauCameraUp.y;
-		cameraUp[2] = nauCameraUp.z;
-		cameraUp[3] = nauCameraUp.w;
-		setPropf4((Float4Property)getAttribSet()->getAttributes()["CAMERA_UP"]->getId(), nauCameraUp);
-
-		float * cameraPosition = (float*)malloc(3 * sizeof(float));
-		vec4 nauCameraPosition = camera->getPropf4(Camera::POSITION);
-		cameraPosition[0] = nauCameraPosition.x;
-		cameraPosition[1] = nauCameraPosition.y;
-		cameraPosition[2] = nauCameraPosition.z;
-		cameraPosition[3] = nauCameraPosition.w;
-		setPropf4((Float4Property)getAttribSet()->getAttributes()["CAMERA_POSITION"]->getId(), nauCameraPosition);
-
-		m_PhysInst->setCamera(cameraName, cameraPosition, cameraUp);
-		hasCamera = true;
-		
-		updateProps();
+void nau::physics::PhysicsManager::cameraAction(Camera * camera, std::string action, float * value) {
+	if (!m_PhysInst)
+		return;
+	std::string cameraName = camera->getName();
+	if (!m_PhysInst->hasCamera(cameraName)) {
+		float * camPosition = new float[4]();
+		vec4 cpos = camera->getPropf4(Camera::POSITION);
+		camPosition[0] = cpos.x; camPosition[1] = cpos.y; camPosition[2] = cpos.z; camPosition[3] = cpos.w;
+		m_PhysInst->setCameraAction(cameraName, "POSITION", camPosition);
 	}
+	m_PhysInst->setCameraAction(cameraName, action, value);
 }
+
 
 
 void
@@ -454,7 +467,6 @@ PhysicsManager::applyMaterialFloatProperty(const std::string &matName, const std
 	}
 }
 
-
 void
 PhysicsManager::applyMaterialVec4Property(const std::string &matName, const std::string &property, float *value) {
 	if (!m_PhysInst)
@@ -469,7 +481,6 @@ PhysicsManager::applyMaterialVec4Property(const std::string &matName, const std:
 		}
 	}
 }
-
 
 PhysicsMaterial &
 PhysicsManager::getMaterial(const std::string &name) {

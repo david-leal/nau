@@ -100,7 +100,7 @@ Camera::Camera (const std::string &name) :
 	registerAndInitArrays(Attribs);
 	m_Id = 0;
 	m_Name = name;
-	m_IsDynamic = m_BoolProps[DYNAMIC];
+	//m_IsDynamic = m_BoolProps[DYNAMIC];
 	m_pViewport = NAU->getDefaultViewport();
 
 	buildViewMatrix();
@@ -151,7 +151,7 @@ Camera::Camera (const std::string &name) :
 	indices->at (6) = Camera::BOTTOM_LEFT_NEAR;		indices->at (7) = Camera::TOP_LEFT_NEAR;
 
 	aMaterialGroup->setIndexList (indices);
-
+	 
 	renderable->addMaterialGroup (aMaterialGroup);
 
 	setRenderable (renderable);
@@ -159,7 +159,13 @@ Camera::Camera (const std::string &name) :
 	//std::shared_ptr<IScene> &s = RENDERMANAGER->createScene(name, "SceneAux");
 	//std::shared_ptr<Camera> p = shared_from_this();
 	//s->add(std::dynamic_pointer_cast<SceneObject>(shared_from_this()));
-
+	
+	/*if (isDynamic()) {
+		float * camPos = new float[4]();
+		vec4 pos = m_Float4Props[POSITION];
+		camPos[0] = pos.x; camPos[1] = pos.y; camPos[2] = pos.z; camPos[3] = pos.w;
+		NAU->getPhysicsManager()->cameraAction(name, "POSITION", camPos);
+	}*/
 }
 
 
@@ -797,32 +803,64 @@ Camera::eventReceived(const std::string &sender, const std::string &eventType,
 		vec4 vRight = m_Float4Props[NORMALIZED_RIGHT_VEC];
 		vec4 vUp = m_Float4Props[UP_VEC];
 
-		if(f->getDirection()=="BACKWARD") {
+		if (isDynamic()) {
+			physics::PhysicsManager * physMan = NAU->getPhysicsManager();
+			float * pace = new float(physMan->getPropf((nau::AttributeValues::FloatProperty)physMan->getAttribSet()->getAttributes()["CAMERA_PACE"]->getId()));
+			physMan->cameraAction(this, "PACE", pace);
+			//NAU->getPhysicsManager()->cameraAction(this, "PACE", &vel);
+		}
 
-			vView *= vel;
-			vPos -=  vView;
-			setPropf4((Float4Property)POSITION, vPos.x, vPos.y, vPos.z, 1.0f);
+		if(f->getDirection()=="BACKWARD") {
+			if (isDynamic()) {
+				float * dir = new float[3]();
+				dir[0] = -vView.x; dir[1] = -vView.y; dir[2] = -vView.z;
+				NAU->getPhysicsManager()->cameraAction(this, "DIRECTION", dir);
+			}
+			else {
+				vView *= vel;
+				vPos -=  vView;
+				setPropf4((Float4Property)POSITION, vPos.x, vPos.y, vPos.z, 1.0f);
+			}
 		}
 
 		else if(f->getDirection()=="FORWARD") {
-
-			vView *= vel;
-			vPos += vView;
-			setPropf4((Float4Property)POSITION, vPos.x, vPos.y, vPos.z, 1.0f);
+			if (isDynamic()) {
+				float * dir = new float[4]();
+				dir[0] = vView.x; dir[1] = vView.y; dir[2] = vView.z; dir[3] = vView.w;
+				NAU->getPhysicsManager()->cameraAction(this, "DIRECTION", dir);
+			}
+			else {
+				vView *= vel;
+				vPos += vView;
+				setPropf4((Float4Property)POSITION, vPos.x, vPos.y, vPos.z, 1.0f);
+			}
 		}
 				
 		else if(f->getDirection()=="LEFT") {
-			
-			vRight *= vel;
-			vPos -= vRight;
-			setPropf4((Float4Property)POSITION, vPos.x, vPos.y, vPos.z, 1.0f);
+			if (isDynamic()) {
+				float * dir = new float[4]();
+				vRight = -vRight;
+				dir[0] = vRight.x; dir[1] = vRight.y; dir[2] = vRight.z; dir[3] = vRight.w;
+				NAU->getPhysicsManager()->cameraAction(this, "DIRECTION", dir);
+			}
+			else {
+				vRight *= vel;
+				vPos -= vRight;
+				setPropf4((Float4Property)POSITION, vPos.x, vPos.y, vPos.z, 1.0f);
+			}
 		}
 
 		else if(f->getDirection()=="RIGHT") {
-			
-			vRight *= vel;
-			vPos += vRight;
-			setPropf4((Float4Property)POSITION, vPos.x, vPos.y, vPos.z, 1.0f);
+			if (isDynamic()) {
+				float * dir = new float[4]();
+				dir[0] = vRight.x; dir[1] = vRight.y; dir[2] = vRight.z; dir[3] = vRight.w;
+				NAU->getPhysicsManager()->cameraAction(this, "DIRECTION", dir);
+			}
+			else {
+				vRight *= vel;
+				vPos += vRight;
+				setPropf4((Float4Property)POSITION, vPos.x, vPos.y, vPos.z, 1.0f);
+			}
 		}
 		else if (f->getDirection() == "UP") {
 		

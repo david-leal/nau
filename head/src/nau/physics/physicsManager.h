@@ -43,7 +43,8 @@ namespace nau
 			
 			void addScene(nau::scene::IScene *aScene, const std::string &matName);
 
-			void addCamera();
+			//void addCamera();
+			void cameraAction(Camera * camera, std::string action, float * value);
 
 			PhysicsMaterial &getMaterial(const std::string &name);
 			void getMaterialNames(std::vector<std::string> *);

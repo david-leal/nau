@@ -33,8 +33,8 @@ public:
 	void setStepOffset(std::string scene, float value);
 	void setTimeStep(std::string scene, float value);
 
-	std::map<std::string, float *> getCameraPositions() { return cameraPositions; };
-	bool hasCamera(std::string name) { return (cameraPositions.find(name) != cameraPositions.end()); };
+	std::map<std::string, float *> * getCameraPositions() { return cameraPositions; };
+	bool hasCamera(std::string name) { return (cameraPositions->find(name) != cameraPositions->end()); };
 
 protected:
 
@@ -51,7 +51,7 @@ protected:
 	} PhysXController;
 
 	std::map<std::string, PhysXController> controllers;
-	std::map<std::string, float *> cameraPositions;
+	std::map<std::string, float *> * cameraPositions;
 	physx::PxControllerManager * manager;
 
 	void createCharacter(const std::string & scene, physx::PxVec3 position, physx::PxVec3 up, physx::PxMaterial * material, bool isCamera = false, float radius = 1.0f, float height = 1.0f);

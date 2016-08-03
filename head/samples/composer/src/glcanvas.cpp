@@ -263,7 +263,7 @@ GLCanvas::OnKeyUp(wxKeyEvent & event) {
 
 void 
 GLCanvas::OnKeyDown(wxKeyEvent & event) {
-	//nau::physics::PhysicsManager * physMan = m_pEngine->getPhysicsManager();
+	nau::physics::PhysicsManager * physMan = m_pEngine->getPhysicsManager();
 	//nau::physics::PhysicsMaterial man = physMan->getMaterial("man");
 	if (WXK_UP == event.GetKeyCode()) {
 		/*float camDirection[] = { 0.0f, 0.0f, -1.0f, 1.0f };
@@ -274,9 +274,9 @@ GLCanvas::OnKeyDown(wxKeyEvent & event) {
 		man.setPropf4((nau::AttributeValues::Float4Property)man.getAttribSet()->getAttributes()["DIRECTION"]->getId(), vec4(manDirection));
 		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.01f);*/
 		
-		/*float impulse[] = { 5.0f, 0.2f, 0.0f, 1.0f };
+		float impulse[] = { 5.0f, 0.2f, 0.0f, 1.0f };
 		nau::physics::PhysicsMaterial mat = physMan->getMaterial("whiteBilliardBall" );
-		mat.setPropf4((nau::AttributeValues::Float4Property)mat.getAttribSet()->getAttributes()["IMPULSE"]->getId(), vec4(impulse));*/
+		mat.setPropf4((nau::AttributeValues::Float4Property)mat.getAttribSet()->getAttributes()["IMPULSE"]->getId(), vec4(impulse));
 	}
 
 	/*if (WXK_DOWN == event.GetKeyCode()) {

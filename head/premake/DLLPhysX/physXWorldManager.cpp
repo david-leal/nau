@@ -233,7 +233,7 @@ void PhysXWorldManager::moveCharacter(std::string scene, float * transform) {
 	characterManager->move(scene, transform, world->getGravity());
 }
 
-std::map<std::string, float *> PhysXWorldManager::getCameraPositions() {
+std::map<std::string, float *> * PhysXWorldManager::getCameraPositions() {
 	return characterManager->getCameraPositions();
 
 	/*float * position = (float *)malloc(4 * sizeof(float));
