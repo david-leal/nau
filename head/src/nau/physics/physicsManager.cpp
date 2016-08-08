@@ -322,59 +322,10 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 	m_Built = false;
 }
 
-//void
-//PhysicsManager::addCamera() {
-//	std::string cameraName = getProps((StringProperty)getAttribSet()->getAttributes()["CAMERA_NAME"]->getId());
-//	if (cameraName.compare("") != 0) {
-//		Camera * camera = RENDERMANAGER->getCamera(cameraName).get();
-//
-//		m_PhysInst->setSceneType(cameraName, IPhysics::CHARACTER);
-//
-//		float * max = (float*)malloc(3 * sizeof(float));
-//		float * min = (float*)malloc(3 * sizeof(float));
-//		//max[0] = camera->getPropf(Camera::NEARP);
-//		max[0] = 1.0f;
-//		//max[1] = camera->getPropf(Camera::TOP);
-//		max[1] = 1.0f;
-//		max[2] = 0.0f;
-//		min[0] = 0.0f; min[1] = 0.0f; min[2] = 0.0f;
-//
-//		m_PhysInst->setSceneShape(cameraName, IPhysics::CAPSULE, min, max);
-//
-//		float * cameraUp = (float*)malloc(3 * sizeof(float));
-//		vec4 nauCameraUp = camera->getPropf4(Camera::UP_VEC);
-//		cameraUp[0] = nauCameraUp.x;
-//		cameraUp[1] = nauCameraUp.y;
-//		cameraUp[2] = nauCameraUp.z;
-//		cameraUp[3] = nauCameraUp.w;
-//		setPropf4((Float4Property)getAttribSet()->getAttributes()["CAMERA_UP"]->getId(), nauCameraUp);
-//
-//		float * cameraPosition = (float*)malloc(3 * sizeof(float));
-//		vec4 nauCameraPosition = camera->getPropf4(Camera::POSITION);
-//		cameraPosition[0] = nauCameraPosition.x;
-//		cameraPosition[1] = nauCameraPosition.y;
-//		cameraPosition[2] = nauCameraPosition.z;
-//		cameraPosition[3] = nauCameraPosition.w;
-//		setPropf4((Float4Property)getAttribSet()->getAttributes()["CAMERA_POSITION"]->getId(), nauCameraPosition);
-//
-//		m_PhysInst->setCamera(cameraName, cameraPosition, cameraUp);
-//		hasCamera = true;
-//		
-//		updateProps();
-//	}
-//}
-
 void nau::physics::PhysicsManager::cameraAction(Camera * camera, std::string action, float * value) {
 	if (!m_PhysInst)
 		return;
-	std::string cameraName = camera->getName();
-	if (!m_PhysInst->hasCamera(cameraName)) {
-		float * camPosition = new float[4]();
-		vec4 cpos = camera->getPropf4(Camera::POSITION);
-		camPosition[0] = cpos.x; camPosition[1] = cpos.y; camPosition[2] = cpos.z; camPosition[3] = cpos.w;
-		m_PhysInst->setCameraAction(cameraName, "POSITION", camPosition);
-	}
-	m_PhysInst->setCameraAction(cameraName, action, value);
+	m_PhysInst->setCameraAction(camera->getName(), action, value);
 }
 
 
@@ -411,14 +362,6 @@ PhysicsManager::setPropf4(Float4Property p, vec4 &value) {
 	m_Float4Props[p] = value;
 	applyGlobalVec4Property(Attribs.getName(p, Enums::VEC4), &value.x);
 }
-
-//void
-//PhysicsManager::setProps(StringProperty prop, std::string & value) {
-//	if (value.compare("") != 0) {
-//		m_StringProps[prop] = value;
-//		//RENDERMANAGER->getCamera(value);
-//	}
-//}
 
 void 
 PhysicsManager::eventReceived(const std::string & sender, const std::string & eventType, const std::shared_ptr<IEventData>& evt) {

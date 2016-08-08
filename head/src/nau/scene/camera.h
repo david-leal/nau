@@ -77,6 +77,7 @@ namespace nau
 			void setPropf(FloatProperty prop, float value);
 			void setPrope(EnumProperty prop, int value);
 			void setProps(StringProperty prop, std::string &value);
+			void setPropb(BoolProperty prop, bool value);
 
 			//void *getProp(int prop, Enums::DataType type);
 
@@ -109,8 +110,6 @@ namespace nau
 			std::shared_ptr<IRenderable> &getRenderable();
 
 			// used for Physics
-			bool isDynamic();
-			void setDynamic(bool value);
 			void setPositionOffset (float value);
 
 		private:
@@ -134,7 +133,6 @@ namespace nau
 
 			// Physics
 			float m_PositionOffset;
-			bool m_IsDynamic; 
 
 			// Projections
 			//bool m_IsOrtho;

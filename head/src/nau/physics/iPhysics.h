@@ -91,7 +91,7 @@ namespace nau
 			
 			virtual void setCameraAction(const std::string &scene, const std::string &action, float * value) = 0;
 			virtual std::map<std::string, float*> * getCameraPositions() = 0;
-			virtual bool hasCamera(const std::string &scene) = 0;
+			//virtual bool hasCamera(const std::string &scene) = 0;
 
 			virtual std::map<std::string, nau::physics::IPhysics::Prop> &getGlobalProperties() = 0;
 			virtual std::map<std::string, nau::physics::IPhysics::Prop> &getMaterialProperties() = 0;

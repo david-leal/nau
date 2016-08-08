@@ -391,7 +391,7 @@ GLCanvas::OnKeyDown(wxKeyEvent & event) {
 	//}
 
 	float direction;
-	if (true == m_pCamera->isDynamic()) {
+	if (true == m_pCamera->getPropb(Camera::DYNAMIC)) {
 		direction = VELOCITY;
 	}
 	else {

@@ -865,7 +865,7 @@ FrmMainFrame::startStandAlone (void) {
 	m_pRoot->enablePhysics();
 
 	nau::scene::Camera *cam = NAU->getActiveCamera ();
-	cam->setDynamic(true);			
+	cam->setPropb(Camera::DYNAMIC, true);
 	m_Canvas->setCamera();
 }
 
