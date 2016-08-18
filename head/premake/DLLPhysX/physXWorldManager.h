@@ -37,7 +37,7 @@ public:
 	void setRigidProperty(std::string scene, std::string propName, float * value);
 	void moveRigid(std::string scene, float * transform);
 
-	void addCloth(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform);
+	void addCloth(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, nau::physics::IPhysics::SceneCondition condition, float * conditionValue);
 	void setSoftProperty(std::string scene, std::string propName, float value);
 	void moveSoft(std::string scene, float * transform);
 

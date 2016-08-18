@@ -65,6 +65,15 @@ namespace nau
 				float * min;
 			} BoundingVolume;
 
+			typedef enum {
+				GT,
+				LT,
+				EGT,
+				ELT,
+				EQ,
+				NONE
+			} SceneCondition;
+
 			virtual void setPropertyManager(IPhysicsPropertyManager *pm) = 0;
 
 			virtual void update() = 0;
@@ -76,7 +85,9 @@ namespace nau
 				m_Scenes[scene].boundingVolume.sceneShape = shape;
 				m_Scenes[scene].boundingVolume.min = min;
 				m_Scenes[scene].boundingVolume.max = max;
-			}
+			};
+
+			void setSceneCondition(const std::string &scene, SceneCondition condition) { m_Scenes[scene].sceneCondition = condition; };
 
 			virtual void applyFloatProperty(const std::string &scene, const std::string &property, float value) = 0;
 			virtual void applyVec4Property(const std::string &scene, const std::string &property, float *value) = 0;
@@ -91,7 +102,6 @@ namespace nau
 			
 			virtual void setCameraAction(const std::string &scene, const std::string &action, float * value) = 0;
 			virtual std::map<std::string, float*> * getCameraPositions() = 0;
-			//virtual bool hasCamera(const std::string &scene) = 0;
 
 			virtual std::map<std::string, nau::physics::IPhysics::Prop> &getGlobalProperties() = 0;
 			virtual std::map<std::string, nau::physics::IPhysics::Prop> &getMaterialProperties() = 0;
@@ -109,6 +119,7 @@ namespace nau
 				float * transform;
 				std::string material;
 				BoundingVolume boundingVolume;
+				SceneCondition sceneCondition;
 			} SceneProps;
 
 			std::map<std::string, SceneProps> m_Scenes;

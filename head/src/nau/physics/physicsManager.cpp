@@ -259,14 +259,16 @@ PhysicsManager::addScene(nau::scene::IScene *aScene, const std::string &matName)
 
 	m_PhysInst->setSceneType(sn, type);
 
-	float * max = (float*)malloc(3 * sizeof(float));
-	float * min = (float*)malloc(3 * sizeof(float));
+	float * max = new float[3]();
+	float * min = new float[3]();
 	vec3 maxVec = aScene->getBoundingVolume().getMax();
 	vec3 minVec = aScene->getBoundingVolume().getMin();
 	max[0] = maxVec.x; max[1] = maxVec.y; max[2] = maxVec.z;
 	min[0] = minVec.x; min[1] = minVec.y; min[2] = minVec.z;
 
 	m_PhysInst->setSceneShape(sn, shape, min, max);
+
+	m_PhysInst->setSceneCondition(sn, (IPhysics::SceneCondition)pm.getPrope(PhysicsMaterial::SCENE_CONDITION));
 	
 	switch (type) {
 	case IPhysics::PARTICLES: 

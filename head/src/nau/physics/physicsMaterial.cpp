@@ -28,6 +28,15 @@ PhysicsMaterial::Init() {
 	Attribs.listAdd("SCENE_SHAPE", "SPHERE", IPhysics::SPHERE);
 	Attribs.listAdd("SCENE_SHAPE", "CAPSULE", IPhysics::CAPSULE);
 
+	Attribs.add(Attribute(SCENE_CONDITION, "SCENE_CONDITION", Enums::DataType::ENUM, false, new NauInt(IPhysics::NONE)));
+	Attribs.listAdd("SCENE_CONDITION", "GT", IPhysics::GT);
+	Attribs.listAdd("SCENE_CONDITION", "LT", IPhysics::LT);
+	Attribs.listAdd("SCENE_CONDITION", "EGT", IPhysics::EGT);
+	Attribs.listAdd("SCENE_CONDITION", "ELT", IPhysics::ELT);
+	Attribs.listAdd("SCENE_CONDITION", "EQ", IPhysics::EQ);
+	Attribs.listAdd("SCENE_CONDITION", "NONE", IPhysics::NONE);
+	Attribs.add(Attribute(SCENE_CONDITION_VALUE, "SCENE_CONDITION_VALUE", Enums::DataType::VEC4, false, new vec4(0.0f, 0.0f, 0.0f, 0.0f)));
+
 	Attribs.add(Attribute(DIRECTION, "DIRECTION", Enums::DataType::VEC4, true, new vec4(0.0f, 0.0f, 0.0f, 1.0f)));
 
 	NAU->registerAttributes("PHYSICS_MATERIAL", &Attribs);

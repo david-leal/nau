@@ -74,6 +74,8 @@
 		<material name="cloth" type="CLOTH">
 			<!-- <FRICTION value="0.5" /> -->
 			<!-- <RESTITUTION value="0.5" /> -->
+			<SCENE_CONDITION value="LT" />
+			<SCENE_CONDITION_VALUE x=1.0 y=0.0 z=0.0 w=1.25 />
 		</material>
 		
 		

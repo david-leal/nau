@@ -35,7 +35,6 @@ public:
 
 	void setCameraAction(const std::string &scene, const std::string &action, float * value);
 	std::map<std::string, float*> * getCameraPositions() { return worldManager->getCameraPositions(); };
-	//bool hasCamera(const std::string &scene) { return worldManager->hasCamera(scene); };
 
 	std::vector<float> * getDebug(); 
 

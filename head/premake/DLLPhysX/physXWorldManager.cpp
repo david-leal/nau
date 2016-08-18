@@ -6,6 +6,18 @@ PhysXWorldManager::PhysXWorldManager() {
 	PxTolerancesScale scale = PxTolerancesScale();
 	PxFoundation* gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
 	PxProfileZoneManager* profileZoneManager = &PxProfileZoneManager::createProfileZoneManager(gFoundation);
+
+	/*PxCudaContextManagerDesc cudaContextManagerDesc;
+	PxCudaContextManager* mCudaContextManager = PxCreateCudaContextManager(*gFoundation, cudaContextManagerDesc, profileZoneManager);
+	if (mCudaContextManager)
+	{
+		if (!mCudaContextManager->contextIsValid())
+		{
+			mCudaContextManager->release();
+			mCudaContextManager = NULL;
+		}
+	}*/
+
 	PxPhysics*	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, scale, true, profileZoneManager);
 	if (gPhysics->getPvdConnectionManager()) {
 		gPhysics->getVisualDebugger()->setVisualizeConstraints(true);
@@ -15,7 +27,7 @@ PhysXWorldManager::PhysXWorldManager() {
 		gConnection = PxVisualDebuggerExt::createConnection(gPhysics->getPvdConnectionManager(), "127.0.0.1", 5425, 100);
 	}
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
-	//sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+	//sceneDesc.gpuDispatcher = mCudaContextManager->getGpuDispatcher();
 	PxDefaultCpuDispatcher* gDispatcher = PxDefaultCpuDispatcherCreate(2);
 	sceneDesc.cpuDispatcher = gDispatcher;
 	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
@@ -41,7 +53,6 @@ PhysXWorldManager::~PhysXWorldManager() {
 }
 
 void PhysXWorldManager::update() {
-	//TODO: XML defined step tine
 	if (world) {
 		world->simulate(timeStep);
 		world->fetchResults(true);
@@ -126,8 +137,29 @@ void PhysXWorldManager::moveRigid(std::string scene, float * transform) {
 	rigidManager->move(scene, transform);
 }
 
-void PhysXWorldManager::addCloth(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	softManager->addSoftBody(world, scene, nbVertices, vertices, nbIndices, indices, transform);
+void PhysXWorldManager::addCloth(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, nau::physics::IPhysics::SceneCondition condition, float * conditionValue) {
+	switch (condition)
+	{
+	case nau::physics::IPhysics::GT:
+		softManager->createInfo(scene, nbVertices, vertices, nbIndices, indices, transform, CLOTH_CONDITION_GT, conditionValue);
+		break;
+	case nau::physics::IPhysics::LT:
+		softManager->createInfo(scene, nbVertices, vertices, nbIndices, indices, transform, CLOTH_CONDITION_LT, conditionValue);
+		break;
+	case nau::physics::IPhysics::EGT:
+		softManager->createInfo(scene, nbVertices, vertices, nbIndices, indices, transform, CLOTH_CONDITION_EGT, conditionValue);
+		break;
+	case nau::physics::IPhysics::ELT:
+		softManager->createInfo(scene, nbVertices, vertices, nbIndices, indices, transform, CLOTH_CONDITION_ELT, conditionValue);
+		break;
+	case nau::physics::IPhysics::EQ:
+		softManager->createInfo(scene, nbVertices, vertices, nbIndices, indices, transform, CLOTH_CONDITION_EQ, conditionValue);
+		break;
+	default:
+		softManager->createInfo(scene, nbVertices, vertices, nbIndices, indices, transform, CLOTH_CONDITION_NONE, conditionValue);
+		break;
+	}
+	softManager->addSoftBody(world, scene);
 }
 
 void PhysXWorldManager::setSoftProperty(std::string scene, std::string propName, float value) {

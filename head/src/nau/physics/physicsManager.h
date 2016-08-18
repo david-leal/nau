@@ -43,16 +43,13 @@ namespace nau
 			
 			void addScene(nau::scene::IScene *aScene, const std::string &matName);
 
-			//void addCamera();
 			void cameraAction(Camera * camera, std::string action, float * value);
 
 			PhysicsMaterial &getMaterial(const std::string &name);
 			void getMaterialNames(std::vector<std::string> *);
 
-
 			void setPropf(FloatProperty p, float value);
 			void setPropf4(Float4Property p, vec4 &value);
-			//void setProps(StringProperty prop, std::string &value);
 			
 			void eventReceived(const std::string &sender, const std::string &eventType,	const std::shared_ptr<IEventData> &evt);
 			std::string& getName();
@@ -83,7 +80,6 @@ namespace nau
 			bool hasCamera;
 
 			std::map<std::string, PhysicsMaterial> m_MatLib;
-			// map from scenes to material
 			std::map<nau::scene::IScene *, std::string> m_Scenes;
 		};
 	};

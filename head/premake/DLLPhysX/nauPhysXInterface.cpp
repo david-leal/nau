@@ -171,7 +171,9 @@ void NauPhysXInterface::setScene(const std::string &scene, const std::string & m
 			vertices,
 			nbIndices,
 			indices,
-			transform
+			transform,
+			m_Scenes[scene].sceneCondition,
+			m_PropertyManager->getMaterialVec4Property(material, "SCENE_CONDITION_VALUE")
 		);
 		break;
 	case IPhysics::CHARACTER:

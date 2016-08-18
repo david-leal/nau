@@ -11,14 +11,14 @@ PhysXSoftManager::~PhysXSoftManager() {
 
 void PhysXSoftManager::update() {
 	for (auto scene : softBodies) {
-		PxCloth * cloth = scene.second.actor->is<PxCloth>();
+		PxCloth * cloth = scene.second.info.actor->is<PxCloth>();
 		if (cloth) {
-			getMatFromPhysXTransform(cloth->getGlobalPose(), scene.second.extInfo.transform);
+			getMatFromPhysXTransform(cloth->getGlobalPose(), scene.second.info.extInfo.transform);
 			PxClothParticleData* pData = cloth->lockParticleData();
 			PxClothParticle* pParticles = pData->particles;
-			float * points = scene.second.extInfo.vertices;
+			float * points = scene.second.info.extInfo.vertices;
 
-			for (int i = 0; i < scene.second.extInfo.nbVertices; i++) {
+			for (int i = 0; i < scene.second.info.extInfo.nbVertices; i++) {
 				points[4 * i] = pParticles[i].pos.x;
 				points[(4 * i) + 1] = pParticles[i].pos.y;
 				points[(4 * i) + 2] = pParticles[i].pos.z;
@@ -28,55 +28,76 @@ void PhysXSoftManager::update() {
 	}
 }
 
-void PhysXSoftManager::addSoftBody(physx::PxScene * world, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	/*softBodies[scene].extInfo.nbVertices = nbVertices;
-	softBodies[scene].extInfo.vertices = vertices;
-	softBodies[scene].extInfo.nbIndices = nbIndices;
-	softBodies[scene].extInfo.indices = indices;
-	softBodies[scene].extInfo.transform = transform;*/
-	softBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
+void PhysXSoftManager::createInfo(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, int condition, float * conditionValue) {
+	softBodies[scene].info.extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
+	softBodies[scene].condition = condition;
+	softBodies[scene].contidionPlane = PxPlane(conditionValue[0], conditionValue[1], conditionValue[2], conditionValue[3]);
+}
+
+PxClothParticle PhysXSoftManager::createClothParticle(std::string scene, physx::PxVec3 vertice) {
+	float invMass;
+	switch (softBodies[scene].condition)
+	{
+	case CLOTH_CONDITION_GT:
+		invMass = softBodies[scene].contidionPlane.distance(vertice) > 0.0f ? 0.0f : 1.0f;
+		break;
+	case CLOTH_CONDITION_LT:
+		invMass = softBodies[scene].contidionPlane.distance(vertice) < 0.0f ? 0.0f : 1.0f;
+		break;
+	case CLOTH_CONDITION_EGT:
+		invMass = softBodies[scene].contidionPlane.contains(vertice) || softBodies[scene].contidionPlane.distance(vertice) > 0.0f ? 0.0f : 1.0f;
+		break;
+	case CLOTH_CONDITION_ELT:
+		invMass = softBodies[scene].contidionPlane.contains(vertice) || softBodies[scene].contidionPlane.distance(vertice) < 0.0f ? 0.0f : 1.0f;
+		break;
+	case CLOTH_CONDITION_EQ:
+		invMass = softBodies[scene].contidionPlane.contains(vertice) ? 0.0f : 1.0f;
+		break;
+	default:
+		invMass = 1.0f;
+		break;
+	}
+	return PxClothParticle(vertice, invMass);
+}
+
+void PhysXSoftManager::addSoftBody(physx::PxScene * world, const std::string & scene) {
+	int nbVert = softBodies[scene].info.extInfo.nbVertices;
+	float * verts = softBodies[scene].info.extInfo.vertices;
 	PxPhysics *gPhysics = &(world->getPhysics());
 
 	PxDefaultMemoryOutputStream writeBuffer;
 
 	int stride = 4 * sizeof(float);
-	PxClothParticle *particles = new PxClothParticle[nbVertices];
+	PxClothParticle *particles = new PxClothParticle[nbVert];
 
 	PxClothMeshDesc meshDesc;
 	PxClothParticle *ptls = particles;
-	for (int i = 0; i < nbVertices; i++) {
-		ptls[i] = PxClothParticle(PxVec3(vertices[4*i], vertices[(4*i)+1], vertices[(4*i)+2]), i == 0 ? 0.0f : 0.1f);
-	}
+	for (int i = 0; i < nbVert; i++)
+		ptls[i] = createClothParticle(scene, PxVec3(verts[4*i], verts[(4*i)+1], verts[(4*i)+2]));
 
-	meshDesc.points.data = reinterpret_cast<const unsigned char *>(vertices);
-	meshDesc.points.count = nbVertices;
+	meshDesc.points.data = reinterpret_cast<const unsigned char *>(verts);
+	meshDesc.points.count = nbVert;
 	meshDesc.points.stride = 4 * sizeof(float);
 
 	meshDesc.invMasses.data = &particles->invWeight;
-	meshDesc.invMasses.count = nbVertices;
+	meshDesc.invMasses.count = nbVert;
 	meshDesc.invMasses.stride = sizeof(PxClothParticle);
 
-	meshDesc.triangles.data = reinterpret_cast<const unsigned char *>(indices);
-	meshDesc.triangles.count = nbIndices / 3;
+	meshDesc.triangles.data = reinterpret_cast<const unsigned char *>(softBodies[scene].info.extInfo.indices);
+	meshDesc.triangles.count = softBodies[scene].info.extInfo.nbIndices / 3;
 	meshDesc.triangles.stride = 3 * sizeof(unsigned int);
 
-	//TODO: Get gravity from world
-	PxClothFabric* fabric = PxClothFabricCreate(*gPhysics, meshDesc, PxVec3(0, -1, 0));
-	PxTransform pose = PxTransform(PxMat44(const_cast<float*> (transform)));
+	PxClothFabric* fabric = PxClothFabricCreate(*gPhysics, meshDesc, world->getGravity().getNormalized());
+	PxTransform pose = PxTransform(PxMat44(softBodies[scene].info.extInfo.transform));
 	PxClothFlags flags = PxClothFlags();
-	/*if(!flags.isSet(PxClothFlag::eSCENE_COLLISION))
-	flags.set(PxClothFlag::eSCENE_COLLISION);
-	if (!flags.isSet(PxClothFlag::eGPU))
-	flags.set(PxClothFlag::eGPU);
-	if (!flags.isSet(PxClothFlag::eSWEPT_CONTACT))
-	flags.set(PxClothFlag::eSWEPT_CONTACT);*/
+
+	flags |= PxClothFlag::eGPU;
+	flags |= PxClothFlag::eSCENE_COLLISION;
+	flags |= PxClothFlag::eSWEPT_CONTACT;
 	
 	//TODO: Set parameters apart from inicialization
 	PxCloth* cloth = gPhysics->createCloth(pose, *fabric, particles, flags);
 	cloth->userData = static_cast<void*> (new std::string(scene));
-	cloth->setClothFlag(PxClothFlag::eSCENE_COLLISION, true);
-	cloth->setClothFlag(PxClothFlag::eGPU, true);
-	cloth->setClothFlag(PxClothFlag::eSWEPT_CONTACT, true);
 	cloth->setSolverFrequency(300.0f);
 	cloth->setInertiaScale(0.9f);
 
@@ -86,14 +107,14 @@ void PhysXSoftManager::addSoftBody(physx::PxScene * world, const std::string & s
 	cloth->setStretchConfig(PxClothFabricPhaseType::eBENDING, PxClothStretchConfig(0.2f));
 	world->addActor(*cloth);
 	
-	softBodies[scene].actor = cloth;
+	softBodies[scene].info.actor = cloth;
 }
 
 void PhysXSoftManager::move(std::string scene, float * transform) {
 	if (softBodies.find(scene) != softBodies.end()) {
-		PxCloth * cloth = softBodies[scene].actor->is<PxCloth>();
+		PxCloth * cloth = softBodies[scene].info.actor->is<PxCloth>();
 		if (cloth) {
-			softBodies[scene].extInfo.transform = transform;
+			softBodies[scene].info.extInfo.transform = transform;
 			cloth->setGlobalPose(PxTransform(PxMat44(const_cast<float*> (transform))));
 		}
 	}
