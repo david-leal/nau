@@ -56,6 +56,17 @@ NauPhysXInterface::NauPhysXInterface() {
 	m_MaterialProps["ROLLING_FRICTION"] = Prop(IPhysics::FLOAT, -1.0f);
 	m_MaterialProps["RESTITUTION"]		= Prop(IPhysics::FLOAT, 1.0f);
 	
+	m_MaterialProps["SOLVER_FREQUENCY"]		= Prop(IPhysics::FLOAT, 240.0f);
+	m_MaterialProps["INERTIA_SCALE"]		= Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["VERTICAL_STRETCH"]		= Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
+	m_MaterialProps["HORIZONTAL_STRETCH"]	= Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
+	m_MaterialProps["SHEARING"]				= Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
+	m_MaterialProps["BENDING"]				= Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
+	m_MaterialProps["FRICTION_COEFFICIENT"] = Prop(IPhysics::FLOAT, 0.0f);
+	m_MaterialProps["COLLISION_MASS_SCALE"] = Prop(IPhysics::FLOAT, 0.0f);
+	m_MaterialProps["SELF_COLLISION_DISTANCE"]	=Prop(IPhysics::FLOAT, 0.0f);
+	m_MaterialProps["SELF_COLLISION_STIFFNESS"] = Prop(IPhysics::FLOAT, 1.0f);
+
 	m_MaterialProps["PACE"]				= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["HIT_MAGNITUDE"]	= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["HEIGHT"]			= Prop(IPhysics::FLOAT, 1.0f);
@@ -66,12 +77,8 @@ NauPhysXInterface::NauPhysXInterface() {
 	m_MaterialProps["UP"] = Prop(IPhysics::VEC4, 0.0f, 1.0f, 0.0f, 1.0f);
 
 	m_MaterialProps["IMPULSE"] = Prop(IPhysics::VEC4, 0.0f, 0.0f, 0.0f, 1.0f);
-
-
 	
 	worldManager = new PhysXWorldManager();
-	/*Prop p = m_GlobalProps["GRAVITY"];
-	worldManager->setGravity(p.x, p.y, p.z);*/
 }
 
 
@@ -84,34 +91,29 @@ void NauPhysXInterface::setPropertyManager(nau::physics::IPhysicsPropertyManager
 
 void NauPhysXInterface::update() {
 	worldManager->update();
-	for (auto particleMaterial : *worldManager->getMaterialParticleNb()) {
+	for (auto particleMaterial : *worldManager->getMaterialParticleNb())
 		m_PropertyManager->setMaterialFloatProperty(particleMaterial.first, "NBPARTICLES", static_cast<float>(particleMaterial.second));
-	}
 }
 
-void NauPhysXInterface::build() {
-	
+void NauPhysXInterface::build() {	
 }
 
 void NauPhysXInterface::applyFloatProperty(const std::string & scene, const std::string & property, float value) {
-	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC) {
+	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC)
 		worldManager->setRigidProperty(scene, property, value);
-	}
-	else if (m_Scenes[scene].sceneType == SceneType::CLOTH) {
+	else if (m_Scenes[scene].sceneType == SceneType::CLOTH) 
 		worldManager->setSoftProperty(scene, property, value);
-	}
-	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER) {
+	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER) 
 		worldManager->setCharacterProperty(scene, property, &value);
-	}
 }
 
 void NauPhysXInterface::applyVec4Property(const std::string & scene, const std::string & property, float * value) {
-	if (m_Scenes[scene].sceneType == SceneType::RIGID) {
+	if (m_Scenes[scene].sceneType == SceneType::RIGID) 
 		worldManager->setRigidProperty(scene, property, value);
-	}
-	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER) {
+	else if (m_Scenes[scene].sceneType == SceneType::CLOTH) 
+		worldManager->setSoftProperty(scene, property, value);
+	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER)
 		worldManager->setCharacterProperty(scene, property, value);
-	}
 }
 
 void NauPhysXInterface::applyGlobalFloatProperty(const std::string & property, float value) {
@@ -204,35 +206,18 @@ void NauPhysXInterface::setScene(const std::string &scene, const std::string & m
 	}
 }
 
-//void NauPhysXInterface::setCamera(const std::string & scene, float * position, float * up) {
-//	worldManager->addCamera(
-//		scene,
-//		position,
-//		up,
-//		worldManager->createMaterial(
-//			m_PropertyManager->getGlobalFloatProperty("CAMERA_DYNAMIC_FRICTION"),
-//			m_PropertyManager->getGlobalFloatProperty("CAMERA_STATIC_FRICTION"),
-//			m_PropertyManager->getGlobalFloatProperty("CAMERA_RESTITUTION")
-//		)
-//	);
-//
-//}
-
 float * NauPhysXInterface::getSceneTransform(const std::string & scene) {
 	return m_Scenes[scene].transform;
 }
 
 void NauPhysXInterface::setSceneTransform(const std::string & scene, float * transform) {
 	m_Scenes[scene].transform = transform;
-	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC) {
+	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC)
 		worldManager->moveRigid(scene, transform);
-	}
-	else if (m_Scenes[scene].sceneType == SceneType::CLOTH) {
+	else if (m_Scenes[scene].sceneType == SceneType::CLOTH)
 		worldManager->moveSoft(scene, transform);
-	}
-	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER) {
+	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER)
 		worldManager->moveCharacter(scene, transform);
-	}
 }
 
 void NauPhysXInterface::setCameraAction(const std::string & scene, const std::string & action, float * value) {

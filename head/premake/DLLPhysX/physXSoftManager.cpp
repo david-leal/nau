@@ -93,29 +93,95 @@ void PhysXSoftManager::addSoftBody(physx::PxScene * world, const std::string & s
 
 	flags |= PxClothFlag::eGPU;
 	flags |= PxClothFlag::eSCENE_COLLISION;
-	flags |= PxClothFlag::eSWEPT_CONTACT;
+	//flags |= PxClothFlag::eSWEPT_CONTACT;
 	
-	//TODO: Set parameters apart from inicialization
 	PxCloth* cloth = gPhysics->createCloth(pose, *fabric, particles, flags);
 	cloth->userData = static_cast<void*> (new std::string(scene));
-	cloth->setSolverFrequency(300.0f);
-	cloth->setInertiaScale(0.9f);
 
-	cloth->setStretchConfig(PxClothFabricPhaseType::eVERTICAL, PxClothStretchConfig(0.2f));
-	cloth->setStretchConfig(PxClothFabricPhaseType::eHORIZONTAL, PxClothStretchConfig(0.2f));
-	cloth->setStretchConfig(PxClothFabricPhaseType::eSHEARING, PxClothStretchConfig(0.75f));
-	cloth->setStretchConfig(PxClothFabricPhaseType::eBENDING, PxClothStretchConfig(0.2f));
 	world->addActor(*cloth);
 	
 	softBodies[scene].info.actor = cloth;
 }
 
 void PhysXSoftManager::move(std::string scene, float * transform) {
-	if (softBodies.find(scene) != softBodies.end()) {
-		PxCloth * cloth = softBodies[scene].info.actor->is<PxCloth>();
-		if (cloth) {
-			softBodies[scene].info.extInfo.transform = transform;
-			cloth->setGlobalPose(PxTransform(PxMat44(const_cast<float*> (transform))));
-		}
+	PxCloth * cloth = getCloth(scene);
+	if (cloth) {
+		softBodies[scene].info.extInfo.transform = transform;
+		cloth->setGlobalPose(PxTransform(PxMat44(const_cast<float*> (transform))));
 	}
+}
+
+void PhysXSoftManager::setVerticalStretch(const std::string & scene, float * value) {
+	PxCloth * cloth = getCloth(scene);
+	if (cloth)
+		cloth->setStretchConfig(PxClothFabricPhaseType::eVERTICAL, *getClothStretchConfig(value));
+}
+
+void PhysXSoftManager::setHorizontalStretch(const std::string & scene, float * value) {
+	PxCloth * cloth = getCloth(scene);
+	if (cloth)
+		cloth->setStretchConfig(PxClothFabricPhaseType::eHORIZONTAL, *getClothStretchConfig(value));
+}
+
+void PhysXSoftManager::setShearing(const std::string & scene, float * value) {
+	PxCloth * cloth = getCloth(scene);
+	if (cloth)
+		cloth->setStretchConfig(PxClothFabricPhaseType::eSHEARING, *getClothStretchConfig(value));
+}
+
+void PhysXSoftManager::setBending(const std::string & scene, float * value) {
+	PxCloth * cloth = getCloth(scene);
+	if (cloth)
+		cloth->setStretchConfig(PxClothFabricPhaseType::eBENDING, *getClothStretchConfig(value));
+}
+
+void PhysXSoftManager::setInertiaScale(const std::string & scene, float value) {
+	PxCloth * cloth = getCloth(scene);
+	if (cloth)
+		cloth->setInertiaScale(value);
+}
+
+void PhysXSoftManager::setSolverFrequency(const std::string & scene, float value) {
+	PxCloth * cloth = getCloth(scene);
+	if (cloth)
+		cloth->setSolverFrequency(value);
+}
+
+void PhysXSoftManager::setFrictionCoefficient(const std::string & scene, float value) {
+	PxCloth * cloth = getCloth(scene);
+	if (cloth)
+		cloth->setFrictionCoefficient(value);
+}
+
+void PhysXSoftManager::setCollisionMassScale(const std::string & scene, float value) {
+	PxCloth * cloth = getCloth(scene);
+	if (cloth)
+		cloth->setCollisionMassScale(value);
+}
+
+void PhysXSoftManager::setSelfCollisionDistance(const std::string & scene, float value) {
+	PxCloth * cloth = getCloth(scene);
+	if (cloth)
+		cloth->setSelfCollisionDistance(value);
+}
+
+void PhysXSoftManager::setSelfCollisionStiffness(const std::string & scene, float value) {
+	PxCloth * cloth = getCloth(scene);
+	if (cloth)
+		cloth->setSelfCollisionStiffness(value);
+}
+
+physx::PxCloth * PhysXSoftManager::getCloth(const std::string & scene) {
+	if (softBodies.find(scene) != softBodies.end())
+		return softBodies[scene].info.actor->is<PxCloth>();
+	return NULL;
+}
+
+physx::PxClothStretchConfig * PhysXSoftManager::getClothStretchConfig(float * value) {
+	PxClothStretchConfig * stretchConfig = new PxClothStretchConfig();
+	stretchConfig->stiffness			= value[0];
+	stretchConfig->stiffnessMultiplier	= value[1];
+	stretchConfig->compressionLimit		= value[2];
+	stretchConfig->stretchLimit			= value[3];
+	return stretchConfig;
 }

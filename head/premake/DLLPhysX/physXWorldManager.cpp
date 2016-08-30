@@ -104,21 +104,16 @@ void PhysXWorldManager::addRigid(const std::string & scene, int nbVertices, floa
 }
 
 void PhysXWorldManager::setRigidProperty(std::string scene, std::string propName, float value) {
-	if (propName.compare("MASS") == 0) {
+	if (propName.compare("MASS") == 0)
 		rigidManager->setMass(scene, value);
-	}
-	else if (propName.compare("STATIC_FRICTION") == 0) {
+	else if (propName.compare("STATIC_FRICTION") == 0)
 		rigidManager->setStaticFriction(scene, value);
-	}
-	else if (propName.compare("DYNAMIC_FRICTION") == 0) {
+	else if (propName.compare("DYNAMIC_FRICTION") == 0)
 		rigidManager->setDynamicFriction(scene, value);
-	}
-	else if (propName.compare("ROLLING_FRICTION") == 0) {
+	else if (propName.compare("ROLLING_FRICTION") == 0)
 		rigidManager->setRollingFriction(scene, value);
-	}
-	else if (propName.compare("RESTITUTION") == 0) {
+	else if (propName.compare("RESTITUTION") == 0)
 		rigidManager->setRestitution(scene, value);
-	}
 }
 
 void PhysXWorldManager::setRigidProperty(std::string scene, std::string propName, float * value) {
@@ -163,7 +158,29 @@ void PhysXWorldManager::addCloth(const std::string & scene, int nbVertices, floa
 }
 
 void PhysXWorldManager::setSoftProperty(std::string scene, std::string propName, float value) {
-	// TODO: Check properties for cloths
+	if (propName.compare("SOLVER_FREQUENCY") == 0)
+		softManager->setSolverFrequency(scene, value);
+	else if (propName.compare("INERTIA_SCALE") == 0)
+		softManager->setInertiaScale(scene, value);
+	else if (propName.compare("FRICTION_COEFFICIENT") == 0)
+		softManager->setFrictionCoefficient(scene, value);
+	else if (propName.compare("COLLISION_MASS_SCALE") == 0)
+		softManager->setCollisionMassScale(scene, value);
+	else if (propName.compare("SELF_COLLISION_DISTANCE") == 0)
+		softManager->setSelfCollisionDistance(scene, value);
+	else if (propName.compare("SELF_COLLISION_STIFFNESS") == 0)
+		softManager->setSelfCollisionStiffness(scene, value);
+}
+
+void PhysXWorldManager::setSoftProperty(std::string scene, std::string propName, float * value) {
+	if (propName.compare("VERTICAL_STRETCH") == 0)
+		softManager->setVerticalStretch(scene, value);
+	else if (propName.compare("HORIZONTAL_STRETCH") == 0)
+		softManager->setHorizontalStretch(scene, value);
+	else if (propName.compare("SHEARING") == 0)
+		softManager->setShearing(scene, value);
+	else if (propName.compare("BENDING") == 0)
+		softManager->setBending(scene, value);
 }
 
 void PhysXWorldManager::moveSoft(std::string scene, float * transform) {
@@ -221,60 +238,10 @@ void PhysXWorldManager::setCharacterProperty(std::string scene, std::string prop
 		characterManager->setRestitution(scene, *value);
 }
 
-//void PhysXWorldManager::setCameraProperty(std::string propName, float value) {
-//	if (characterManager->hasCam()) {
-//		std::string scene = characterManager->getCameraName();
-//		if (propName.compare("CAMERA_PACE") == 0) {
-//			characterManager->setPace(scene, value);
-//		}
-//		else if (propName.compare("CAMERA_HIT_MAGNITUDE") == 0) {
-//			characterManager->setHitMagnitude(scene, value);
-//		}
-//		else if (propName.compare("CAMERA_HEIGHT") == 0) {
-//			characterManager->setHeight(scene, value);
-//		}
-//		else if (propName.compare("CAMERA_RADIUS") == 0) {
-//			characterManager->setRadius(scene, value);
-//		}
-//		else if (propName.compare("CAMERA_STEP_OFFSET") == 0) {
-//			characterManager->setStepOffset(scene, value);
-//		}
-//		else if (propName.compare("CAMERA_MASS") == 0) {
-//			characterManager->setMass(scene, value);
-//		}
-//		else if (propName.compare("CAMERA_FRICTION") == 0) {
-//			characterManager->setFriction(scene, value);
-//		}
-//		else if (propName.compare("CAMERA_RESTITUTION") == 0) {
-//			characterManager->setRestitution(scene, value);
-//		}
-//	}
-//
-//}
-//
-//void PhysXWorldManager::setCameraProperty(std::string propName, float * value) {
-//	if (characterManager->hasCam()) {
-//		std::string scene = characterManager->getCameraName();
-//		if (propName.compare("CAMERA_DIRECTION") == 0) {
-//			characterManager->setDirection(scene, PxVec3(value[0], value[1], value[2]));
-//		}
-//	}
-//}
-
 void PhysXWorldManager::moveCharacter(std::string scene, float * transform) {
 	characterManager->move(scene, transform, world->getGravity());
 }
 
 std::map<std::string, float *> * PhysXWorldManager::getCameraPositions() {
 	return characterManager->getCameraPositions();
-
-	/*float * position = (float *)malloc(4 * sizeof(float));
-	PxVec3 * camPosition = characterManager->getCameraPosition();
-	if (!camPosition)
-		return NULL;
-	position[0] = camPosition->x;
-	position[1] = camPosition->y;
-	position[2] = camPosition->z;
-	position[3] = 1.0f;
-	return position;*/
 }

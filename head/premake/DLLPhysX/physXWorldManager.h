@@ -39,6 +39,7 @@ public:
 
 	void addCloth(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, nau::physics::IPhysics::SceneCondition condition, float * conditionValue);
 	void setSoftProperty(std::string scene, std::string propName, float value);
+	void setSoftProperty(std::string scene, std::string propName, float * value);
 	void moveSoft(std::string scene, float * transform);
 
 	void addParticles(const std::string &scene, const std::string &material, float maxParticles, float * positions, float *transform);

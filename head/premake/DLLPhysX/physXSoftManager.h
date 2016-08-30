@@ -23,6 +23,17 @@ public:
 	physx::PxClothParticle createClothParticle(std::string scene, physx::PxVec3 vertice);
 	void addSoftBody(physx::PxScene * world, const std::string &scene);
 	void move(std::string scene, float * transform);
+	void setVerticalStretch(const std::string &scene, float * value);
+	void setHorizontalStretch(const std::string &scene, float * value);
+	void setShearing(const std::string &scene, float * value);
+	void setBending(const std::string &scene, float * value);
+	void setInertiaScale(const std::string &scene, float value);
+	void setSolverFrequency(const std::string &scene, float value);
+	void setFrictionCoefficient(const std::string &scene, float value);
+	void setCollisionMassScale(const std::string &scene, float value);
+	void setSelfCollisionDistance(const std::string &scene, float value);
+	void setSelfCollisionStiffness(const std::string &scene, float value);
+
 
 protected:
 
@@ -34,6 +45,8 @@ protected:
 
 
 	std::map<std::string, SoftScene> softBodies;
+	physx::PxCloth * getCloth(const std::string &scene);
+	physx::PxClothStretchConfig * getClothStretchConfig(float * value);
 };
 
 #endif
