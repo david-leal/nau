@@ -1,7 +1,5 @@
 #include "bulletSoftManager.h"
 
-
-
 BulletSoftManager::BulletSoftManager() {
 }
 
@@ -12,55 +10,45 @@ BulletSoftManager::~BulletSoftManager() {
 
 void BulletSoftManager::update() {
 	for (auto scene : softBodies) {
-		btSoftBody * cloth = btSoftBody::upcast(scene.second.object);
+		btSoftBody * cloth = btSoftBody::upcast(scene.second.info.object);
 
 		float m[16];
 		cloth->getWorldTransform().getOpenGLMatrix(m);
-		for (int k = 0; k < 16; k++) { scene.second.extInfo.transform[k] = m[k]; }
+		for (int k = 0; k < 16; k++) { scene.second.info.extInfo.transform[k] = m[k]; }
 
-		//btSoftBody::Node& nodeRef(cloth->m_nodes.at(0));
-		btSoftBody::tNodeArray&   nodes(cloth->m_nodes);
+		btSoftBody::tNodeArray& nodes(cloth->m_nodes);
 		for (int i = 0; i < nodes.size(); i++) {
-			/*scene.second.extInfo.vertices[4 * i] =		 nodes[i].m_x.x();
-			scene.second.extInfo.vertices[(4 * i) + 1] = nodes[i].m_x.y();
-			scene.second.extInfo.vertices[(4 * i) + 2] = nodes[i].m_x.z();*/
-			for (int j = 0; j < 3; j++) {
-				scene.second.extInfo.vertices[(4 * i) + j] = nodes[i].m_x.m_floats[j];
-			}
+			for (int j = 0; j < 3; j++)
+				scene.second.info.extInfo.vertices[(4 * i) + j] = nodes[i].m_x.m_floats[j];
 		}
-
-		/*btSoftBody::tFaceArray& faces(cloth->m_faces);
-		for (int i = 0; i < faces.size(); i++) {
-			for (int j = 0; j < 3; j++) {
-				btSoftBody::Node* node = faces[i].m_n[j];
-				int index = int(node - &nodeRef);
-				for (int k = 0; k < 3; k++) {
-					scene.second.extInfo.vertices[(index * 4) + k] = node->m_x.m_floats[k];
-				}
-				scene.second.extInfo.indices[(i * 3) + j] = index;
-			}
-		}*/
-		//cloth->setWindVelocity(btVector3(9.0f, 0.0, -1.0f));
-		//cloth->addForce(btVector3(1.0f, 0.0f, -1.0f));
 		btSoftBody::PSolve_Anchors(cloth, 0.0f, 0.0f);
 	}
 }
 
-btSoftBody * BulletSoftManager::addSoftBody(btSoftBodyWorldInfo & worldInfo, const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {
-	softBodies[scene].extInfo = externalInfo(nbVertices, vertices, nbIndices, indices, transform);
+void BulletSoftManager::createInfo(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, int condition, float * conditionValue) {
+	softBodies[scene].info.extInfo= externalInfo(nbVertices, vertices, nbIndices, indices, transform);
+	softBodies[scene].condition = condition;
+	softBodies[scene].contidionPlane = new btStaticPlaneShape(btVector3(conditionValue[0], conditionValue[1], conditionValue[2]), conditionValue[3]);
+}
 
-	float * newPoints = new float[(nbVertices * 3)];
-	for (int i = 0; i < nbVertices; i++) {
+btSoftBody * BulletSoftManager::addSoftBody(btSoftBodyWorldInfo & worldInfo, const std::string & scene) {
+	float * newPoints = new float[(softBodies[scene].info.extInfo.nbVertices* 3)];
+	std::vector<int> lockedIndices;
+	float * auxPoint = new float[3];
+	for (int i = 0; i < softBodies[scene].info.extInfo.nbVertices; i++) {
 		for (int j = 0; j < 3; j++) {
-			newPoints[(i * 3) + j] = vertices[(i * 4) + j];
+			newPoints[(i * 3) + j] = softBodies[scene].info.extInfo.vertices[(i * 4) + j];
+			auxPoint[j] = newPoints[(i * 3) + j];
 		}
+		if (isLocked(scene, btVector3(auxPoint[0], auxPoint[1], auxPoint[2])))
+			lockedIndices.push_back(i);
 	}
 
 	btSoftBody * cloth = btSoftBodyHelpers::CreateFromTriMesh(
 		worldInfo,
 		newPoints,
-		reinterpret_cast<const int *>(indices),
-		static_cast<int>(nbIndices / 3)
+		reinterpret_cast<const int *>(softBodies[scene].info.extInfo.indices),
+		static_cast<int>(softBodies[scene].info.extInfo.nbIndices / 3)
 	);
 	/*btSoftBody::Material * pm = cloth->appendMaterial();
 	pm->m_kLST = 0.5;
@@ -76,24 +64,25 @@ btSoftBody * BulletSoftManager::addSoftBody(btSoftBodyWorldInfo & worldInfo, con
 	//cloth->m_cfg.aeromodel = btSoftBody::eAeroModel::V_TwoSidedLiftDrag;
 
 	float m[16];
-	for (int i = 0; i < 16; i++) { m[i] = transform[i]; }
+	for (int i = 0; i < 16; i++) { m[i] = softBodies[scene].info.extInfo.transform[i]; }
 	btTransform * trans = new btTransform();
 	trans->setFromOpenGLMatrix(m);
 	//cloth->setWorldTransform(*trans);
 	cloth->transform(*trans);
 
-	btTransform * startTransform = new btTransform();
-	startTransform->setIdentity();
-	startTransform->setOrigin(btVector3(0.0f, 0.0f, 0.0f));
-	btDefaultMotionState * motion = new btDefaultMotionState(*startTransform);
-	btRigidBody * body = new btRigidBody(0, motion, new btBoxShape(btVector3(1.0f, 1.0f, 1.0f)));
-
-	cloth->appendAnchor(1, body);
-	//cloth->appendAnchor(19, body);
+	if (lockedIndices.size() > 0) {
+		btTransform * startTransform = new btTransform();
+		startTransform->setIdentity();
+		startTransform->setOrigin(btVector3(0.0f, 0.0f, 0.0f));
+		btDefaultMotionState * motion = new btDefaultMotionState(*startTransform);
+		btRigidBody * body = new btRigidBody(0, motion, new btBoxShape(btVector3(1.0f, 1.0f, 1.0f)));
+		for(int indice : lockedIndices)
+			cloth->appendAnchor(indice, body);
+	}
 
 	cloth->setUserPointer(static_cast<void *>(new std::string(scene)));
 
-	softBodies[scene].object = cloth;
+	softBodies[scene].info.object = cloth;
 	return cloth;
 }
 
@@ -105,7 +94,7 @@ void BulletSoftManager::setRestitution(std::string name, float value) {
 
 void BulletSoftManager::move(std::string scene, float * transform) {
 	if (softBodies.find(scene) != softBodies.end()) {
-		btSoftBody * cloth = btSoftBody::upcast(softBodies[scene].object);
+		btSoftBody * cloth = btSoftBody::upcast(softBodies[scene].info.object);
 		if (cloth) {
 			float m[16];
 			for (int i = 0; i < 16; i++) { m[i] = transform[i]; }
@@ -115,4 +104,30 @@ void BulletSoftManager::move(std::string scene, float * transform) {
 			//cloth->setWorldTransform(*trans);
 		}
 	}
+}
+
+bool BulletSoftManager::isLocked(const std::string & scene, btVector3 vertex) {
+	switch (softBodies[scene].condition)
+	{
+	case CLOTH_CONDITION_GT:
+		return distance(scene, vertex) > 0.0f;
+	case CLOTH_CONDITION_LT:
+		return distance(scene, vertex) < 0.0f;
+	case CLOTH_CONDITION_EGT:
+		return contains(scene, vertex) || distance(scene, vertex) > 0.0f;
+	case CLOTH_CONDITION_ELT:
+		return contains(scene, vertex) || distance(scene, vertex) < 0.0f;
+	case CLOTH_CONDITION_EQ:
+		return contains(scene, vertex);
+	default:
+		return false;
+	}
+}
+
+float BulletSoftManager::distance(const std::string & scene, btVector3 p) {
+	return p.dot(softBodies[scene].contidionPlane->getPlaneNormal()) + softBodies[scene].contidionPlane->getPlaneConstant();
+}
+
+bool BulletSoftManager::contains(const std::string & scene, btVector3 p) {
+	return abs(distance(scene, p)) < (1.0e-7f);
 }

@@ -79,7 +79,7 @@
 			<VERTICAL_STRETCH x="0.21" y="1.0" z="1.0" w=1.0 />
 			<HORIZONTAL_STRETCH x="0.21" y="1.0" z="1.0" w=1.0 />
 			<SHEARING x="0.75" y="1.0" z="1.0" w=1.0 />
-			<BENDING x="0.1" y="1.0" z="1.0" w=1.0 />
+			<BENDING x="0.1" y="1.0" z="1.0" w=1.0 /> 
 			<!-- <FRICTION_COEFFICIENT value="0.0" />
 			<COLLISION_MASS_SCALE value="0.0" />
 			<SELF_COLLISION_DISTANCE value="0.0" />

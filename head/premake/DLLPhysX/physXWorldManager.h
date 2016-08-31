@@ -50,7 +50,6 @@ public:
 	void moveCharacter(std::string scene, float * transform);
 
 	void addCamera(const std::string & scene, float * position, float * up, float pace, float minPace, float hitMagnitude, float timeStep, float stepOffset, float mass, float radius, float height, physx::PxMaterial * material);
-	//void cameraAction(std::string cameraName, std::string cameraAction, float * value);
 	bool hasCamera(std::string cameraName) { return characterManager->hasCamera(cameraName); };
 	std::map<std::string, float *> * getCameraPositions();
 

@@ -117,15 +117,12 @@ void PhysXWorldManager::setRigidProperty(std::string scene, std::string propName
 }
 
 void PhysXWorldManager::setRigidProperty(std::string scene, std::string propName, float * value) {
-	if (propName.compare("FORCE") == 0) {
+	if (propName.compare("FORCE") == 0)
 		rigidManager->setForce(scene, value);
-	}
-	else if (propName.compare("IMPULSE") == 0) {
+	else if (propName.compare("IMPULSE") == 0)
 		rigidManager->setImpulse(scene, value);
-	}
-	else if (propName.compare("INERTIA") == 0) {
+	else if (propName.compare("INERTIA") == 0)
 		rigidManager->setInertiaTensor(scene, value);
-	}
 }
 
 void PhysXWorldManager::moveRigid(std::string scene, float * transform) {

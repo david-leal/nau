@@ -22,8 +22,6 @@ public:
 	void update();
 	void build();
 
-	//void setSceneType(const std::string &scene, SceneType type);
-
 	void applyFloatProperty(const std::string &scene, const std::string &property, float value);
 	void applyVec4Property(const std::string &scene, const std::string &property, float *value);
 
@@ -34,10 +32,9 @@ public:
 
 	float *getSceneTransform(const std::string &scene);
 	void setSceneTransform(const std::string &scene, float *transform);
-	void setCamera(const std::string & scene, float * position, float * up);
 
-	//void setParticleScene(const std::string &scene, float maxParticles, float * nbParticles, float * transform);
-	//float * getParticlePositions(const std::string &scene);
+	void setCameraAction(const std::string &scene, const std::string &action, float * value);
+	std::map<std::string, float*> * getCameraPositions() { return worldManager->getCameraPositions(); };
 
 	std::vector<float> * getDebug();
 

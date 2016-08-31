@@ -35,13 +35,17 @@ public:
 	void setRigidProperty(std::string scene, std::string propName, float * value);
 	void moveRigid(std::string scene, float * transform);
 
-	void addCloth(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform);
+	void addCloth(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, nau::physics::IPhysics::SceneCondition condition, float * conditionValue);
 	void setSoftProperty(std::string scene, std::string propName, float value);
 	void moveSoft(std::string scene, float * transform);
 	std::vector<float> * getDebug() { return debugDrawer->getDebugPoints(); }
 	void setDebug();
 
 	//void addCharacter();
+
+	void addCamera(const std::string & scene, float * position, float * up, float pace, float minPace, float hitMagnitude, float timeStep, float stepOffset, float mass, float radius, float height);
+	bool hasCamera(std::string cameraName) { /*return characterManager->hasCamera(cameraName); */};
+	std::map<std::string, float *> * getCameraPositions();
 
 	void setTimeStep(float tStep) { timeStep = tStep; };
 

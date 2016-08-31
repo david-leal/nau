@@ -9,6 +9,12 @@
 #include <BulletSoftBody/btSoftBodyHelpers.h>
 #include <BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
 
+#define CLOTH_CONDITION_NONE -1
+#define CLOTH_CONDITION_GT 0
+#define CLOTH_CONDITION_LT 1
+#define CLOTH_CONDITION_EGT 2
+#define CLOTH_CONDITION_ELT 3
+#define CLOTH_CONDITION_EQ 4
 
 class BulletSoftManager {
 
@@ -17,13 +23,24 @@ public:
 	~BulletSoftManager();
 
 	void update();
-	btSoftBody * addSoftBody(btSoftBodyWorldInfo & worldInfo, const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
+	void createInfo(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform, int condition, float * conditionValue);
+	btSoftBody * addSoftBody(btSoftBodyWorldInfo & worldInfo, const std::string &scene);
 	void setFriction(std::string name, float value);
 	void setRestitution(std::string name, float value);
 	void move(std::string scene, float * transform);
 
 protected:
-	std::map<std::string, BulletScene> softBodies;
+
+	typedef struct {
+		BulletScene info;
+		int condition;
+		btStaticPlaneShape * contidionPlane;
+	} SoftScene;
+
+	std::map<std::string, SoftScene> softBodies;
+	bool isLocked(const std::string  &scene, btVector3 vertex);
+	float distance(const std::string &scene, btVector3 p);
+	bool contains(const std::string &scene, btVector3 p);
 };
 
 #endif

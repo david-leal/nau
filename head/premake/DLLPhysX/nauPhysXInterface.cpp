@@ -21,7 +21,6 @@ deletePhysics() {
 __declspec(dllexport)
 void
 init() {
-
 }
 
 __declspec(dllexport)

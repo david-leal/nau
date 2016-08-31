@@ -21,7 +21,6 @@ deletePhysics() {
 __declspec(dllexport)
 void
 init() {
-
 }
 
 __declspec(dllexport)
@@ -37,7 +36,16 @@ NauBulletInterface * NauBulletInterface::Create() {
 NauBulletInterface::NauBulletInterface() {
 	//INFO: Declare Physics Properties reflected in XML file
 	m_GlobalProps["GRAVITY"]	= Prop(IPhysics::VEC4, 0.0f, -9.8f, 0.0f, 0.0f);
-	//m_GlobalProps["TIME_STEP"]	= Prop(IPhysics::FLOAT, 0.016666666667f);
+
+	m_GlobalProps["CAMERA_TIME"] = Prop(IPhysics::FLOAT, 0.016666666667f);
+	m_GlobalProps["CAMERA_PACE"] = Prop(IPhysics::FLOAT, 0.2f);
+	m_GlobalProps["CAMERA_MIN_PACE"] = Prop(IPhysics::FLOAT, 0.05f);
+	m_GlobalProps["CAMERA_HIT_MAGNITUDE"] = Prop(IPhysics::FLOAT, 100.0f);
+	m_GlobalProps["CAMERA_STEP_OFFSET"] = Prop(IPhysics::FLOAT, 0.2f);
+	m_GlobalProps["CAMERA_MASS"] = Prop(IPhysics::FLOAT, 10.0f);
+	m_GlobalProps["CAMERA_STATIC_FRICTION"] = Prop(IPhysics::FLOAT, 0.5f);
+	m_GlobalProps["CAMERA_DYNAMIC_FRICTION"] = Prop(IPhysics::FLOAT, 0.5f);
+	m_GlobalProps["CAMERA_RESTITUTION"] = Prop(IPhysics::FLOAT, 0.5f);
 
 	m_MaterialProps["MASS"]		= Prop(IPhysics::FLOAT, 0.0f);
 	m_MaterialProps["INERTIA"]	= Prop(IPhysics::VEC4, 0.0f, 0.0f, 0.0f, 1.0f);
@@ -47,6 +55,17 @@ NauBulletInterface::NauBulletInterface() {
 	m_MaterialProps["ROLLING_FRICTION"] = Prop(IPhysics::FLOAT, 0.0f);
 	m_MaterialProps["RESTITUTION"]		= Prop(IPhysics::FLOAT, 1.0f);
 	
+	m_MaterialProps["SOLVER_FREQUENCY"] = Prop(IPhysics::FLOAT, 240.0f);
+	m_MaterialProps["INERTIA_SCALE"] = Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["VERTICAL_STRETCH"] = Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
+	m_MaterialProps["HORIZONTAL_STRETCH"] = Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
+	m_MaterialProps["SHEARING"] = Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
+	m_MaterialProps["BENDING"] = Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
+	m_MaterialProps["FRICTION_COEFFICIENT"] = Prop(IPhysics::FLOAT, 0.0f);
+	m_MaterialProps["COLLISION_MASS_SCALE"] = Prop(IPhysics::FLOAT, 0.0f);
+	m_MaterialProps["SELF_COLLISION_DISTANCE"] = Prop(IPhysics::FLOAT, 0.0f);
+	m_MaterialProps["SELF_COLLISION_STIFFNESS"] = Prop(IPhysics::FLOAT, 1.0f);
+
 	m_MaterialProps["PACE"]				= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["HIT_MAGNITUDE"]	= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["HEIGHT"]			= Prop(IPhysics::FLOAT, 1.0f);
@@ -80,12 +99,10 @@ void NauBulletInterface::build() {
 }
 
 void NauBulletInterface::applyFloatProperty(const std::string & scene, const std::string & property, float value) {
-	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC) {
+	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC)
 		worldManager->setRigidProperty(scene, property, value);
-	}
-	if (m_Scenes[scene].sceneType == SceneType::CLOTH) {
+	else if (m_Scenes[scene].sceneType == SceneType::CLOTH)
 		worldManager->setSoftProperty(scene, property, value);
-	}
 }
 
 void NauBulletInterface::applyVec4Property(const std::string & scene, const std::string & property, float * value) {
@@ -95,9 +112,8 @@ void NauBulletInterface::applyVec4Property(const std::string & scene, const std:
 }
 
 void NauBulletInterface::applyGlobalFloatProperty(const std::string & property, float value) {
-	if (property.compare("TIME_STEP") == 0) {
+	if (property.compare("TIME_STEP") == 0)
 		worldManager->setTimeStep(value);
-	}
 }
 
 void NauBulletInterface::applyGlobalVec4Property(const std::string & property, float * value) {
@@ -145,7 +161,9 @@ void NauBulletInterface::setScene(const std::string &scene, const std::string & 
 			vertices,
 			nbIndices,
 			indices,
-			transform
+			transform,
+			m_Scenes[scene].sceneCondition,
+			m_PropertyManager->getMaterialVec4Property(material, "SCENE_CONDITION_VALUE")
 		);
 		break;
 	case IPhysics::CHARACTER:
@@ -164,16 +182,41 @@ float * NauBulletInterface::getSceneTransform(const std::string & scene) {
 
 void NauBulletInterface::setSceneTransform(const std::string & scene, float * transform) {
 	m_Scenes[scene].transform = transform;
-	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC) {
+	if (m_Scenes[scene].sceneType == SceneType::RIGID || m_Scenes[scene].sceneType == SceneType::STATIC)
 		worldManager->moveRigid(scene, transform);
-	}
-	if (m_Scenes[scene].sceneType == SceneType::CLOTH) {
+	if (m_Scenes[scene].sceneType == SceneType::CLOTH)
 		worldManager->moveSoft(scene, transform);
-	}
 }
 
-void NauBulletInterface::setCamera(const std::string & scene, float * position, float * up) {
-	
+void NauBulletInterface::setCameraAction(const std::string & scene, const std::string & action, float * value) {
+	//TODO: Implement Character Manager to get camera working
+	//if (!worldManager->hasCamera(scene)) {
+	//	if (action.compare("POSITION") == 0) {
+	//		worldManager->addCamera(
+	//			scene,
+	//			value,
+	//			m_PropertyManager->getGlobalVec4Property("CAMERA_UP"),
+	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_PACE"),
+	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_MIN_PACE"),
+	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_HIT_MAGNITUDE"),
+	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_TIME"),
+	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_STEP_OFFSET"),
+	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_MASS"),
+	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_RADIUS"),
+	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_HEIGHT"),
+	//			worldManager->createMaterial(
+	//				m_PropertyManager->getGlobalFloatProperty("CAMERA_DYNAMIC_FRICTION"),
+	//				m_PropertyManager->getGlobalFloatProperty("CAMERA_STATIC_FRICTION"),
+	//				m_PropertyManager->getGlobalFloatProperty("CAMERA_RESTITUTION")
+	//			)
+	//		);
+	//	}
+	//}
+	//else {
+	//	//TODO: Move camera
+	//	//if (action.compare("POSITION") == 0) {}
+	//	worldManager->setCharacterProperty(scene, action, value);
+	//}
 }
 
 std::vector<float> * NauBulletInterface::getDebug() {
