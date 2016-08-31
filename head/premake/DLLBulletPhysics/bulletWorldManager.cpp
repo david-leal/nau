@@ -103,7 +103,10 @@ void BulletWorldManager::addCloth(const std::string & scene, int nbVertices, flo
 }
 
 void BulletWorldManager::setSoftProperty(std::string scene, std::string propName, float value) {
-	//TODO: Check properties for cloths
+	if (propName.compare("VITERATIONS") == 0)
+		softManager->setViterations(scene, value);
+	else if (propName.compare("PITERATIONS") == 0)
+		softManager->setPiteration(scene, value);
 }
 
 void BulletWorldManager::moveSoft(std::string scene, float * transform) {

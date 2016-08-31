@@ -55,17 +55,9 @@ NauBulletInterface::NauBulletInterface() {
 	m_MaterialProps["ROLLING_FRICTION"] = Prop(IPhysics::FLOAT, 0.0f);
 	m_MaterialProps["RESTITUTION"]		= Prop(IPhysics::FLOAT, 1.0f);
 	
-	m_MaterialProps["SOLVER_FREQUENCY"] = Prop(IPhysics::FLOAT, 240.0f);
-	m_MaterialProps["INERTIA_SCALE"] = Prop(IPhysics::FLOAT, 1.0f);
-	m_MaterialProps["VERTICAL_STRETCH"] = Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
-	m_MaterialProps["HORIZONTAL_STRETCH"] = Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
-	m_MaterialProps["SHEARING"] = Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
-	m_MaterialProps["BENDING"] = Prop(IPhysics::VEC4, 1.0f, 1.0f, 1.0f, 1.0f);
-	m_MaterialProps["FRICTION_COEFFICIENT"] = Prop(IPhysics::FLOAT, 0.0f);
-	m_MaterialProps["COLLISION_MASS_SCALE"] = Prop(IPhysics::FLOAT, 0.0f);
-	m_MaterialProps["SELF_COLLISION_DISTANCE"] = Prop(IPhysics::FLOAT, 0.0f);
-	m_MaterialProps["SELF_COLLISION_STIFFNESS"] = Prop(IPhysics::FLOAT, 1.0f);
-
+	m_MaterialProps["VITERATIONS"] = Prop(IPhysics::FLOAT, 1.0f);
+	m_MaterialProps["PITERATIONS"] = Prop(IPhysics::FLOAT, 1.0f);
+	
 	m_MaterialProps["PACE"]				= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["HIT_MAGNITUDE"]	= Prop(IPhysics::FLOAT, 1.0f);
 	m_MaterialProps["HEIGHT"]			= Prop(IPhysics::FLOAT, 1.0f);
@@ -106,9 +98,8 @@ void NauBulletInterface::applyFloatProperty(const std::string & scene, const std
 }
 
 void NauBulletInterface::applyVec4Property(const std::string & scene, const std::string & property, float * value) {
-	if (m_Scenes[scene].sceneType == SceneType::RIGID) {
+	if (m_Scenes[scene].sceneType == SceneType::RIGID)
 		worldManager->setRigidProperty(scene, property, value);
-	}
 }
 
 void NauBulletInterface::applyGlobalFloatProperty(const std::string & property, float value) {
@@ -117,9 +108,8 @@ void NauBulletInterface::applyGlobalFloatProperty(const std::string & property, 
 }
 
 void NauBulletInterface::applyGlobalVec4Property(const std::string & property, float * value) {
-	if (property.compare("GRAVITY") == 0) {
+	if (property.compare("GRAVITY") == 0)
 		worldManager->setGravity(value[0], value[1], value[2]);
-	}
 }
 
 void NauBulletInterface::setScene(const std::string &scene, const std::string & material, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform) {

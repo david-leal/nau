@@ -86,23 +86,31 @@ btSoftBody * BulletSoftManager::addSoftBody(btSoftBodyWorldInfo & worldInfo, con
 	return cloth;
 }
 
-void BulletSoftManager::setFriction(std::string name, float value) {
+void BulletSoftManager::setViterations(const std::string & scene, float value) {
+	if (value > 0.0f) {
+		btSoftBody * cloth = getCloth(scene);
+		if (cloth)
+			cloth->m_cfg.viterations = (int)value;
+	}
 }
 
-void BulletSoftManager::setRestitution(std::string name, float value) {
+void BulletSoftManager::setPiteration(const std::string & scene, float value) {
+	if (value > 0.0f) {
+		btSoftBody * cloth = getCloth(scene);
+		if (cloth)
+			cloth->m_cfg.piterations = (int)value;
+	}
 }
 
 void BulletSoftManager::move(std::string scene, float * transform) {
-	if (softBodies.find(scene) != softBodies.end()) {
-		btSoftBody * cloth = btSoftBody::upcast(softBodies[scene].info.object);
-		if (cloth) {
-			float m[16];
-			for (int i = 0; i < 16; i++) { m[i] = transform[i]; }
-			btTransform * trans = new btTransform();
-			trans->setFromOpenGLMatrix(m);
-			cloth->transform(*trans);
-			//cloth->setWorldTransform(*trans);
-		}
+	btSoftBody * cloth = getCloth(scene);
+	if (cloth) {
+		float m[16];
+		for (int i = 0; i < 16; i++) { m[i] = transform[i]; }
+		btTransform * trans = new btTransform();
+		trans->setFromOpenGLMatrix(m);
+		cloth->transform(*trans);
+		//cloth->setWorldTransform(*trans);
 	}
 }
 
@@ -130,4 +138,10 @@ float BulletSoftManager::distance(const std::string & scene, btVector3 p) {
 
 bool BulletSoftManager::contains(const std::string & scene, btVector3 p) {
 	return abs(distance(scene, p)) < (1.0e-7f);
+}
+
+btSoftBody * BulletSoftManager::getCloth(const std::string & scene) {
+	if (softBodies.find(scene) != softBodies.end())
+		return btSoftBody::upcast(softBodies[scene].info.object);
+	return NULL;
 }

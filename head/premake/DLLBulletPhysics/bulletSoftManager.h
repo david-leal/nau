@@ -25,8 +25,8 @@ public:
 	void update();
 	void createInfo(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform, int condition, float * conditionValue);
 	btSoftBody * addSoftBody(btSoftBodyWorldInfo & worldInfo, const std::string &scene);
-	void setFriction(std::string name, float value);
-	void setRestitution(std::string name, float value);
+	void setViterations(const std::string &scene, float value);
+	void setPiteration(const std::string &scene, float value);
 	void move(std::string scene, float * transform);
 
 protected:
@@ -41,6 +41,7 @@ protected:
 	bool isLocked(const std::string  &scene, btVector3 vertex);
 	float distance(const std::string &scene, btVector3 p);
 	bool contains(const std::string &scene, btVector3 p);
+	btSoftBody * getCloth(const std::string &scene);
 };
 
 #endif
