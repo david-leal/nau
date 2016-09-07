@@ -56,9 +56,8 @@ btCollisionShape * BulletRigidManager::createCollisionShape(const std::string & 
 btRigidBody * BulletRigidManager::addRigid(const std::string & scene, btCollisionShape * shape, float mass, bool isStatic) {
 	btVector3 localInertia(0, 0, 0);
 	BulletMotionState * motionState = new BulletMotionState(rigidBodies[scene].extInfo.transform);
+	btRigidBody * body;
 	if (isStatic) {
-		btRigidBody * body;
-		
 		if (scene.compare("plane") == 0) {
 			btRigidBody::btRigidBodyConstructionInfo rbGroundInfo(0, motionState, new btStaticPlaneShape(btVector3(0, 1, 0), 0));
 			body = new btRigidBody(rbGroundInfo);
@@ -67,16 +66,14 @@ btRigidBody * BulletRigidManager::addRigid(const std::string & scene, btCollisio
 			body = new btRigidBody(0, motionState, shape, localInertia);
 		}
 		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
-		rigidBodies[scene].object = body;
-		return body;
 	}
 	else {
 		shape->calculateLocalInertia(mass, localInertia);
-		btRigidBody * body = new btRigidBody(mass, motionState, shape, localInertia);
-		//btRigidBody * body = new btRigidBody(mass, motionState, new btBoxShape(btVector3(1.0f, 1.0f, 1.0f)), localInertia);
-		rigidBodies[scene].object = body;
-		return body;
+		body = new btRigidBody(mass, motionState, shape, localInertia);
 	}
+	body->setUserPointer(static_cast<void *>(new std::string(scene)));
+	rigidBodies[scene].object = body;
+	return body;
 }
 
 void BulletRigidManager::setMass(std::string name, float value) {

@@ -8,7 +8,7 @@
 			</scene>
 			
 			<scene name="cloth" physicsMaterial="cloth">
-				<file name="..\..\models\flag\flag.obj" />
+				<file name="..\..\..\models\flag\flag.obj" />
 				<TRANSLATE x=0 y=2 z=0 />
 			</scene>
 			

@@ -129,6 +129,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="bulletCharacterManager.h" />
     <ClInclude Include="bulletDebugger.h" />
     <ClInclude Include="bulletMotionState.h" />
     <ClInclude Include="bulletRigidManager.h" />
@@ -138,6 +139,7 @@
     <ClInclude Include="nauBulletInterface.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="bulletCharacterManager.cpp" />
     <ClCompile Include="bulletDebugger.cpp" />
     <ClCompile Include="bulletMotionState.cpp" />
     <ClCompile Include="bulletRigidManager.cpp" />

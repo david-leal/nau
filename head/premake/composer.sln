@@ -1,11 +1,11 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "composer", "..\samples\composer\composer.vcxproj", "{8AFA88FD-951A-479D-A7F8-124919B6D19F}"
 	ProjectSection(ProjectDependencies) = postProject
+		{C9B65841-4C4A-47B3-95BC-A655808E8186} = {C9B65841-4C4A-47B3-95BC-A655808E8186}
 		{B2A55A68-A417-4C52-BFE7-8193BA388ABF} = {B2A55A68-A417-4C52-BFE7-8193BA388ABF}
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C} = {60ACAB96-62DC-4809-91B2-C71ED43A4B3C}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nau", "..\nau\nau.vcxproj", "{B2A55A68-A417-4C52-BFE7-8193BA388ABF}"

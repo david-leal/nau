@@ -22,12 +22,12 @@
 
 	<textures>
 		<!--texture name="Crate" filename="../../models/Texturas/crate.jpg" mipmap=true/-->	
-		<texture name="Azulejo" filename="../../models/Texturas/AzulejoCapStAnt.tif">
+		<texture name="Azulejo" filename="../../../models/Texturas/AzulejoCapStAnt.tif">
 			<!--WIDTH value=128 />
 			<HEIGHT value=128/-->
 			<SIZE width=128 height=128 />
 		</texture>
-		<texture name="Crate" filename="../../models/Texturas/crate.jpg" mipmap=true />	
+		<texture name="Crate" filename="../../../models/Texturas/crate.jpg" mipmap=true />	
 			<!--SIZE width=128 height=128 />
 		</texture-->
 	</textures>

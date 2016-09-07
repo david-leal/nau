@@ -80,7 +80,9 @@
 		
 		
 		<material name="man" type="CHARACTER" >
-			<PACE value="0.0" />
+			<RADIUS value="1.0" />
+			<HEIGHT value="1.0" />
+			<PACE value="0.1" />
 			<HIT_MAGNITUDE value="100.0" />
 			<HEIGHT value="1.0" />
 			<RADIUS value="1.0" />

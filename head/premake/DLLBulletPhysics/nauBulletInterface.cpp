@@ -95,11 +95,15 @@ void NauBulletInterface::applyFloatProperty(const std::string & scene, const std
 		worldManager->setRigidProperty(scene, property, value);
 	else if (m_Scenes[scene].sceneType == SceneType::CLOTH)
 		worldManager->setSoftProperty(scene, property, value);
+	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER)
+		worldManager->setCharacterProperty(scene, property, value);
 }
 
 void NauBulletInterface::applyVec4Property(const std::string & scene, const std::string & property, float * value) {
 	if (m_Scenes[scene].sceneType == SceneType::RIGID)
 		worldManager->setRigidProperty(scene, property, value);
+	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER)
+		worldManager->setCharacterProperty(scene, property, value);
 }
 
 void NauBulletInterface::applyGlobalFloatProperty(const std::string & property, float value) {
@@ -157,6 +161,17 @@ void NauBulletInterface::setScene(const std::string &scene, const std::string & 
 		);
 		break;
 	case IPhysics::CHARACTER:
+		worldManager->addCharacter(
+			scene,
+			nbVertices,
+			vertices,
+			nbIndices,
+			indices,
+			transform,
+			m_PropertyManager->getMaterialFloatProperty(material, "HEIGHT"),
+			m_PropertyManager->getMaterialFloatProperty(material, "RADIUS"),
+			m_PropertyManager->getMaterialFloatProperty(material, "STEP_OFFSET")
+		);
 		break;
 	case IPhysics::DEBUG:
 		worldManager->setDebug();

@@ -247,9 +247,9 @@ GLCanvas::Render () {
 
 void 
 GLCanvas::OnKeyUp(wxKeyEvent & event) {
-	//nau::physics::PhysicsManager * physMan = m_pEngine->getPhysicsManager();
-	/*nau::physics::PhysicsMaterial man = physMan->getMaterial("man");
-	man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.0f);*/ 
+	/*nau::physics::PhysicsManager * physMan = m_pEngine->getPhysicsManager();
+	nau::physics::PhysicsMaterial man = physMan->getMaterial("man");
+	man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.0f);*/
 	
 	//physMan->setPropf((nau::AttributeValues::FloatProperty)physMan->getAttribSet()->getAttributes()["CAMERA_PACE"]->getId(), 0.0f);
 	
@@ -263,16 +263,16 @@ GLCanvas::OnKeyUp(wxKeyEvent & event) {
 
 void 
 GLCanvas::OnKeyDown(wxKeyEvent & event) {
-	nau::physics::PhysicsManager * physMan = m_pEngine->getPhysicsManager();
+	//nau::physics::PhysicsManager * physMan = m_pEngine->getPhysicsManager();
 	//nau::physics::PhysicsMaterial man = physMan->getMaterial("man");
 	if (WXK_UP == event.GetKeyCode()) {
 		/*float camDirection[] = { 0.0f, 0.0f, -1.0f, 1.0f };
 		physMan->setPropf4((nau::AttributeValues::Float4Property)physMan->getAttribSet()->getAttributes()["CAMERA_DIRECTION"]->getId(), vec4(camDirection));
 		physMan->setPropf((nau::AttributeValues::FloatProperty)physMan->getAttribSet()->getAttributes()["CAMERA_PACE"]->getId(), 0.1f);*/
 		
-		/*float manDirection[] = { 0.0f, 0.0f, -0.1f, 1.0f };
+		/*float manDirection[] = { 0.0f, 0.0f, -1.0f, 1.0f };
 		man.setPropf4((nau::AttributeValues::Float4Property)man.getAttribSet()->getAttributes()["DIRECTION"]->getId(), vec4(manDirection));
-		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.01f);*/
+		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.1f);*/
 		
 		/*float impulse[] = { 5.0f, 0.2f, 0.0f, 1.0f };
 		nau::physics::PhysicsMaterial mat = physMan->getMaterial("whiteBilliardBall" );
@@ -280,21 +280,21 @@ GLCanvas::OnKeyDown(wxKeyEvent & event) {
 	}
 
 	/*if (WXK_DOWN == event.GetKeyCode()) {
-		float manDirection[] = { 0.0f, 0.0f, 0.1f, 1.0f };
+		float manDirection[] = { 0.0f, 0.0f, 1.0f, 1.0f };
 		man.setPropf4((nau::AttributeValues::Float4Property)man.getAttribSet()->getAttributes()["DIRECTION"]->getId(), vec4(manDirection));
-		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.01f);
+		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.1f);
 	}
 
 	if (WXK_LEFT == event.GetKeyCode()) {
-		float manDirection[] = { -0.1f, 0.0f, 0.0f, 1.0f };
+		float manDirection[] = { -1.0f, 0.0f, 0.0f, 1.0f };
 		man.setPropf4((nau::AttributeValues::Float4Property)man.getAttribSet()->getAttributes()["DIRECTION"]->getId(), vec4(manDirection));
-		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.01f);
+		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.1f);
 	}
 
 	if (WXK_RIGHT == event.GetKeyCode()) {
-		float manDirection[] = { 0.1f, 0.0f, 0.0f, 1.0f };
+		float manDirection[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 		man.setPropf4((nau::AttributeValues::Float4Property)man.getAttribSet()->getAttributes()["DIRECTION"]->getId(), vec4(manDirection));
-		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.01f);
+		man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.1f);
 	}*/
 
 

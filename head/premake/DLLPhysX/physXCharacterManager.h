@@ -19,7 +19,7 @@ public:
 	void addCamera(const std::string & scene, physx::PxVec3 position, physx::PxVec3 up, float pace, float minPace, float hitMagnitude, float timeStep, float stepOffset, float mass, float radius, float height, physx::PxMaterial * material);
 	void move(const std::string & scene, physx::PxVec3 gravity = physx::PxVec3(0.0f));
 	void move(const std::string & scene, float * transform, physx::PxVec3 gravity = physx::PxVec3(0.0f));
-	void createInfo(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform);
+	void createInfo(const std::string &scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform);
 
 	void setDirection(std::string scene, physx::PxVec3 dir);
 	void setPace(std::string scene, float pace);

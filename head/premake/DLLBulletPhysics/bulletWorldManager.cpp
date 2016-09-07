@@ -12,11 +12,11 @@ BulletWorldManager::BulletWorldManager() {
 	btGImpactCollisionAlgorithm::registerAlgorithm(dispatcher);
 	btDefaultSoftBodySolver * softbodySolver = new btDefaultSoftBodySolver();
 	world = new btSoftRigidDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration, softbodySolver);
-	//world = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
-	//world->setGravity(btVector3(0, -10, 0));
+	//world->getPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
 
 	rigidManager = new BulletRigidManager();
 	softManager = new BulletSoftManager();
+	characterManager = new BulletCharacterManager();
 }
 
 
@@ -32,6 +32,7 @@ void BulletWorldManager::update() {
 		world->stepSimulation(timeStep);
 		rigidManager->update();
 		softManager->update();
+		characterManager->update(world);
 		if (debugDrawer) {
 			debugDrawer->clear();
 			world->debugDrawWorld();
@@ -120,6 +121,27 @@ void BulletWorldManager::setDebug() {
 		//debugDrawer->setDebugMode(btIDebugDraw::DBG_MAX_DEBUG_DRAW_MODE);
 		world->setDebugDrawer(debugDrawer);
 	}
+}
+
+void BulletWorldManager::addCharacter(const std::string & scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform, float height, float radius, float stepOffset) {
+	characterManager->createInfo(scene, nbVertices, vertices, nbIndices, indices, transform);
+	characterManager->addCharacter(world, scene, height, radius, stepOffset);
+}
+
+void BulletWorldManager::setCharacterProperty(std::string scene, std::string propName, float value) {
+	if (propName.compare("PACE") == 0)
+		characterManager->setPace(scene, value);
+	else if (propName.compare("HIT_MAGNITUDE") == 0)
+		characterManager->setHitMagnitude(scene, value);
+}
+
+void BulletWorldManager::setCharacterProperty(std::string scene, std::string propName, float * value) {
+	if (propName.compare("DIRECTION") == 0)
+		characterManager->setDirection(scene, btVector3(value[0], value[1], value[2]));
+}
+
+void BulletWorldManager::moveCharacter(std::string scene, float * transform)
+{
 }
 
 void BulletWorldManager::addCamera(const std::string & scene, float * position, float * up, float pace, float minPace, float hitMagnitude, float timeStep, float stepOffset, float mass, float radius, float height) {

@@ -18,9 +18,8 @@ PhysXCharacterManager::~PhysXCharacterManager() {
 }
 
 void PhysXCharacterManager::update(physx::PxVec3 gravity) {
-	for (auto scene : controllers) {
+	for (auto scene : controllers)
 		move(scene.first, gravity);
-	}
 }
 
 void
