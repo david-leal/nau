@@ -22,55 +22,25 @@ void BulletCharacterManager::update(btSoftRigidDynamicsWorld * world) {
 		btGhostObject * ghost = btGhostObject::upcast(scene.second.sceneInfo.object);
 		btTransform trans = ghost->getWorldTransform();
 
-		btVector3 up = world->getGravity().normalize() * -1.0f;
-		btVector3 dir = *controllers[scene.first].direction;
-		btVector3 right = up.cross(dir).normalize() * -1.0f;
+		if (scene.second.isCamera) {
+			updateCameraPosition(scene.first, trans.getOrigin());
+			setPace(scene.first, controllers[scene.first].pace * 0.9f);
+		}
+		else {
 
-		btMatrix3x3 mat = btMatrix3x3(
-			right.getX(), up.getX(), dir.getX(),
-			right.getY(), up.getY(), dir.getY(),
-			right.getZ(), up.getZ(), dir.getZ()
-		);
+			btVector3 up = world->getGravity().normalize() * -1.0f;
+			btVector3 dir = *controllers[scene.first].direction;
+			btVector3 right = up.cross(dir).normalize() * -1.0f;
 
-		btTransform tr = btTransform(trans.getBasis() * mat, trans.getOrigin());
-		tr.getOpenGLMatrix(scene.second.sceneInfo.extInfo.transform);
+			btMatrix3x3 mat = btMatrix3x3(
+				right.getX(), up.getX(), dir.getX(),
+				right.getY(), up.getY(), dir.getY(),
+				right.getZ(), up.getZ(), dir.getZ()
+			);
 
-		//btManifoldArray manifoldArray;
-		//btAlignedObjectArray<btCollisionObject*>& objArray = (btGhostObject::upcast(scene.second.sceneInfo.object))->getOverlappingPairs();
-
-		//for (int i = 0; i < objArray.size(); i++) {
-		//	manifoldArray.clear();
-		//	btBroadphasePair* collisionPair = world->getPairCache()->findPair(scene.second.sceneInfo.object->getBroadphaseHandle(), objArray[i]->getBroadphaseHandle());
-
-		//	if (!collisionPair) continue;
-
-		//	if (collisionPair->m_algorithm)
-		//		collisionPair->m_algorithm->getAllContactManifolds(manifoldArray);
-
-		//	for (int j = 0; j<manifoldArray.size(); j++) {
-		//		btPersistentManifold* manifold = manifoldArray[j];
-
-		//		bool isFirstBody = manifold->getBody0() == scene.second.sceneInfo.object;
-		//		bool isStatic = manifold->getBody1()->getCollisionFlags() == btCollisionObject::CollisionFlags::CF_STATIC_OBJECT;
-
-
-		//		btScalar direction = isFirstBody ? btScalar(-1.0) : btScalar(1.0);
-
-		//		if (!isStatic) {
-		//			for (int p = 0; p < manifold->getNumContacts(); ++p) {
-		//				const btManifoldPoint&pt = manifold->getContactPoint(p);
-
-		//				if (pt.getDistance() < 0.f) {
-		//					const btVector3& ptA = pt.getPositionWorldOnA();
-		//					const btVector3& ptB = pt.getPositionWorldOnB();
-		//					const btVector3& normalOnB = pt.m_normalWorldOnB;
-
-		//					// handle collisions here
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
+			btTransform tr = btTransform(trans.getBasis() * mat, trans.getOrigin());
+			tr.getOpenGLMatrix(scene.second.sceneInfo.extInfo.transform);
+		}
 	}
 }
 
@@ -79,28 +49,20 @@ void BulletCharacterManager::addCharacter(btSoftRigidDynamicsWorld * world, cons
 	//TODO: (remains to be tested by removing the character from the world and make the changes)
 	btTransform startTransform;
 	startTransform.setFromOpenGLMatrix(controllers[scene].sceneInfo.extInfo.transform);
-
-	btConvexShape* capsule = new btCapsuleShape(radius, height);
-
-	btPairCachingGhostObject* m_ghostObject = new btPairCachingGhostObject();
-	m_ghostObject->setWorldTransform(startTransform);
-	world->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
-	m_ghostObject->setCollisionShape(capsule);
-	m_ghostObject->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
-	m_ghostObject->setUserPointer(static_cast<void *>(new std::string(scene)));
-
-	btKinematicCharacterController* charCon = new btKinematicCharacterController(m_ghostObject, capsule, stepHeight);
-	charCon->setGravity(-world->getGravity().getY());
-	controllers[scene].controller = charCon;
-
-	world->addCollisionObject(m_ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::AllFilter);
-	world->addAction(charCon);
-	controllers[scene].sceneInfo.object = m_ghostObject;
-	//controllers[scene].callBack = new ContactSensorCallback(*m_ghostObject);
+	createCharacter(world, scene, startTransform, height, radius, stepHeight);
 }
 
-void BulletCharacterManager::addCamera(btSoftRigidDynamicsWorld * world, const std::string &scene, float height, float radius, float stepHeight)
-{
+void BulletCharacterManager::addCamera(btSoftRigidDynamicsWorld * world, const std::string &scene, btVector3 position, float height, float radius, float stepHeight, float pace, float minPace, float hitMagnitude) {
+	btTransform trans = btTransform();
+	trans.setIdentity();
+	trans.setOrigin(position);
+	createCharacter(world, scene, trans, height, radius, stepHeight);
+	controllers[scene].isCamera = true;
+	updateCameraPosition(scene, position);
+	setMinPace(scene, minPace);
+	setDirection(scene, btVector3(0.0f, 0.0f, 0.0f));
+	setPace(scene, pace);
+	setHitMagnitude(scene, hitMagnitude);
 }
 
 void BulletCharacterManager::move(const std::string & scene) {
@@ -132,12 +94,15 @@ void BulletCharacterManager::setDirection(std::string scene, btVector3 dir) {
 void BulletCharacterManager::setPace(std::string scene, float pace) {
 	btKinematicCharacterController * controller = getKinematicController(scene);
 	if (controller) {
-		controllers[scene].pace = pace;
+		float minPace = controllers[scene].minPace ? controllers[scene].minPace : 0.01f;
+		controllers[scene].pace = pace > minPace ? pace : 0.0f;
 		controller->setWalkDirection(*controllers[scene].direction * pace);
 	}
 }
 
 void BulletCharacterManager::setMinPace(std::string scene, float pace) {
+	if (isPresent(scene))
+		controllers[scene].minPace = pace;
 }
 
 void BulletCharacterManager::setHitMagnitude(std::string scene, float hitMagnitude) {
@@ -190,6 +155,28 @@ btScalar BulletCharacterManager::addSingleResult(btManifoldPoint & cp, const btC
 	return 0;
 }
 
+void BulletCharacterManager::createCharacter(btSoftRigidDynamicsWorld * world, const std::string & scene, btTransform transform, float height, float radius, float stepHeight) {
+	//INFO: Radius, Height and StepHeight have to be set in intitialization and cannot be change
+	//TODO: (remains to be tested by removing the character from the world and make the changes)
+	btConvexShape* capsule = new btCapsuleShape(radius, height);
+
+	btPairCachingGhostObject* m_ghostObject = new btPairCachingGhostObject();
+	m_ghostObject->setWorldTransform(transform);
+	world->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+	m_ghostObject->setCollisionShape(capsule);
+	m_ghostObject->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
+	m_ghostObject->setUserPointer(static_cast<void *>(new std::string(scene)));
+
+	btKinematicCharacterController* charCon = new btKinematicCharacterController(m_ghostObject, capsule, stepHeight);
+	charCon->setGravity(-world->getGravity().getY());
+	controllers[scene].controller = charCon;
+
+	world->addCollisionObject(m_ghostObject, btBroadphaseProxy::CharacterFilter, btBroadphaseProxy::AllFilter);
+	world->addAction(charCon);
+	controllers[scene].sceneInfo.object = m_ghostObject;
+	//controllers[scene].callBack = new ContactSensorCallback(*m_ghostObject);
+}
+
 btKinematicCharacterController * BulletCharacterManager::getKinematicController(const std::string & scene) {
 	if (isPresent(scene))
 		return controllers[scene].controller;
@@ -204,4 +191,14 @@ btGhostObject * BulletCharacterManager::getGhostObject(const std::string & scene
 
 bool BulletCharacterManager::isPresent(const std::string & scene) {
 	return controllers.find(scene) != controllers.end();
+}
+
+void BulletCharacterManager::updateCameraPosition(std::string scene, btVector3 position) {
+	if (!hasCamera(scene))
+		(*cameraPositions)[scene] = new float[4]();
+	(*cameraPositions)[scene][0] = position.getX();
+	(*cameraPositions)[scene][1] = position.getY();
+	(*cameraPositions)[scene][2] = position.getZ();
+	(*cameraPositions)[scene][3] = 1.0f;
+
 }

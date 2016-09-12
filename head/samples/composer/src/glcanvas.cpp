@@ -247,8 +247,8 @@ GLCanvas::Render () {
 
 void 
 GLCanvas::OnKeyUp(wxKeyEvent & event) {
-	/*nau::physics::PhysicsManager * physMan = m_pEngine->getPhysicsManager();
-	nau::physics::PhysicsMaterial man = physMan->getMaterial("man");
+	//nau::physics::PhysicsManager * physMan = m_pEngine->getPhysicsManager();
+	/*nau::physics::PhysicsMaterial man = physMan->getMaterial("man");
 	man.setPropf((nau::AttributeValues::FloatProperty)man.getAttribSet()->getAttributes()["PACE"]->getId(), 0.0f);*/
 	
 	//physMan->setPropf((nau::AttributeValues::FloatProperty)physMan->getAttribSet()->getAttributes()["CAMERA_PACE"]->getId(), 0.0f);

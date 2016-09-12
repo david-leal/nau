@@ -45,12 +45,11 @@ public:
 	void setDebug();
 
 	void addCharacter(const std::string &scene, int nbVertices, float *vertices, int nbIndices, unsigned int *indices, float *transform, float height, float radius, float stepOffset);
-	void setCharacterProperty(std::string scene, std::string propName, float value);
 	void setCharacterProperty(std::string scene, std::string propName, float * value);
 	void moveCharacter(std::string scene, float * transform);
 
-	void addCamera(const std::string & scene, float * position, float * up, float pace, float minPace, float hitMagnitude, float timeStep, float stepOffset, float mass, float radius, float height);
-	bool hasCamera(std::string cameraName) { /*return characterManager->hasCamera(cameraName); */};
+	void addCamera(const std::string & scene, float * position, float pace, float minPace, float hitMagnitude, float stepOffset, float radius, float height);
+	bool hasCamera(std::string cameraName) { return characterManager->hasCamera(cameraName); };
 	std::map<std::string, float *> * getCameraPositions();
 
 	void setTimeStep(float tStep) { timeStep = tStep; };

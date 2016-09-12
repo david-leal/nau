@@ -128,26 +128,33 @@ void BulletWorldManager::addCharacter(const std::string & scene, int nbVertices,
 	characterManager->addCharacter(world, scene, height, radius, stepOffset);
 }
 
-void BulletWorldManager::setCharacterProperty(std::string scene, std::string propName, float value) {
-	if (propName.compare("PACE") == 0)
-		characterManager->setPace(scene, value);
-	else if (propName.compare("HIT_MAGNITUDE") == 0)
-		characterManager->setHitMagnitude(scene, value);
-}
-
 void BulletWorldManager::setCharacterProperty(std::string scene, std::string propName, float * value) {
 	if (propName.compare("DIRECTION") == 0)
 		characterManager->setDirection(scene, btVector3(value[0], value[1], value[2]));
+	else if (propName.compare("PACE") == 0)
+		characterManager->setPace(scene, *value);
+	else if (propName.compare("HIT_MAGNITUDE") == 0)
+		characterManager->setHitMagnitude(scene, *value);
 }
 
 void BulletWorldManager::moveCharacter(std::string scene, float * transform)
 {
 }
 
-void BulletWorldManager::addCamera(const std::string & scene, float * position, float * up, float pace, float minPace, float hitMagnitude, float timeStep, float stepOffset, float mass, float radius, float height) {
+void BulletWorldManager::addCamera(const std::string & scene, float * position, float pace, float minPace, float hitMagnitude, float stepOffset, float radius, float height) {
+	characterManager->addCamera(
+		world,
+		scene,
+		btVector3(position[0], position[1], position[2]),
+		height,
+		radius,
+		stepOffset,
+		pace,
+		minPace,
+		hitMagnitude
+	);
 }
 
 std::map<std::string, float*>* BulletWorldManager::getCameraPositions() {
-	//TODO: Change This When Character manager exists
-	return new std::map<std::string, float*>;
+	return characterManager->getCameraPositions();
 }

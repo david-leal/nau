@@ -96,7 +96,7 @@ void NauBulletInterface::applyFloatProperty(const std::string & scene, const std
 	else if (m_Scenes[scene].sceneType == SceneType::CLOTH)
 		worldManager->setSoftProperty(scene, property, value);
 	else if (m_Scenes[scene].sceneType == SceneType::CHARACTER)
-		worldManager->setCharacterProperty(scene, property, value);
+		worldManager->setCharacterProperty(scene, property, &value);
 }
 
 void NauBulletInterface::applyVec4Property(const std::string & scene, const std::string & property, float * value) {
@@ -194,34 +194,25 @@ void NauBulletInterface::setSceneTransform(const std::string & scene, float * tr
 }
 
 void NauBulletInterface::setCameraAction(const std::string & scene, const std::string & action, float * value) {
-	//TODO: Implement Character Manager to get camera working
-	//if (!worldManager->hasCamera(scene)) {
-	//	if (action.compare("POSITION") == 0) {
-	//		worldManager->addCamera(
-	//			scene,
-	//			value,
-	//			m_PropertyManager->getGlobalVec4Property("CAMERA_UP"),
-	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_PACE"),
-	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_MIN_PACE"),
-	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_HIT_MAGNITUDE"),
-	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_TIME"),
-	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_STEP_OFFSET"),
-	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_MASS"),
-	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_RADIUS"),
-	//			m_PropertyManager->getGlobalFloatProperty("CAMERA_HEIGHT"),
-	//			worldManager->createMaterial(
-	//				m_PropertyManager->getGlobalFloatProperty("CAMERA_DYNAMIC_FRICTION"),
-	//				m_PropertyManager->getGlobalFloatProperty("CAMERA_STATIC_FRICTION"),
-	//				m_PropertyManager->getGlobalFloatProperty("CAMERA_RESTITUTION")
-	//			)
-	//		);
-	//	}
-	//}
-	//else {
-	//	//TODO: Move camera
-	//	//if (action.compare("POSITION") == 0) {}
-	//	worldManager->setCharacterProperty(scene, action, value);
-	//}
+	if (!worldManager->hasCamera(scene)) {
+		if (action.compare("POSITION") == 0) {
+			worldManager->addCamera(
+				scene,
+				value,
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_PACE"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_MIN_PACE"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_HIT_MAGNITUDE"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_STEP_OFFSET"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_RADIUS"),
+				m_PropertyManager->getGlobalFloatProperty("CAMERA_HEIGHT")
+			);
+		}
+	}
+	else {
+		//TODO: Move camera
+		//if (action.compare("POSITION") == 0) {}
+		worldManager->setCharacterProperty(scene, action, value);
+	}
 }
 
 std::vector<float> * NauBulletInterface::getDebug() {

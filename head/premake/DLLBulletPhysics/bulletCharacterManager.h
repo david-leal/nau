@@ -19,7 +19,7 @@ public:
 
 	void update(btSoftRigidDynamicsWorld * world);
 	void addCharacter(btSoftRigidDynamicsWorld * world, const std::string &scene, float height, float radius, float stepHeight);
-	void addCamera(btSoftRigidDynamicsWorld * world, const std::string &scene, float height, float radius, float stepHeight);
+	void addCamera(btSoftRigidDynamicsWorld * world, const std::string &scene, btVector3 position, float height, float radius, float stepHeight, float pace, float minPace, float hitMagnitude);
 	void move(const std::string &scene);
 	void move(const std::string &scene, float * transform);
 	void createInfo(const std::string &scene, int nbVertices, float * vertices, int nbIndices, unsigned int * indices, float * transform);
@@ -43,34 +43,6 @@ public:
 
 protected:
 
-
-	//struct ContactSensorCallback : public btCollisionWorld::ContactResultCallback {
-
-	//	ContactSensorCallback(btCollisionObject& tgtBody) : btCollisionWorld::ContactResultCallback(), body(tgtBody) { }
-
-	//	btCollisionObject& body; //!< The body the sensor is monitoring
-
-	//	virtual btScalar addSingleResult(btManifoldPoint& cp,
-	//		const btCollisionObjectWrapper* colObj0, int partId0, int index0,
-	//		const btCollisionObjectWrapper* colObj1, int partId1, int index1)
-	//	{
-
-	//		bool isFirstBody = colObj0->m_collisionObject == &body;
-	//		bool isStatic = colObj1->m_collisionObject->getCollisionFlags() == btCollisionObject::CF_STATIC_OBJECT;
-
-	//		btScalar direction = isFirstBody ? btScalar(-1.0) : btScalar(1.0);
-
-	//		if (cp.getDistance() < 0.f && !isStatic) {
-	//			const btVector3& ptA = cp.getPositionWorldOnA();
-	//			const btVector3& ptB = cp.getPositionWorldOnB();
-	//			const btVector3& normalOnB = cp.m_normalWorldOnB;
-
-	//			// handle collisions here
-	//		}
-	//		return 0; // There was a planned purpose for the return value of addSingleResult, but it is not used so you can ignore it.
-	//	}
-	//};
-
 	typedef struct {
 		bool isCamera;
 		BulletScene sceneInfo;
@@ -79,6 +51,7 @@ protected:
 		float pace;
 		float hitMagnitude;
 		float timeStep;
+		float minPace;
 		btKinematicCharacterController * controller;
 		//ContactSensorCallback * callBack;
 	} BulletController;
@@ -86,9 +59,12 @@ protected:
 	std::map<std::string, BulletController> controllers;
 	std::map<std::string, float *> * cameraPositions;
 
+
+	void createCharacter(btSoftRigidDynamicsWorld * world, const std::string &scene, btTransform transform, float height, float radius, float stepHeight);
 	btKinematicCharacterController * BulletCharacterManager::getKinematicController(const std::string & scene);
 	btGhostObject * BulletCharacterManager::getGhostObject(const std::string & scene);
 	bool isPresent(const std::string &scene);
+	void updateCameraPosition(std::string scene, btVector3 position);
 };
 
 #endif
