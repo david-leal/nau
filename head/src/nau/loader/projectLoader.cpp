@@ -744,7 +744,6 @@ ProjectLoader::load (std::string file, int *width, int *height)
 		loadAssets (hRoot, matLibs);
 		loadPipelines (hRoot);
 		loadInterface(hRoot);
-
 	}
 	catch(std::string &s) {
 		throw(s);
@@ -1151,8 +1150,7 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 					if (attribIndex != VertexData::MaxAttribs) {
 						v->setBuffer(attribIndex, b->getPropi(IBuffer::ID));
 					}
-					else if (!strcmp(p->Value(),"index")){
-
+					else if (std::string(p->Value()) == std::string("index")){
 						mg->getIndexData()->setBuffer(b->getPropi(IBuffer::ID));
 					}
 					else {

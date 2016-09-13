@@ -8,7 +8,8 @@
 #define APIENTRY __stdcall
 #endif
 
-#include <vld.h>
+//#include <vld.h>
+
 
 #include <main.h>
 #include <glcanvas.h>
@@ -864,7 +865,7 @@ FrmMainFrame::startStandAlone (void) {
 	m_pRoot->enablePhysics();
 
 	nau::scene::Camera *cam = NAU->getActiveCamera ();
-//	cam->setDynamic(true);		
+
 	cam->setPropb(Camera::DYNAMIC, true);
 	m_Canvas->setCamera();
 }

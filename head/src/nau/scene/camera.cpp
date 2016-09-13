@@ -92,8 +92,8 @@ Camera::Create(const std::string &name) {
 Camera::Camera (const std::string &name) :
 	SceneObject(),
 
-//	m_IsDynamic (false),
-	m_LookAt(false)
+	//m_IsDynamic (false),
+	m_LookAt(false),
 	//m_LookAtPoint(0.0f, 0.0f, 0.0f),
 //	m_PositionOffset (0.0f)
 	//m_IsOrtho (false)
@@ -103,7 +103,6 @@ Camera::Camera (const std::string &name) :
 	m_Id = 0;
 	m_Name = name;
 	m_pViewport = NAU->getDefaultViewport();
-
 	buildViewMatrix();
 	buildInverses();
 
@@ -153,7 +152,7 @@ Camera::Camera (const std::string &name) :
 	indices->at (6) = Camera::BOTTOM_LEFT_NEAR;		indices->at (7) = Camera::TOP_LEFT_NEAR;
 
 	aMaterialGroup->setIndexList (indices);
-
+	 
 	renderable->addMaterialGroup (aMaterialGroup);
 
 	setRenderable (renderable);
@@ -161,7 +160,13 @@ Camera::Camera (const std::string &name) :
 	//std::shared_ptr<IScene> &s = RENDERMANAGER->createScene(name, "SceneAux");
 	//std::shared_ptr<Camera> p = shared_from_this();
 	//s->add(std::dynamic_pointer_cast<SceneObject>(shared_from_this()));
-
+	
+	/*if (isDynamic()) {
+		float * camPos = new float[4]();
+		vec4 pos = m_Float4Props[POSITION];
+		camPos[0] = pos.x; camPos[1] = pos.y; camPos[2] = pos.z; camPos[3] = pos.w;
+		NAU->getPhysicsManager()->cameraAction(name, "POSITION", camPos);
+	}*/
 }
 
 
@@ -331,6 +336,20 @@ Camera::setProps(StringProperty prop, std::string & value) {
 	}
 }
 
+void nau::scene::Camera::setPropb(BoolProperty prop, bool value){
+	assert(isValidb(prop, value));
+	m_BoolProps[prop] = value;
+	nau::physics::PhysicsManager * physMan = NAU->getPhysicsManager();
+	if (!physMan)
+		return;
+	if (value) {
+		float * camPosition = new float[4]();
+		vec4 cpos = getPropf4(Camera::POSITION);
+		camPosition[0] = cpos.x; camPosition[1] = cpos.y; camPosition[2] = cpos.z; camPosition[3] = cpos.w;
+		physMan->cameraAction(this, "POSITION", camPosition);
+	}
+}
+
 
 //void *
 //Camera::getProp(int prop, Enums::DataType type) {
@@ -415,11 +434,11 @@ Camera::getBoundingVolume () {
 void
 Camera::setCamera (vec3 position, vec3 view, vec3 up) {
 
-//	if (m_IsDynamic) {
-//		m_Float4Props[POSITION].set(position.x, position.y + 0.85f, position.z, 1.0f);
-//	} else {
+	/*if (m_BoolProps[DYNAMIC]) {
+		m_Float4Props[POSITION].set(position.x, position.y + 0.85f, position.z, 1.0f);
+	} else {*/
 		m_Float4Props[POSITION].set(position.x, position.y, position.z, 1.0f);
-//	}
+	//}
 	view.normalize();
 	m_Float4Props[VIEW_VEC].set(view.x, view.y, view.z, 0.0f);
 //	m_Float4Props[NORMALIZED_VIEW_VEC].set(view.x, view.y, view.z, 0.0f);
@@ -805,7 +824,7 @@ Camera::eventReceived(const std::string &sender, const std::string &eventType,
 			physMan->cameraAction(this, "PACE", pace);
 		}
 
-		if (f->getDirection() == "BACKWARD") {
+		if(f->getDirection()=="BACKWARD") {
 			if (m_BoolProps[DYNAMIC]) {
 				float * dir = new float[3]();
 				dir[0] = -vView.x; dir[1] = -vView.y; dir[2] = -vView.z;
@@ -813,12 +832,12 @@ Camera::eventReceived(const std::string &sender, const std::string &eventType,
 			}
 			else {
 				vView *= vel;
-				vPos -= vView;
+				vPos -=  vView;
 				setPropf4((Float4Property)POSITION, vPos.x, vPos.y, vPos.z, 1.0f);
 			}
 		}
 
-		else if (f->getDirection() == "FORWARD") {
+		else if(f->getDirection()=="FORWARD") {
 			if (m_BoolProps[DYNAMIC]) {
 				float * dir = new float[4]();
 				dir[0] = vView.x; dir[1] = vView.y; dir[2] = vView.z; dir[3] = vView.w;
@@ -830,8 +849,8 @@ Camera::eventReceived(const std::string &sender, const std::string &eventType,
 				setPropf4((Float4Property)POSITION, vPos.x, vPos.y, vPos.z, 1.0f);
 			}
 		}
-
-		else if (f->getDirection() == "LEFT") {
+				
+		else if(f->getDirection()=="LEFT") {
 			if (m_BoolProps[DYNAMIC]) {
 				float * dir = new float[4]();
 				vRight = -vRight;
@@ -845,7 +864,7 @@ Camera::eventReceived(const std::string &sender, const std::string &eventType,
 			}
 		}
 
-		else if (f->getDirection() == "RIGHT") {
+		else if(f->getDirection()=="RIGHT") {
 			if (m_BoolProps[DYNAMIC]) {
 				float * dir = new float[4]();
 				dir[0] = vRight.x; dir[1] = vRight.y; dir[2] = vRight.z; dir[3] = vRight.w;
@@ -884,22 +903,8 @@ Camera::eventReceived(const std::string &sender, const std::string &eventType,
 
 
 // Physics
-//bool 
-//Camera::isDynamic() {
-//
-//	return m_IsDynamic;
-//}
-//			
-//void 
-//Camera::setDynamic(bool value) {
-//
-//	m_IsDynamic = value;
-//}
-//
-//void 
-//Camera::setPositionOffset (float value) {
-//
-//	m_PositionOffset = value;
-//}
+void 
+Camera::setPositionOffset (float value) {
 
-
+	m_PositionOffset = value;
+}
