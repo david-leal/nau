@@ -1,6 +1,7 @@
 #ifndef NAU_H
 #define NAU_H
 
+
 #pragma warning( disable: 4290)
 
 #ifndef _USE_MATH_DEFINES
@@ -27,7 +28,7 @@
 #include "nau/scene/iScene.h"
 #include "nau/scene/camera.h"
 #include "nau/scene/light.h"
-#include "nau/world/iWorld.h"
+//#include "nau/world/iWorld.h"
 
 #ifdef NAU_LUA
 extern "C" {
@@ -177,6 +178,10 @@ namespace nau {
 		bool validateObjectType(const std::string & type);
 		void getValidObjectTypes(std::vector<std::string>* v);
 
+		void getValidObjectNames(const std::string & type, std::vector<std::string>* v);
+
+		bool validateObjectName(const std::string & type, std::string & v);
+
 		bool validateObjectContext(const std::string & type, const std::string & context);
 
 		bool validateObjectComponent(const std::string & type, const std::string & component);
@@ -230,7 +235,8 @@ namespace nau {
 
 
 		// Physics
-		nau::world::IWorld& getWorld (void);
+		//nau::world::IWorld& getWorld (void);
+		
 		void loadAsset (std::string aFilename, std::string sceneName, std::string params = "") throw (std::string);
 		void writeAssets (std::string fileType, std::string aFilename, std::string sceneName);
 		void enablePhysics (void);
@@ -256,6 +262,7 @@ namespace nau {
 		nau::material::MaterialLibManager* getMaterialLibManager (void);
 		nau::event_::EventManager* getEventManager (void);
 		nau::render::IRenderer *getRenderer(void);
+		nau::physics::PhysicsManager *getPhysicsManager();
 		IAPISupport * getAPISupport(void);
 
 		/* Render Flags */
@@ -311,7 +318,7 @@ namespace nau {
 		bool m_Inited;
 
 		bool m_Physics;
-		nau::world::IWorld *m_pWorld;
+		//nau::world::IWorld *m_pWorld;
 		
 		//double m_CurrentTime;
 		double m_LastFrameTime;

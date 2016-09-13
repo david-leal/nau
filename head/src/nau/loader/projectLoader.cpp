@@ -18,6 +18,7 @@
 #include "nau/material/programValue.h"
 #include "nau/material/uniformBlockManager.h"
 #include "nau/math/number.h"
+#include "nau/physics/physicsManager.h"
 #include "nau/render/iAPISupport.h"
 #include "nau/render/passCompute.h"
 #include "nau/render/passFactory.h"
@@ -81,6 +82,9 @@ unsigned int ProjectLoader::s_Dummy_uint;
 bool ProjectLoader::s_Dummy_bool;
 uivec3 ProjectLoader::s_Dummy_uivec3;
 uivec2 ProjectLoader::s_Dummy_uivec2;
+std::string ProjectLoader::s_Dummy_string;
+
+std::vector<ProjectLoader::DeferredValidation> ProjectLoader::s_DeferredVal;
 
 
 
@@ -295,6 +299,28 @@ ProjectLoader::readChildTag(std::string pName, TiXmlElement *p, Enums::DataType 
 }
 
 
+std::string &
+ProjectLoader::readChildTagString(std::string parent, TiXmlElement *pElem,	AttribSet &attribs) {
+
+	if (TIXML_SUCCESS != pElem->QueryStringAttribute("name", &s_Dummy_string)) {
+		NAU_THROW("File %s: Element %s: String Attribute %s without a value", ProjectLoader::s_File.c_str(), parent.c_str(), pElem->Value());
+	}
+
+	return s_Dummy_string;
+}
+
+
+std::string &
+ProjectLoader::readAttributeString(std::string tag, std::unique_ptr<Attribute> &attrib, TiXmlElement *p) {
+
+	s_Dummy_string = "";
+
+	p->QueryStringAttribute(tag.c_str(), &s_Dummy_string);
+
+	return s_Dummy_string;
+}
+
+
 Data *
 ProjectLoader::readAttribute(std::string tag, std::unique_ptr<Attribute> &attrib, TiXmlElement *p) {
 
@@ -334,7 +360,10 @@ ProjectLoader::readAttribute(std::string tag, std::unique_ptr<Attribute> &attrib
 				return NULL;
 			else {
 				s_Dummy_int = attrib->getOptionValue(s);
-				return new NauInt(s_Dummy_int);
+				if (s_Dummy_int != -1)
+					return new NauInt(s_Dummy_int);
+				else
+					return NULL;
 			}
 			break;
 		default:
@@ -442,19 +471,28 @@ ProjectLoader::readAttributes(std::string parent, AttributeValues *anObj, nau::A
 				NAU_THROW("File %s\nElement %s: \"%s\" is a read-only attribute", ProjectLoader::s_File.c_str(), parent.c_str(), attrib->Name());
 
 			int id = a->getId();
-			value = readAttribute(a->getName(), a, pElem);
-			if (!anObj->isValid(id, a->getType(), value)) {
-				std::string s = getValidValuesString(a);
-				if (s != "") {
-					NAU_THROW("File %s\nElement %s: \"%s\" has an invalid value\nValid values are\n%s", ProjectLoader::s_File.c_str(), parent.c_str(), attrib->Name(), s.c_str());
+			Enums::DataType t = a->getType();
+			if (Enums::STRING != t) {
+				value = readAttribute(a->getName(), a, pElem);
+				if (!anObj->isValid(id, a->getType(), value)) {
+					std::string s = getValidValuesString(a);
+					if (s != "") {
+						NAU_THROW("File %s\nElement %s: \"%s\" has an invalid value\nValid values are\n%s", ProjectLoader::s_File.c_str(), parent.c_str(), attrib->Name(), s.c_str());
+					}
+					else {
+						NAU_THROW("File %s\nElement %s: \"%s\" is not supported", ProjectLoader::s_File.c_str(), parent.c_str(), attrib->Name());
+					}
 				}
-				else {
-					NAU_THROW("File %s\nElement %s: \"%s\" is not supported", ProjectLoader::s_File.c_str(), parent.c_str(), attrib->Name());
-				}
+				anObj->setProp(id, a->getType(), value);
+				delete value;
 			}
-
-			anObj->setProp(id, a->getType(), value);
-			delete value;
+			else {
+				std::string &valueS = readAttributeString(a->getName(), a, pElem);
+				if (!anObj->isValids((AttributeValues::StringProperty)id, valueS)) {
+					// deal with error
+				}
+				anObj->setProps((AttributeValues::StringProperty)id, valueS);
+			}
 		}
 		attrib = attrib->Next();
 	}
@@ -543,18 +581,34 @@ ProjectLoader::readChildTags(std::string parent, AttributeValues *anObj, nau::At
 
 			int id = a->getId();
 			Enums::DataType type = a->getType();
-			value = readChildTag(parent, p, type, attribs);
-			if (!anObj->isValid(id, type, value)) {
-				std::string s = getValidValuesString(a);
-				if (s != "") {
-					NAU_THROW("File %s\nElement %s: \"%s\" has an invalid value\nValid values are\n%s", ProjectLoader::s_File.c_str(), parent.c_str(), a->getName().c_str(), s.c_str());
+			
+			if (type != Enums::STRING) {
+				
+				value = readChildTag(parent, p, type, attribs);
+				if (!anObj->isValid(id, a->getType(), value)) {
+					std::string s = getValidValuesString(a);
+					if (s != "") {
+						NAU_THROW("File %s\nElement %s: \"%s\" has an invalid value\nValid values are\n%s", ProjectLoader::s_File.c_str(), parent.c_str(), a->getName().c_str(), s.c_str());
+					}
+					else {
+						NAU_THROW("File %s\nElement %s: \"%s\" is not supported", ProjectLoader::s_File.c_str(), parent.c_str(), a->getName().c_str());
+					}
 				}
-				else {
-					NAU_THROW("File %s\nElement %s: \"%s\" is not supported", ProjectLoader::s_File.c_str(), parent.c_str(), a->getName().c_str());
-				}
+				anObj->setProp(id, a->getType(), value);
+				delete value;
 			}
-			anObj->setProp(id, a->getType(), value);
-			delete value;
+			else {
+				std::string &valueS = readChildTagString(parent, p, attribs);
+				if (!anObj->isValids((AttributeValues::StringProperty)id, valueS)) {
+					std::string s = "File: " + ProjectLoader::s_File;
+					addToDefferredVal(s, p->Row(), p->Column(), valueS, a->getObjType());
+					//std::vector<string> validValues;
+					//NAU->getValidObjectNames(a->getObjType(), &validValues);
+					//TextUtil::Join(validValues, ", ", &s_Dummy);
+					//NAU_THROW("File %s line: %d column: %d\nElement %s: \"%s\" has an invalid value\nValid values are\n%s", ProjectLoader::s_File.c_str(), p->Row(), p->Column(),parent.c_str(), a->getName().c_str(), s_Dummy.c_str());
+				}
+				anObj->setProps((AttributeValues::StringProperty)id, valueS);
+			}
 		}
 		p = p->NextSiblingElement();
 	}
@@ -641,6 +695,7 @@ ProjectLoader::load (std::string file, int *width, int *height)
 	LOG_INFO ("Loading project: %s", file.c_str()); 
 #endif
 
+	s_DeferredVal.clear();
 	ProjectLoader::s_Path = File::GetPath(file);
 	ProjectLoader::s_File = file;
 	s_Constants.clear();
@@ -696,6 +751,8 @@ ProjectLoader::load (std::string file, int *width, int *height)
 	}
 	std::vector<std::string> v = { "assets" , "pipelines" , "interface"};
 	checkForNonValidChildTags("project", v, pElem);
+
+	deferredValidation();
 
 #if NAU_DEBUG == 1
 	LOG_INFO ("Loading done"); 
@@ -793,6 +850,43 @@ and can be used to replace any numeric type.
 ----------------------------------------------------------------- */
 
 void 
+ProjectLoader::addToDefferredVal(std::string filename, int row, int column, 
+				std::string value, std::string objType) {
+
+	DeferredValidation df;
+	df.filename = filename;
+	df.actualValue = value;
+	df.row = row;
+	df.column = column;
+	df.objType = objType;
+
+	s_DeferredVal.push_back(df);
+}
+
+void 
+ProjectLoader::deferredValidation() {
+
+	std::string s;
+	s_Dummy = "";
+	for (auto df : s_DeferredVal) {
+		if (!NAU->validateObjectName(df.objType, df.actualValue)) {
+			s_Dummy = s_Dummy + df.filename + " (Line " + std::to_string(df.row) + ", column " + std::to_string(df.column) + ")\n ";
+			s_Dummy += "Element " + df.objType + " value " + df.actualValue + " is invalid\n";
+			s_Dummy += "Valid Values: ";
+			std::vector<string> validValues;
+			NAU->getValidObjectNames(df.objType, &validValues);
+			TextUtil::Join(validValues, ", ", &s);
+			s_Dummy += s + "\n\n";
+		}
+	}
+	s_DeferredVal.clear();
+
+	if (s_Dummy != "") {
+		NAU_THROW(s_Dummy.c_str());
+	}
+}
+
+void
 ProjectLoader::loadConstants(TiXmlHandle &handle) 
 {
 	TiXmlElement *pElem, *pElem2;
@@ -854,6 +948,7 @@ void
 ProjectLoader::loadScenes(TiXmlHandle handle) 
 {
 	TiXmlElement *pElem;
+	nau::resource::ResourceManager *rm = RESOURCEMANAGER;
 
 	TiXmlElement *pElem2 = handle.FirstChild("scenes").Element();
 	std::vector<std::string> v;
@@ -866,7 +961,7 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 		const char *pType = pElem->Attribute("type");
 		const char *pFilename = pElem->Attribute("filename");
 		const char *pParam = pElem->Attribute("param");
-
+		const char *pPhysMat = pElem->Attribute("physicsMaterial");
 		std::string s;
 
 		if (0 == pName) {
@@ -926,12 +1021,12 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 
 				bool alreadyThere = false;
 				std::shared_ptr<Primitive> p;
-				if (RESOURCEMANAGER->hasRenderable(pNameSO, "")) {
+				if (rm->hasRenderable(pNameSO)) {
 					alreadyThere = true;
-					p = dynamic_pointer_cast<Primitive>(RESOURCEMANAGER->getRenderable(pNameSO, ""));
+					p = dynamic_pointer_cast<Primitive>(rm->getRenderable(pNameSO));
 				}
 				else {
-					p = dynamic_pointer_cast<Primitive>(RESOURCEMANAGER->createRenderable(pPrimType, pNameSO));
+					p = dynamic_pointer_cast<Primitive>(rm->createRenderable(pPrimType, pNameSO));
 				}
 				if (!p)
 					NAU_THROW("File %s\nScene %s\nPrimitive %s has an invalid primitive type - %s", ProjectLoader::s_File.c_str(), pName, pNameSO, pPrimType);
@@ -977,12 +1072,12 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 
 				bool alreadyThere = false;
 				std::shared_ptr<nau::geometry::Terrain> p;
-				if (RESOURCEMANAGER->hasRenderable(pNameSO, "")) {
+				if (rm->hasRenderable(pNameSO)) {
 					alreadyThere = true;
-					p = dynamic_pointer_cast<Terrain>(RESOURCEMANAGER->getRenderable(pNameSO, ""));
+					p = dynamic_pointer_cast<Terrain>(rm->getRenderable(pNameSO));
 				}
 				else {
-					p = dynamic_pointer_cast<Terrain>(RESOURCEMANAGER->createRenderable("Terrain", pNameSO));
+					p = dynamic_pointer_cast<Terrain>(rm->createRenderable("Terrain", pNameSO));
 				}
 
 				if (!alreadyThere) {
@@ -1032,13 +1127,13 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 				IRenderable::DrawPrimitive dp = IRenderer::PrimitiveTypes[primString];
 				std::shared_ptr<SceneObject> &so = SceneObjectFactory::Create("SimpleObject");
 				so->setName(pNameSO);
-				std::shared_ptr<IRenderable> &i = RESOURCEMANAGER->createRenderable("Mesh", pNameSO);
+				std::shared_ptr<IRenderable> &i = rm->createRenderable("Mesh", pNameSO);
 				i->setDrawingPrimitive(dp);
 				std::shared_ptr<MaterialGroup> mg;
 				if (pMaterial)
 					mg = MaterialGroup::Create(i.get(), pMaterial);
 				else
-					mg = MaterialGroup::Create(i.get(), "dirLightDifAmbPix");
+					mg = MaterialGroup::Create(i.get(), "__nauDefault");
 
 				std::shared_ptr<VertexData> &v = i->getVertexData();
 				std::string bufferName;
@@ -1050,13 +1145,13 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 						NAU_THROW("File %s\nScene: %s\nBuffer has no name", ProjectLoader::s_File.c_str(), pName);
 
 					IBuffer * b;
-					b = RESOURCEMANAGER->createBuffer(bufferName);
+					b = rm->createBuffer(bufferName);
 					int attribIndex = VertexData::GetAttribIndex(std::string(p->Value()));
 
 					if (attribIndex != VertexData::MaxAttribs) {
 						v->setBuffer(attribIndex, b->getPropi(IBuffer::ID));
 					}
-					else if (p->Value() == "index"){
+					else if (!strcmp(p->Value(),"index")){
 
 						mg->getIndexData()->setBuffer(b->getPropi(IBuffer::ID));
 					}
@@ -1134,6 +1229,9 @@ ProjectLoader::loadScenes(TiXmlHandle handle)
 			if (params.find("UNITIZE") != std::string::npos)
 				is->unitize();
 		}
+
+		if (pPhysMat)
+			NAU->getPhysicsManager()->addScene(is.get(), pPhysMat);
 	}
 }
 
@@ -1296,25 +1394,25 @@ ProjectLoader::loadCameras(TiXmlHandle handle)
 		TiXmlElement *pElemAux = 0;
 		std::string s;
 
-		// Read Viewport
-		pElemAux = pElem->FirstChildElement ("viewport");
-		std::shared_ptr<Viewport> v;
-		if (0 == pElemAux) {
-			v = NAU->getDefaultViewport ();
-		} else {
-			if (TIXML_SUCCESS != pElemAux->QueryStringAttribute("name", &s))
-				NAU_THROW("File %s\nElement %s\nviewport name is required", ProjectLoader::s_File.c_str(), pName);
+		//// Read Viewport
+		//pElemAux = pElem->FirstChildElement ("viewport");
+		//std::shared_ptr<Viewport> v;
+		//if (0 == pElemAux) {
+		//	v = NAU->getDefaultViewport ();
+		//} else {
+		//	if (TIXML_SUCCESS != pElemAux->QueryStringAttribute("name", &s))
+		//		NAU_THROW("File %s\nElement %s\nviewport name is required", ProjectLoader::s_File.c_str(), pName);
 
-			// Check if previously defined
-			v = RENDERMANAGER->getViewport(s);
-			if (!v)
-				NAU_THROW("File %s\nElement %s\nviewport %s is not previously defined", ProjectLoader::s_File.c_str(), pName, s.c_str());
+		//	// Check if previously defined
+		//	v = RENDERMANAGER->getViewport(s);
+		//	if (!v)
+		//		NAU_THROW("File %s\nElement %s\nviewport %s is not previously defined", ProjectLoader::s_File.c_str(), pName, s.c_str());
 
-			aNewCam->setViewport (v);
-		}
+		//	aNewCam->setViewport (v);
+		//}
 		// read projection values
 		pElemAux = pElem->FirstChildElement("projection");
-
+		
 		if (pElemAux != NULL)
 		{
 			std::vector<std::string> excluded;
@@ -1323,7 +1421,7 @@ ProjectLoader::loadCameras(TiXmlHandle handle)
 		// Reading remaining camera attributes
 
 		std::vector<std::string> excluded;
-		excluded.push_back("projection"); excluded.push_back("viewport");
+		excluded.push_back("projection"); 
 		readChildTags(pName, (AttributeValues *)aNewCam.get(), Camera::Attribs, excluded, pElem);
 	} //End of Cameras
 }
@@ -1428,10 +1526,31 @@ ProjectLoader::loadAssets (TiXmlHandle &hRoot, std::vector<std::string>  &matLib
 
 
 	std::vector<std::string> ok = {"constants", "attributes", "scenes", "viewports", "cameras",
-		"lights", "events", "atomics", "materialLibs", "sensors", "routes", "interpolators"};
+		"lights", "events", "atomics", "materialLibs", "physicsLibs", "sensors", "routes", "interpolators"};
 	checkForNonValidChildTags("Assets", ok, hRoot.FirstChild ("assets").Element());
+
+
+
 	loadConstants(handle);
 	loadUserAttrs(handle);
+
+	pElem = handle.FirstChild ("physicsLibs").FirstChild ("physicsLib").Element();
+	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement("physicsLib")) {
+		const char *pFilename = pElem->Attribute ("filename");
+
+		if (0 == pFilename) {
+			NAU_THROW("File %s\nNo file specified for physicsc material lib", ProjectLoader::s_File.c_str());
+		}
+
+		try {
+			SLOG("Loading Physics Material Lib from file : %s", File::GetFullPath(ProjectLoader::s_Path,pFilename).c_str());
+			loadPhysLib(File::GetFullPath(ProjectLoader::s_Path,pFilename));
+		}
+		catch(std::string &s) {
+			throw(s);
+		}
+	}
+
 	loadScenes(handle);
 	loadViewports(handle);
 	loadCameras(handle);
@@ -1440,19 +1559,19 @@ ProjectLoader::loadAssets (TiXmlHandle &hRoot, std::vector<std::string>  &matLib
 	if (APISupport->apiSupport(IAPISupport::BUFFER_ATOMICS))
 		loadAtomicSemantics(handle);
 
-	pElem = handle.FirstChild ("materialLibs").FirstChild ("materialLib").Element();
-	for ( ; 0 != pElem; pElem = pElem->NextSiblingElement()) {
-		const char *pFilename = pElem->Attribute ("filename");
+	pElem = handle.FirstChild("materialLibs").FirstChild("materialLib").Element();
+	for (; 0 != pElem; pElem = pElem->NextSiblingElement()) {
+		const char *pFilename = pElem->Attribute("filename");
 
 		if (0 == pFilename) {
 			NAU_THROW("File %s\nNo file specified for material lib", ProjectLoader::s_File.c_str());
 		}
 
 		try {
-			SLOG("Loading Material Lib from file : %s", File::GetFullPath(ProjectLoader::s_Path,pFilename).c_str());
-			loadMatLib(File::GetFullPath(ProjectLoader::s_Path,pFilename));
+			SLOG("Loading Material Lib from file : %s", File::GetFullPath(ProjectLoader::s_Path, pFilename).c_str());
+			loadMatLib(File::GetFullPath(ProjectLoader::s_Path, pFilename));
 		}
-		catch(std::string &s) {
+		catch (std::string &s) {
 			throw(s);
 		}
 	}
@@ -3589,11 +3708,8 @@ ProjectLoader::loadInterface(TiXmlHandle & hRoot) {
 				else
 					INTERFACE->addVar(pWindowName, pLabel, pType, pContext, pComponent, id, def);
 			}
-
 		}
-
 	}
-
 }
 
 
@@ -3612,8 +3728,8 @@ PRE POST PROCESS
  ----------------------------------------------------------------------------- */
 
 void 
-ProjectLoader::loadPassPreProcess(TiXmlHandle hPass, Pass *aPass) 
-{
+ProjectLoader::loadPassPreProcess(TiXmlHandle hPass, Pass *aPass) {
+
 	TiXmlElement *pElem;
 	std::vector <std::string> excluded = {"name", "fromLibrary"};
 
@@ -3653,15 +3769,13 @@ ProjectLoader::loadPassPreProcess(TiXmlHandle hPass, Pass *aPass)
 		else {
 			NAU_THROW("File %s\nPass %s\nError in pre process tag\nValid child tags are: texture or buffer", s_File.c_str(), aPass->getName().c_str());
 		}
-
-
 	}
 }
 
 
 void 
-ProjectLoader::loadPassPostProcess(TiXmlHandle hPass, Pass *aPass) 
-{
+ProjectLoader::loadPassPostProcess(TiXmlHandle hPass, Pass *aPass) {
+
 	TiXmlElement *pElem;
 	std::vector <std::string> excluded = {"name", "fromLibrary"};
 
@@ -3871,7 +3985,7 @@ ProjectLoader::loadMatLibTextures(TiXmlHandle hRoot, MaterialLib *aLib, std::str
 		files[4] = File::GetFullPath(path,pFilePosZ);
 		files[5] = File::GetFullPath(path,pFileNegZ);
 
-		RESOURCEMANAGER->addTexture (files, s_pFullName, mipmap);		
+		RESOURCEMANAGER->addTexture (files, std::string(s_pFullName), mipmap);		
 	}
 }
 
@@ -3946,11 +4060,12 @@ ProjectLoader::loadMatLibStates(TiXmlHandle hRoot, MaterialLib *aLib)
 			NAU_THROW("Mat Lib %s\nState %s is already defined", aLib->getName().c_str(), pStateName);
 
 
-		IState *s = IState::create();
-		s->setName(fullName);
+		IState *s = RESOURCEMANAGER->createState(fullName);
+		//IState *s = IState::create();
+		//s->setName(fullName);
 
 		loadState(pElem,aLib,NULL,s);
-		RESOURCEMANAGER->addState(s);
+		//RESOURCEMANAGER->addState(s);
 	}
 }
 
@@ -4382,6 +4497,9 @@ ProjectLoader::loadMaterialShader(TiXmlHandle handle, MaterialLib *aLib, std::sh
 			}
 
 			else if (s == "CAMERA" && strcmp(pContext, "CURRENT")) {
+				std::string s;
+				s += "MatLib " + aLib->getName();
+				addToDefferredVal(s, pElemAux2->Row(), pElemAux2->Column(), pContext, "CAMERA");
 				// Must consider that a camera can be defined internally in a pass, example:lightcams
 				/*if (!RENDERMANAGER->hasCamera(pContext))
 					NAU_THROW("Camera %s is not defined in the project file", pContext);*/
@@ -4453,6 +4571,118 @@ ProjectLoader::loadMaterialState(TiXmlHandle handle, MaterialLib *aLib, std::sha
 		aMat->setState(RESOURCEMANAGER->createState(fullName));
 	}
 }
+
+
+/* -----------------------------------------------------------------------------
+PHYSICS MATERIAL LIBS
+
+<?xml version="1.0" ?>
+<physicslib name="Billiard">
+
+<globalProperties>
+	<BLA value="0" />
+	<BLE x="1" y="0" z="0" />
+</globalProperties>
+
+<materials>
+	<material name = "bla" tyep="RIGID">
+		<prop name="BLI" value="0" />
+		<prop name="BLO" x="1" y="0" z="0" />
+	</material>
+</materials>
+...
+</materiallib>
+
+
+-----------------------------------------------------------------------------*/
+
+void
+ProjectLoader::loadPhysLib(std::string file)
+{
+	std::string path = File::GetPath(file);
+	//std::map<std::string,IState *> states;
+
+	TiXmlDocument doc(file.c_str());
+	bool loadOkay = doc.LoadFile();
+
+	MaterialLib *aLib = 0;
+
+	if (!loadOkay)
+		NAU_THROW("Parsing Error -%s- Line(%d) Column(%d) in file: %s", doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol(), file.c_str());
+
+	TiXmlHandle hDoc(&doc);
+	TiXmlHandle hRoot(0);
+	TiXmlElement *pElem;
+
+	{ //root
+		pElem = hDoc.FirstChildElement().Element();
+		if (0 == pElem)
+			NAU_THROW("Parse Error in physics lib file %s", file.c_str());
+		hRoot = TiXmlHandle(pElem);
+	}
+
+	pElem = hRoot.Element();
+	const char* pName = pElem->Attribute("name");
+
+	if (0 == pName)
+		NAU_THROW("Physics lib has no name in file %s", file.c_str());
+
+	SLOG("Physics Lib: %s", pName);
+
+	aLib = MATERIALLIBMANAGER->getLib(pName);
+
+	std::string aux = s_File;
+	s_File = file;
+
+
+	nau::physics::PhysicsManager *pm = NAU->getPhysicsManager();
+	pElem = hRoot.FirstChild("globalProperties").Element();
+	std::vector<std::string> excluded;
+	readChildTags(pName, pm, nau::physics::PhysicsManager::Attribs, excluded, pElem);
+
+	pElem = hRoot.FirstChild("materials").FirstChild("material").Element();
+	for (; 0 != pElem; pElem = pElem->NextSiblingElement()) {
+
+		TiXmlHandle handle(pElem);
+
+		const char *pMaterialName = pElem->Attribute("name");
+		if (0 == pMaterialName)
+			NAU_THROW("Physics Lib %s\nMaterial has no name", pName);
+
+		std::unique_ptr<Attribute> &a = nau::physics::PhysicsMaterial::Attribs.get("SCENE_TYPE");
+		nau::math::Data *d = readAttribute("type", a, pElem);
+		if (d == NULL) {
+			std::string s = getValidValuesString(a);
+			NAU_THROW("File %s: Element %s: \"%s\" is not a valid attribute\nValid tags are: %s",
+				ProjectLoader::s_File.c_str(), pMaterialName, a->getName().c_str(), s.c_str());
+		}
+
+		std::string mn = pMaterialName;
+		nau::physics::PhysicsMaterial &mat = pm->getMaterial(mn);
+		mat.setPrope(nau::physics::PhysicsMaterial::SCENE_TYPE, *(int *)(d->getPtr()));
+
+		const char *pMaterialShapeName = pElem->Attribute("shape");
+		if (0 != pMaterialShapeName) {
+			std::unique_ptr<Attribute> &b = nau::physics::PhysicsMaterial::Attribs.get("SCENE_SHAPE");
+			nau::math::Data *e = readAttribute("shape", b, pElem);
+			if (e == NULL) {
+				std::string s = getValidValuesString(b);
+				NAU_THROW("File %s: Element %s: \"%s\" is not a valid attribute\nValid tags are: %s",
+					ProjectLoader::s_File.c_str(), pMaterialName, b->getName().c_str(), s.c_str());
+			}
+			mat.setPrope(nau::physics::PhysicsMaterial::SCENE_SHAPE, *(int *)(e->getPtr()));
+		}
+
+		readChildTags(pMaterialName, &mat, nau::physics::PhysicsMaterial::Attribs, excluded, pElem);
+
+		SLOG("Physics Material: %s", pMaterialName);
+
+		}
+	s_File = aux;
+
+	pm->updateProps();
+}
+
 
 /* -----------------------------------------------------------------------------
 MATERIAL LIBS     

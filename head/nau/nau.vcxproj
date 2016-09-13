@@ -527,6 +527,10 @@
     <ClCompile Include="..\src\nau\geometry\square.cpp" />
     <ClCompile Include="..\src\nau\loader\patchLoader.cpp" />
     <ClCompile Include="..\src\nau\material\iTextureSampler.cpp" />
+    <ClCompile Include="..\src\nau\physics\physicsDummy.cpp" />
+    <ClCompile Include="..\src\nau\physics\physicsManager.cpp" />
+    <ClCompile Include="..\src\nau\physics\physicsMaterial.cpp" />
+    <ClCompile Include="..\src\nau\physics\physicsPropertyManager.cpp" />
     <ClCompile Include="..\src\nau\render\iAPISupport.cpp" />
     <ClCompile Include="..\src\nau\render\iGlobalState.cpp" />
     <ClCompile Include="..\src\nau\render\iRenderable.cpp" />
@@ -676,13 +680,6 @@
     <ClCompile Include="..\src\nau\event\sensorFactory.cpp" />
     <ClCompile Include="..\src\nau\event\timeSensor.cpp" />
     <ClCompile Include="..\src\nau\util\tree.cpp" />
-    <ClCompile Include="..\src\nau\world\bulletDebugger.cpp" />
-    <ClCompile Include="..\src\nau\world\bulletMotionState.cpp" />
-    <ClCompile Include="..\src\nau\world\bulletWorld.cpp" />
-    <ClCompile Include="..\src\nau\world\physicalObject.cpp" />
-    <ClCompile Include="..\src\nau\world\physXMotionState.cpp" />
-    <ClCompile Include="..\src\nau\world\physXWorld.cpp" />
-    <ClCompile Include="..\src\nau\world\worldFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\iNau.h" />
@@ -761,6 +758,12 @@
     <ClInclude Include="..\src\nau\math\vec2.h" />
     <ClInclude Include="..\src\nau\math\vec3.h" />
     <ClInclude Include="..\src\nau\math\vec4.h" />
+    <ClInclude Include="..\src\nau\physics\iPhysics.h" />
+    <ClInclude Include="..\src\nau\physics\iPhysicsPropertyManager.h" />
+    <ClInclude Include="..\src\nau\physics\physicsDummy.h" />
+    <ClInclude Include="..\src\nau\physics\physicsManager.h" />
+    <ClInclude Include="..\src\nau\physics\physicsMaterial.h" />
+    <ClInclude Include="..\src\nau\physics\physicsPropertyManager.h" />
     <ClInclude Include="..\src\nau\render\iAPISupport.h" />
     <ClInclude Include="..\src\nau\render\iGlobalState.h" />
     <ClInclude Include="..\src\nau\render\iRenderable.h" />
@@ -882,14 +885,6 @@
     <ClInclude Include="..\src\nau\math\mtrand.h" />
     <ClInclude Include="..\src\nau\math\plane.h" />
     <ClInclude Include="..\src\nau\util\tree.h" />
-    <ClInclude Include="..\src\nau\world\bulletDebugger.h" />
-    <ClInclude Include="..\src\nau\world\bulletMotionState.h" />
-    <ClInclude Include="..\src\nau\world\bulletWorld.h" />
-    <ClInclude Include="..\src\nau\world\iWorld.h" />
-    <ClInclude Include="..\src\nau\world\physicalObject.h" />
-    <ClInclude Include="..\src\nau\world\physXMotionState.h" />
-    <ClInclude Include="..\src\nau\world\physXWorld.h" />
-    <ClInclude Include="..\src\nau\world\worldFactory.h" />
     <CustomBuildStep Include="..\src\nau\math\spherical.h" />
     <ClInclude Include="..\src\nau\math\utils.h" />
     <ClInclude Include="..\src\nau\render\pass.h" />

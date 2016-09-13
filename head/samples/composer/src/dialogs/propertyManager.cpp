@@ -94,6 +94,7 @@ PropertyManager::addAttribute(wxPropertyGridManager *pg, std::unique_ptr<Attribu
 	case Enums::VEC4: createVec4(pg, a); break;
 	case Enums::MAT3: createMat3(pg, a); break;
 	case Enums::MAT4: createMat4(pg, a); break;
+	case Enums::STRING: createString(pg, a); break;
 	default: assert(false && "Missing datatype in property manager");
 
 	}
@@ -131,6 +132,7 @@ PropertyManager::updateGrid(wxPropertyGridManager *pg, nau::AttribSet &attribs, 
 			break;
 		case Enums::MAT3: updateMat3(pg, a->getName(), attribVal->getPropm3((AttributeValues::Mat3Property)a->getId())); break;
 		case Enums::MAT4: updateMat4(pg, a->getName(), attribVal->getPropm4((AttributeValues::Mat4Property)a->getId())); break;
+		case Enums::STRING: updateString(pg, a->getName(), attribVal->getProps((AttributeValues::StringProperty)a->getId())); break;
 		default: assert(false && "Missing datatype in property manager");
 		}
 	}
@@ -387,6 +389,20 @@ PropertyManager::updateProp(wxPropertyGridManager *pg, std::string prop, AttribS
 	}
 }
 
+//		STRING
+
+void
+PropertyManager::createString(wxPropertyGridManager *pg, std::unique_ptr<Attribute> &a) {
+
+	std::string s = a->getObjType();
+}
+
+
+void
+PropertyManager::updateString(wxPropertyGridManager *pg, std::string label, const std::string &a) {
+
+	//pg->SetPropertyValue(wxString(label.c_str()), a);
+}
 //		ENUM
 
 void

@@ -7,7 +7,7 @@
 #include "nau/material/iTextureSampler.h"
 
 
-//#ifdef __SLANGER__
+//#ifdef __COMPOSER__
 //#include <wx/bitmap.h>
 //#include <wx/image.h>
 //#include <IL/ilu.h>
@@ -63,25 +63,12 @@ namespace nau
 			//void setProp(int prop, Enums::DataType type, void *value);
 
 			static ITexture* Create (std::string file, std::string label, bool mipmap=true);
-			//static ITexture* Create (std::string label);
-
-			//static ITexture* Create(std::string label, std::string internalFormat,
-			//	std::string aFormat, std::string aType, int width, int height, 
-			//	unsigned char* data );
 
 			static ITexture* Create(std::string label, std::string internalFormat,
 				int width, int height, int depth = 1, int layers = 1, int levels = 0, int samples = 0);
 
-			//static ITexture* CreateMS(std::string label, std::string internalFormat,
-			//	int width, int height, 
-			//	int samples );
-
 			static ITexture* Create(std::string label);
 	
-
-//#ifdef __SLANGER__
-//			virtual wxBitmap *getBitmap(void);
-//#endif
 			virtual std::string& getLabel (void);
 			virtual void setLabel (std::string label);
 			//! prepare a texture for rendering
@@ -100,24 +87,21 @@ namespace nau
 
 			virtual ~ITexture(void);
 
-		protected:
-			// For textures with data, ex. loaded images
-			//ITexture(std::string label, std::string aDimension, std::string internalFormat, 
-			//	std::string aFormat, std::string aType, int width, int height);
-			/// For 2D textures without data, ex texture storage
-			//ITexture(std::string label, std::string aDimension, std::string internalFormat, 
-			//	int width, int height);
+			char *data;
 
+		protected:
 			ITexture(std::string label);
 
+
 			/// For inheritance reasons only
-			ITexture() {/*bitmap=NULL;*/};
+			ITexture():data(NULL) {/*bitmap=NULL;*/};
 
 			static bool Init();
 			static bool Inited;
 
 			std::string m_Label;
-//#ifdef __SLANGER__
+
+//#ifdef __COMPOSER__
 //			wxBitmap *bitmap;
 //#endif
 		};

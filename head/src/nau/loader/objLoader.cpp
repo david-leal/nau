@@ -222,7 +222,7 @@ OBJLoader::firstPass(FILE* file)
 	initGroup(s);
 	group = &m_Groups["default"];
 	groupName = "default";
-	materialName = "DefaultOBJMaterial";
+	materialName = "__nauDefault";
 	
 	m_NumVertices = m_NumNormals = m_NumTexCoords = m_NumTriangles = 0;
 	m_NumMaterials = 0;
@@ -878,7 +878,8 @@ OBJLoader::loadScene (nau::scene::IScene *aScene, std::string &aFilename, std::s
 
 	// Renderable
 	// Set Renderable Factory 
-	std::shared_ptr<IRenderable> &aRenderable = RESOURCEMANAGER->createRenderable ("Mesh","unnamed", aObject->getName());
+	nau::resource::ResourceManager *rm = RESOURCEMANAGER;
+	std::shared_ptr<IRenderable> &aRenderable = rm->createRenderable ("Mesh",rm->makeMeshName("", aObject->getName()));
 	aRenderable->setDrawingPrimitive(primitive);
 
 	// Import VERTEX/NORMAL/TEXTURE data into Renderable

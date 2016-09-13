@@ -4,7 +4,11 @@
 #pragma warning( disable: 4299)
 #pragma warning( disable: 4099)
 
-//#include <vld.h>
+#ifdef _WIN32
+#define APIENTRY __stdcall
+#endif
+
+#include <vld.h>
 
 #include <main.h>
 #include <glcanvas.h>
@@ -63,6 +67,8 @@ bool WndComposer::OnInit()
     return true;
 }
 
+
+
 // Menu Options 
 // File Menu
 int idMenuProject = wxNewId();
@@ -91,6 +97,10 @@ int idMenuDlgShaders = wxNewId();
 int idMenuDlgAtomics = wxNewId();
 int idMenuDlgBuffers = wxNewId();
 int idMenuDlgRT = wxNewId();
+// Physics Menu
+int idMenuPhysicsOn = wxNewId();
+int idMenuPhysicsOff = wxNewId();
+int idMenuDlgPhysics = wxNewId();
 // Debug Menu
 int idMenuDbgBreak = wxNewId();
 int idMenuDlgStep = wxNewId();
@@ -104,11 +114,6 @@ int idMenuProfileReset = wxNewId();
 // About Menu
 int idMenuAbout = wxNewId();
 int idMenuDlgOGL = wxNewId();
-
-int idMenuPhysicsBuild = wxNewId();
-int idMenuPhysicsOn = wxNewId();
-int idMenuPhysicsOff = wxNewId();
-
 
 BEGIN_EVENT_TABLE(FrmMainFrame, wxFrame)
 // File Menu
@@ -135,6 +140,9 @@ EVT_MENU(idMenuDlgAtomics, FrmMainFrame::OnDlgAtomics)
 EVT_MENU(idMenuDlgShaders, FrmMainFrame::OnDlgShaders)
 EVT_MENU(idMenuDlgBuffers, FrmMainFrame::OnDlgBuffers)
 EVT_MENU(idMenuDlgRT, FrmMainFrame::OnDlgRenderTargets)
+// Physics Menu
+EVT_MENU_RANGE(idMenuPhysicsOn, idMenuPhysicsOff, FrmMainFrame::OnPhysicsMode)
+EVT_MENU(idMenuDlgPhysics, FrmMainFrame::OnDlgPhysics)
 // Debug Menu
 EVT_MENU(idMenuDlgLog, FrmMainFrame::OnDlgLog)
 EVT_MENU(idMenuDbgBreak, FrmMainFrame::OnBreakResume)
@@ -151,8 +159,7 @@ EVT_MENU(idMenuAbout, FrmMainFrame::OnAbout)
 
 EVT_KEY_DOWN(FrmMainFrame::OnKeyDown)
 	
-EVT_MENU_RANGE(idMenuPhysicsOn, idMenuPhysicsOff, FrmMainFrame::OnPhysicsMode)
-EVT_MENU(idMenuPhysicsBuild, FrmMainFrame::OnPhysicsBuild)
+//EVT_MENU(idMenuPhysicsBuild, FrmMainFrame::OnPhysicsBuild)
 	
 EVT_CLOSE(FrmMainFrame::OnClose)
 	
@@ -257,6 +264,15 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 	
 	mbar->Append (materialsMenu, _("&Materials"));
 
+	// Physics Menu
+
+	physicsMenu = new wxMenu(_T(""));
+	physicsMenu->Append(idMenuDlgPhysics, _("Physics Property Manager"), _(""));
+	physicsMenu->AppendRadioItem (idMenuPhysicsOn, _("Physics On"), _("Physics On"));
+	physicsMenu->AppendRadioItem (idMenuPhysicsOff, _("Physics Off"), _("Physics Off"));
+	physicsMenu->Check (idMenuPhysicsOff, true);
+	mbar->Append (physicsMenu, _("Physics"));
+
 	// Debug Menu
 
 	debugMenu = new wxMenu(_T(""));
@@ -292,12 +308,8 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 
     mbar->Append(aboutMenu, _("&Help"));
 
-	wxMenu* physicsMenu = new wxMenu(_T(""));
-	physicsMenu->Append (idMenuPhysicsBuild, _("&Build physics"), _("Builds physics"));
-	physicsMenu->AppendRadioItem (idMenuPhysicsOn, _("Physics On"), _("Physics On"));
-	physicsMenu->AppendRadioItem (idMenuPhysicsOff, _("Physics Off"), _("Physics Off"));
-	physicsMenu->Check (idMenuPhysicsOn, true);
-	mbar->Append (physicsMenu, _("Physics"));
+	//wxMenu* physicsMenu = new wxMenu(_T(""));
+	//physicsMenu->Append (idMenuPhysicsBuild, _("&Build physics"), _("Builds physics"));
 
     SetMenuBar(mbar);
 
@@ -321,7 +333,6 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 	//		-1, wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER|wxSTAY_ON_TOP);
 	//}
 #endif
-
 
 	m_pRoot = nau::Nau::Create();
 
@@ -380,9 +391,9 @@ FrmMainFrame::FrmMainFrame (wxFrame *frame, const wxString& title)
 	m_Canvas->setCamera();
 
 	// Dialogs //
-	DlgLog::SetParent(this);
-	DlgLog::Instance()->updateDlg();
 	DlgOGL::SetParent(this);
+	DlgLog::Instance()->updateDlg();
+	DlgPhysics::SetParent(this);
 	DlgTextureLib::SetParent(this);
 	DlgCameras::SetParent(this);
 	DlgMaterials::SetParent(this);
@@ -443,8 +454,14 @@ FrmMainFrame::~FrmMainFrame() {
 void 
 FrmMainFrame::OnClose(wxCloseEvent& event) {
 
-	delete m_pRoot;
-	Destroy();  
+	if (m_pRoot) {
+		delete m_pRoot;
+		m_pRoot = NULL;
+		m_Canvas->setEngine(NULL);
+		delete m_Canvas;
+	}
+	Destroy();
+	wxExit();
 }
 
 
@@ -545,6 +562,7 @@ FrmMainFrame::updateDlgs() {
 	DlgDbgPrograms::Instance()->updateDlg();
 	DlgTrace::Instance()->updateDlg();
 	DlgRenderTargets::Instance()->updateDlg();
+	DlgPhysics::Instance()->updateDlg();
 
 	renderMenu->Enable(idMenuDlgPass, true);
 	renderMenu->Enable(idMenuWireframe, true);
@@ -699,34 +717,6 @@ FrmMainFrame::OnProjectLoad(wxCommandEvent& event) {
 	if (wxID_OK == openFileDlg->ShowModal ()) {
 		wxString path = openFileDlg->GetPath ();
 		loadProject(path.c_str());
-//		wxStopWatch aTimer;
-//		aTimer.Start();
-//
-//		try {
-//			m_pRoot->clear();
-//			DlgLog::Instance()->updateDlg();
-//			DlgLog::Instance()->clear();
-//			int width=0, height=0;
-//			std::string ProjectFile ((const char *) path.c_str());
-//			m_pRoot->readProjectFile (ProjectFile, &width,&height);
-//			if (width)
-//				SetClientSize(width,height);
-//			m_Canvas->setCamera();
-//			updateDlgs();
-//#ifndef FINAL
-//
-//			float t =  aTimer.Time()/1000.0;
-//			SLOG("Elapsed time: %f", t);
-//#endif
-//
-//			DlgTrace::Instance()->clear();
-//
-//		} catch (nau::ProjectLoaderError &e) {
-//		  wxMessageBox (wxString (e.getException().c_str()));
-//		} 	
-//		catch (std::string s) {
-//			wxMessageBox(wxString (s.c_str()));
-//		}
 	}
 	delete openFileDlg;
 }
@@ -801,7 +791,7 @@ FrmMainFrame::OnProcess (wxCommandEvent& event) {
 
 void FrmMainFrame::OnQuit(wxCommandEvent& event) {
 
-	Close();
+	Close(true);
 }
 
 
@@ -874,7 +864,8 @@ FrmMainFrame::startStandAlone (void) {
 	m_pRoot->enablePhysics();
 
 	nau::scene::Camera *cam = NAU->getActiveCamera ();
-	cam->setDynamic(true);			
+//	cam->setDynamic(true);		
+	cam->setPropb(Camera::DYNAMIC, true);
 	m_Canvas->setCamera();
 }
 
@@ -961,9 +952,9 @@ FrmMainFrame::OnDlgDbgStep(wxCommandEvent& event) {
 
 
 void
-FrmMainFrame::OnPhysicsBuild (wxCommandEvent &event)
-{
-	buildPhysics();
+FrmMainFrame::OnDlgPhysics (wxCommandEvent &event) {
+
+	DlgPhysics::Instance()->Show(TRUE);
 }
 
 void
@@ -971,271 +962,6 @@ FrmMainFrame::buildPhysics(void) {
 
 	/****************************************PROGRAMATIC DRAW**************************************/
 	//std::string newSceneName = "bufferScene";
-
-	//std::shared_ptr<IScene> is = RENDERMANAGER->createScene(newSceneName);
-
-	//const char *pMaterial = "ballMat";
-	//const char *pNameSO = "myMesh";
-
-	//IRenderable::DrawPrimitive dp = IRenderer::PrimitiveTypes["LINES"];
-	//std::shared_ptr<SceneObject> &so = SceneObjectFactory::Create("SimpleObject");
-	//so->setName(pNameSO);
-	//std::shared_ptr<IRenderable> &i = RESOURCEMANAGER->createRenderable("Mesh", pNameSO);
-	//i->setDrawingPrimitive(dp);
-	//std::shared_ptr<MaterialGroup> mg;
-	//if (pMaterial)
-	//	mg = MaterialGroup::Create(i.get(), pMaterial);
-	//else
-	//	mg = MaterialGroup::Create(i.get(), "dirLightDifAmbPix");
-
-	//std::shared_ptr<VertexData> &v = i->getVertexData();
-	//IBuffer * pointsBuffer = RESOURCEMANAGER->createBuffer("pointsBuffer");
-	////IBuffer * indicesBuffer = RESOURCEMANAGER->createBuffer("indicesBuffer");
-
-	////float arrayPoints[] = { 0.0f,0.0f,0.0f,1.0f, 0.0f,1.0f,0.0f,1.0f, -1.0f,0.0f,0.0f,1.0f };
-	//float arrayPoints[] = { 1.0f,0.0f,0.0f,1.0f, 0.0f,1.0f,0.0f,1.0f, -1.0f,0.0f,0.0f,1.0f, 0.0f,-1.0f,0.0f,1.0f};
-	//float* points = arrayPoints;
-
-	////unsigned int arrayIndices[] = { 1, 2, 3 };
-	////unsigned int* indices = arrayIndices;
-
-	///*std::shared_ptr<std::vector<VertexData::Attr>> vertices =
-	//	std::shared_ptr<std::vector<VertexData::Attr>>(new std::vector<VertexData::Attr>(3));
-	//vertices->at(0).set(0.0f, 0.0f, 0.0f);
-	//vertices->at(1).set(0.0f, 1.0f, 0.0f);
-	//vertices->at(2).set(-1.0f, 0.0f, 0.0f);
-
-	//std::shared_ptr<std::vector<unsigned int>> indices =
-	//	std::shared_ptr<std::vector<unsigned int>>(new std::vector<unsigned int>(3));
-	//indices->at(0) = 0;
-	//indices->at(1) = 1;
-	//indices->at(2) = 2;*/
-
-	//v->setBuffer(VertexData::GetAttribIndex(std::string("position")), pointsBuffer->getPropi(IBuffer::ID));
-	//pointsBuffer->setData(sizeof(arrayPoints), points);
-	////pointsBuffer->setData(3*sizeof(VertexData::Attr), &(vertices->at(0)));
-
-	////mg->getIndexData()->setBuffer(indicesBuffer->getPropi(IBuffer::ID));
-	////indicesBuffer->setData(sizeof(arrayIndices), indices);
-	////mg->setIndexList(indices);
-
-
-	////v->setDataFor(VertexData::GetAttribIndex(std::string("position")), vertices);
-	///*int attribIndex = VertexData::GetAttribIndex(std::string("position"));
-
-	//if (attribIndex != VertexData::MaxAttribs) {
-	//	v->setBuffer(attribIndex, b->getPropi(IBuffer::ID));
-	//}*/
-
-	//v->resetCompilationFlag();
-	//v->compile();
-	////mg->resetCompilationFlag();
-	////mg->compile();
-	//i->addMaterialGroup(mg);
-	////i->resetCompilationFlags();
-	//so->setRenderable(i);
-	//is->add(so);
-	////is->compile();
-	////is->show();
-	//RENDERMANAGER->getActivePipeline()->getCurrentPass()->addScene(newSceneName);
-
-	/****************************************PROGRAMATIC DRAW**************************************/
-
-
-	/****************************************INSTANCES**************************************/
-
-	/*RENDERMANAGER->getCurrentPass()->setPropui(Pass::INSTANCE_COUNT, 4);
-
-	IBuffer * pointsBuffer = RESOURCEMANAGER->getBuffer(std::string("Simple::positions"));
-
-	float arrayPoints[] = { 0.0f,0.0f,-6.0f,1.0f,
-		3.0f,0.0f,0.0f,1.0f,
-		0.0f,3.0f,0.0f,1.0f,
-		0.0f,0.0f,-3.0f,1.0f
-	};
-	float* points = arrayPoints;
-
-	pointsBuffer->setData(sizeof(arrayPoints), points);
-
-	RENDERMANAGER->getScene("particle")->getSceneObject(0)->getRenderable()->getVertexData()->resetCompilationFlag();
-	RENDERMANAGER->getScene("particle")->getSceneObject(0)->getRenderable()->getVertexData()->compile();*/
-
-	/****************************************INSTANCES**************************************/
-
-
-	/****************************************PHYSICS!!!**************************************/
-	nau::scene::Camera *cam = RENDERMANAGER->getCamera("testCamera").get();
-	
-	if (0 != m_pRoot) {
-		//std::vector<std::string>* names = RENDERMANAGER->getAllSceneNames();
-		//m_pRoot->getWorld().setScene(RENDERMANAGER->getScene("plane"));
-		m_pRoot->getWorld().build();//glcanvas; onPaint; idle 
-
-		EVENTMANAGER->addListener("DYNAMIC_CAMERA", cam);
-		//m_pRoot->getWorld()._add(60.1f, cam, cam->getName(), vec3(0.3f, 0.3f, 0.5f));//descartar
-
-
-	/****************************************Bullet DEBUG**************************************/
-		std::string newSceneName = "debugScene";
-
-		std::shared_ptr<IScene> is = RENDERMANAGER->createScene(newSceneName);
-
-		const char *pMaterial = "debugMat";
-		const char *pNameSO = "myMesh";
-
-		IRenderable::DrawPrimitive dp = IRenderer::PrimitiveTypes["LINES"];
-		std::shared_ptr<SceneObject> &so = SceneObjectFactory::Create("SimpleObject");
-		so->setName(pNameSO);
-		std::shared_ptr<IRenderable> &i = RESOURCEMANAGER->createRenderable("Mesh", pNameSO);
-		i->setDrawingPrimitive(dp);
-		std::shared_ptr<MaterialGroup> mg;
-		if (pMaterial)
-			mg = MaterialGroup::Create(i.get(), pMaterial);
-		else
-			mg = MaterialGroup::Create(i.get(), "dirLightDifAmbPix");
-
-		std::shared_ptr<VertexData> &v = i->getVertexData();
-		IBuffer * pointsBuffer = RESOURCEMANAGER->createBuffer("pointsBuffer");
-
-		v->setBuffer(VertexData::GetAttribIndex(std::string("position")), pointsBuffer->getPropi(IBuffer::ID));
-
-		v->resetCompilationFlag();
-		v->compile();
-		i->addMaterialGroup(mg);
-		so->setRenderable(i);
-		is->add(so);
-		RENDERMANAGER->getActivePipeline()->getCurrentPass()->addScene(newSceneName);
-
-		m_pRoot->getWorld().setDebug(is.get(), pointsBuffer);
-
-		/****************************************Bullet DEBUG**************************************/
-
-		shared_ptr<IScene> &planeScene = RENDERMANAGER->getScene("plane");
-		m_pRoot->getWorld()._addRigid(
-			0.0f,
-			1.0f,
-			1.0f,
-			planeScene,
-			planeScene->getName(),
-			vec3(0.5f, 0.5f, 0.5f)
-			);
-
-		/*shared_ptr<IScene> &boxScene = RENDERMANAGER->getScene("box");
-		m_pRoot->getWorld()._addRigid(
-			10.0f,
-			0.5f,
-			0.5f,
-			boxScene,
-			boxScene->getName(),
-			vec3(1.0f, 1.0f, 1.0f)
-		);*/
-
-
-		/*shared_ptr<IScene> &boxScene1 = RENDERMANAGER->getScene("box1");
-		m_pRoot->getWorld()._addRigid(
-			0.0f,
-			0.5f,
-			0.5f,
-			boxScene1,
-			boxScene1->getName(),
-			vec3(1.0f, 1.0f, 1.0f)
-			);
-
-		shared_ptr<IScene> &boxScene2 = RENDERMANAGER->getScene("box2");
-		m_pRoot->getWorld()._addRigid(
-			0.0f,
-			0.5f,
-			0.5f,
-			boxScene2,
-			boxScene2->getName(),
-			vec3(1.0f, 1.0f, 1.0f)
-		);
-
-		shared_ptr<IScene> &boxScene3 = RENDERMANAGER->getScene("box3");
-		m_pRoot->getWorld()._addRigid(
-			0.0f,
-			0.5f,
-			0.5f,
-			boxScene3,
-			boxScene3->getName(),
-			vec3(1.0f, 1.0f, 1.0f)
-		);
-
-		shared_ptr<IScene> &boxScene4 = RENDERMANAGER->getScene("box4");
-		m_pRoot->getWorld()._addRigid(
-			0.0f,
-			0.5f,
-			0.5f,
-			boxScene4,
-			boxScene4->getName(),
-			vec3(1.0f, 1.0f, 1.0f)
-		);*/
-
-
-		//shared_ptr<IScene> &stairsScene = RENDERMANAGER->getScene("stairs");
-		//m_pRoot->getWorld()._addRigid(
-		//	0.0f,
-		//  1.0f,
-		//	1.0f,
-		//	stairsScene,
-		//	stairsScene->getName(),
-		//	vec3(0.5f, 0.5f, 0.5f)
-		//	);
-
-		/*shared_ptr<IScene> &stairsScene = RENDERMANAGER->getScene("skateRamp");
-		m_pRoot->getWorld()._addRigid(
-			0.0f,
-			1.0f,
-			1.0f,
-			stairsScene,
-			stairsScene->getName(),
-			vec3(0.5f, 0.5f, 0.5f)
-			);*/
-
-		//shared_ptr<IScene> &ballScene = RENDERMANAGER->getScene("ball");
-		////vector<SceneObject*> ballObjects = ballScene->getAllObjects();
-		////shared_ptr<SceneObject> ball = ballScene->getSceneObject(0);
-		//m_pRoot->getWorld()._addRigid(
-		//	10.0f,
-		//	0.5f,
-		//	0.5f,
-		//	ballScene,
-		//	ballScene->getName(),
-		//	//vec3(0.5f, 0.5f, 0.5f)
-		//	vec3(1.0f, 1.0f, 1.0f)
-		//	);
-
-		/*shared_ptr<IScene> &manScene = RENDERMANAGER->getScene("man");
-		m_pRoot->getWorld()._addCharacter(
-			10.0f,
-			1.0f,
-			1.0f,
-			0.2f,
-			manScene,
-			manScene->getName()
-			);*/
-
-		shared_ptr<IScene> &clothScene = RENDERMANAGER->getScene("cloth");
-			m_pRoot->getWorld()._addCloth(
-			10.0f,
-			clothScene,
-			clothScene->getName(),
-			vec3(1.0f, 1.0f, 1.0f)
-			);
-		
-		/*shared_ptr<IScene> particleScene = RENDERMANAGER->getScene("particle");
-		m_pRoot->getWorld()._addParticles(
-			RENDERMANAGER->getCurrentPass(),
-			particleScene,
-			"particles",
-			RESOURCEMANAGER->getBuffer(std::string("Simple::positions"))
-			);*/
-
-	}
-}
-
-
-
 
 
 void
@@ -1245,12 +971,10 @@ FrmMainFrame::OnPhysicsMode (wxCommandEvent &event)
 
 	if (idMenuPhysicsOn == event.GetId()) {
 		m_pRoot->enablePhysics();		
-		cam->setDynamic(true);
 	}
 	
 	if (idMenuPhysicsOff == event.GetId()) {
 		m_pRoot->disablePhysics();	
-		cam->setDynamic(false);
 	}
 }
 
