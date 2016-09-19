@@ -35,10 +35,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DLLPhysX", "DLLPhysX\DLLPhy
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DLLPhysics", "DLLPhysics\DLLPhysics.vcxproj", "{38B90109-45D9-4974-9758-803FE9B9D215}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DLLPhysX", "DLLPhysX\DLLPhysX.vcxproj", "{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DLLBulletPhysics", "DLLBulletPhysics\DLLBulletPhysics.vcxproj", "{C9B65841-4C4A-47B3-95BC-A655808E8186}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug Optix Dynamic|Win32 = Debug Optix Dynamic|Win32
@@ -203,46 +199,6 @@ Global
 		{38B90109-45D9-4974-9758-803FE9B9D215}.Release|Win32.ActiveCfg = Release|Win32
 		{38B90109-45D9-4974-9758-803FE9B9D215}.Release|Win32.Build.0 = Release|Win32
 		{38B90109-45D9-4974-9758-803FE9B9D215}.Release|x64.ActiveCfg = Release|x64
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug Optix Dynamic|Win32.ActiveCfg = Debug|Win32
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug Optix Dynamic|Win32.Build.0 = Debug|Win32
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug Optix Dynamic|x64.ActiveCfg = Debug|x64
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug Optix Dynamic|x64.Build.0 = Debug|x64
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug Optix|Win32.ActiveCfg = Debug|Win32
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug Optix|Win32.Build.0 = Debug|Win32
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug Optix|x64.ActiveCfg = Debug|x64
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug Optix|x64.Build.0 = Debug|x64
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug|Win32.ActiveCfg = Debug|Win32
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug|Win32.Build.0 = Debug|Win32
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug|x64.ActiveCfg = Debug|x64
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Debug|x64.Build.0 = Debug|x64
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Release Optix|Win32.ActiveCfg = Release|Win32
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Release Optix|Win32.Build.0 = Release|Win32
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Release Optix|x64.ActiveCfg = Release|x64
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Release Optix|x64.Build.0 = Release|x64
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Release|Win32.ActiveCfg = Release|Win32
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Release|Win32.Build.0 = Release|Win32
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Release|x64.ActiveCfg = Release|x64
-		{60ACAB96-62DC-4809-91B2-C71ED43A4B3C}.Release|x64.Build.0 = Release|x64
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug Optix Dynamic|Win32.ActiveCfg = Debug|Win32
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug Optix Dynamic|Win32.Build.0 = Debug|Win32
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug Optix Dynamic|x64.ActiveCfg = Debug|x64
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug Optix Dynamic|x64.Build.0 = Debug|x64
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug Optix|Win32.ActiveCfg = Debug|Win32
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug Optix|Win32.Build.0 = Debug|Win32
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug Optix|x64.ActiveCfg = Debug|x64
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug Optix|x64.Build.0 = Debug|x64
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug|Win32.ActiveCfg = Debug|Win32
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug|Win32.Build.0 = Debug|Win32
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug|x64.ActiveCfg = Debug|x64
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Debug|x64.Build.0 = Debug|x64
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Release Optix|Win32.ActiveCfg = Release|Win32
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Release Optix|Win32.Build.0 = Release|Win32
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Release Optix|x64.ActiveCfg = Release|x64
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Release Optix|x64.Build.0 = Release|x64
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Release|Win32.ActiveCfg = Release|Win32
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Release|Win32.Build.0 = Release|Win32
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Release|x64.ActiveCfg = Release|x64
-		{C9B65841-4C4A-47B3-95BC-A655808E8186}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

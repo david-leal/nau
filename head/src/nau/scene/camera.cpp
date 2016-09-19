@@ -93,7 +93,7 @@ Camera::Camera (const std::string &name) :
 	SceneObject(),
 
 	//m_IsDynamic (false),
-	m_LookAt(false),
+	m_LookAt(false)
 	//m_LookAtPoint(0.0f, 0.0f, 0.0f),
 //	m_PositionOffset (0.0f)
 	//m_IsOrtho (false)

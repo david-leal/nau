@@ -526,19 +526,19 @@
     <ClCompile Include="..\src\nau\interface\interface.cpp">
       <Filter>Source Files\interface</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\nau\loader\bufferLoader.cpp">
+	<ClCompile Include="..\src\nau\loader\bufferLoader.cpp">
       <Filter>Source Files\loader</Filter>
     </ClCompile>
     <ClCompile Include="..\src\nau\physics\physicsDummy.cpp">
       <Filter>Source Files\physics</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\nau\world\physXWorld.cpp">
-      <Filter>Source Files\world</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\nau\physics\physicsMaterial.cpp">
       <Filter>Source Files\physics</Filter>
     </ClCompile>
     <ClCompile Include="..\src\nau\physics\physicsPropertyManager.cpp">
+      <Filter>Source Files\physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\nau\physics\physicsManager.cpp">
       <Filter>Source Files\physics</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1062,7 +1062,7 @@
     <ClInclude Include="..\src\nau\interface\interface.h">
       <Filter>Source Files\interface</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\nau\loader\bufferLoader.h">
+	<ClInclude Include="..\src\nau\loader\bufferLoader.h">
       <Filter>Source Files\loader</Filter>
     </ClInclude>
     <ClInclude Include="..\src\nau\physics\iPhysics.h">
@@ -1074,14 +1074,14 @@
     <ClInclude Include="..\src\nau\physics\physicsManager.h">
       <Filter>Source Files\physics</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\nau\world\physXWorld.h">
-      <Filter>Source Files\world</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\nau\physics\iPhysicsPropertyManager.h">
       <Filter>Source Files\physics</Filter>
     </ClInclude>
     <ClInclude Include="..\src\nau\physics\physicsPropertyManager.h">
       <Filter>Source Files\physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\nau\physics\physicsMaterial.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

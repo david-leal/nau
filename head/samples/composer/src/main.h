@@ -114,13 +114,8 @@ private:
 
    DECLARE_EVENT_TABLE();
 
-<<<<<<< HEAD
-	void buildPhysics (void);
-	void OnPhysicsBuild (wxCommandEvent &event);
-=======
 	//void buildPhysics (void);
 	//void OnPhysicsBuild (wxCommandEvent &event);
->>>>>>> upstream/master
 	void OnPhysicsMode (wxCommandEvent &event);
 	
 };

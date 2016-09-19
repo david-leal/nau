@@ -858,7 +858,7 @@ FrmMainFrame::startStandAlone (void) {
 	}
 
 	//initScene();
-	buildPhysics();
+	//buildPhysics();
 
 	RENDERMANAGER->getScene ("MainScene")->compile();
 
@@ -957,13 +957,6 @@ FrmMainFrame::OnDlgPhysics (wxCommandEvent &event) {
 
 	DlgPhysics::Instance()->Show(TRUE);
 }
-
-void
-FrmMainFrame::buildPhysics(void) {
-
-	/****************************************PROGRAMATIC DRAW**************************************/
-	//std::string newSceneName = "bufferScene";
-
 
 void
 FrmMainFrame::OnPhysicsMode (wxCommandEvent &event)
